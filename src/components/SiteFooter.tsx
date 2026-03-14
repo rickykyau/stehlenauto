@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/stehlen-logo.png";
 
 const SiteFooter = () => {
