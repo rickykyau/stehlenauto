@@ -230,15 +230,20 @@ const CollectionTemplate = () => {
           </span>
 
           {/* Active filter chips */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 flex-wrap">
+            {filterYear && (
+              <button onClick={() => updateParam("year", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
+                {filterYear} <X className="w-3 h-3" />
+              </button>
+            )}
             {actualEffectiveMake && !vehicle && (
               <button onClick={() => setMakeFilter("")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
                 {actualEffectiveMake} <X className="w-3 h-3" />
               </button>
             )}
-            {filterYear && (
-              <button onClick={() => updateParam("year", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
-                {filterYear} <X className="w-3 h-3" />
+            {filterModel && (
+              <button onClick={() => updateParam("model", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
+                {filterModel} <X className="w-3 h-3" />
               </button>
             )}
             {filterCategory && (
