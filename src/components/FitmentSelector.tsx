@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Shield, Truck, ChevronDown } from "lucide-react";
+import { useVehicle } from "@/contexts/VehicleContext";
 
 const YEARS = Array.from({ length: 30 }, (_, i) => (2025 - i).toString());
 const MAKES = ["Ford", "Chevy", "Dodge", "GMC", "Toyota", "Nissan", "Jeep", "Ram"];
@@ -19,13 +21,18 @@ interface FitmentSelectorProps {
 }
 
 const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
-  const [year, setYear] = useState("");
-  const [make, setMake] = useState("");
-  const [model, setModel] = useState("");
+  const { vehicle: savedVehicle, setVehicle } = useVehicle();
+  const navigate = useNavigate();
+  const [year, setYear] = useState(savedVehicle?.year || "");
+  const [make, setMake] = useState(savedVehicle?.make || "");
+  const [model, setModel] = useState(savedVehicle?.model || "");
 
   const handleSubmit = () => {
     if (year && make && model) {
-      onVehicleSelect?.({ year, make, model });
+      const v = { year, make, model };
+      setVehicle(v);
+      onVehicleSelect?.(v);
+      navigate("/collections/all");
     }
   };
 
@@ -37,7 +44,6 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border">
-        {/* Year */}
         <div className="relative border-b md:border-b-0 md:border-r border-border">
           <select
             value={year}
@@ -50,7 +56,6 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
 
-        {/* Make */}
         <div className="relative border-b md:border-b-0 md:border-r border-border">
           <select
             value={make}
@@ -64,7 +69,6 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
 
-        {/* Model */}
         <div className="relative">
           <select
             value={model}
