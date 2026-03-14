@@ -7,6 +7,7 @@ import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3
 import logo from "@/assets/stehlen-logo.png";
 import { collections, products } from "@/data/products";
 import VehicleBar from "./VehicleBar";
+import { useCart } from "@/contexts/CartContext";
 
 // Extract unique makes from products
 const uniqueMakes = [...new Set(products.map(p => p.make))].sort();
