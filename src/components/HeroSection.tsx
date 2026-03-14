@@ -35,10 +35,10 @@ const HeroSection = ({ onVehicleSelect }: HeroSectionProps) => {
             Bolt-on installation. No drilling. Guaranteed fitment for your vehicle.
           </p>
 
-          <button className="self-start flex items-center gap-3 h-12 px-8 bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all">
+          <Link to="/collections/all" className="self-start flex items-center gap-3 h-12 px-8 bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all">
             SHOP ALL PARTS
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </Link>
         </div>
 
         {/* Right: Fitment selector */}
