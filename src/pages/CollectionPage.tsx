@@ -485,4 +485,40 @@ const FilterSection = ({ title, expanded, onToggle, children }: { title: string;
   </div>
 );
 
+/** Collapsible decade group for year filter */
+const DecadeGroup = ({ decade, years, filterYear, onSelect }: { decade: string; years: number[]; filterYear: string; onSelect: (y: number) => void }) => {
+  const [open, setOpen] = useState(filterYear ? years.includes(parseInt(filterYear)) : decade === "2020s");
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center justify-between px-3 py-2 font-body text-sm transition-colors ${
+          years.some((y) => String(y) === filterYear) ? "text-primary font-semibold" : "text-secondary-foreground hover:bg-accent"
+        }`}
+      >
+        <span>{decade}</span>
+        {open ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="grid grid-cols-3 gap-1 px-3 pb-2">
+          {years.map((year) => (
+            <button
+              key={year}
+              onClick={() => onSelect(year)}
+              className={`py-1.5 font-display text-[10px] tracking-wider border transition-colors text-center ${
+                filterYear === String(year)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default CollectionTemplate;
