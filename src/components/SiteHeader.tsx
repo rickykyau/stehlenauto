@@ -17,6 +17,7 @@ const SiteHeader = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category" | "make">(null);
   const location = useLocation();
+  const { toggleCart, itemCount } = useCart();
 
   // Close menu on route change
   useEffect(() => {
