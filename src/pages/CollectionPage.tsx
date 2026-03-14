@@ -295,29 +295,34 @@ const CollectionTemplate = () => {
             )}
           </div>
 
-          {/* Year filter — first, because it's the broadest vehicle identifier */}
+          {/* Year filter — compact chip grid */}
           <FilterSection title="YEAR" expanded={expandedFilters.year} onToggle={() => toggleFilter("year")}>
             <button
               onClick={() => updateParam("year", "")}
-              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors mb-2 ${
                 !filterYear ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
               }`}
             >
               All Years
             </button>
-            <div className="max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-1.5">
               {years.map((year) => (
                 <button
                   key={year}
                   onClick={() => updateParam("year", String(year))}
-                  className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                    filterYear === String(year) ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                  className={`py-1.5 font-display text-[10px] tracking-wider border transition-colors text-center ${
+                    filterYear === String(year)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
                   }`}
                 >
-                  {year}
+                  {String(year).slice(2)}
                 </button>
               ))}
             </div>
+            {filterYear && (
+              <p className="mt-2 font-display text-[10px] tracking-wider text-primary text-center">{filterYear}</p>
+            )}
           </FilterSection>
 
           {/* Make filter */}
