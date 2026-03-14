@@ -40,12 +40,13 @@ const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({ make: true, year: true, category: true });
+  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({ year: true, make: true, model: true, category: true });
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
 
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
   const filterMake = searchParams.get("filter.p.vendor") || searchParams.get("make") || "";
   const filterYear = searchParams.get("year") || "";
+  const filterModel = searchParams.get("model") || "";
   const filterCategory = searchParams.get("category") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
@@ -61,27 +62,45 @@ const CollectionTemplate = () => {
     return getProductsByCategory(collection.id);
   }, [collection, isAllProducts]);
 
-  const makes = useMemo(() => {
-    const set = new Set(categoryProducts.map((p) => p.make));
-    return Array.from(set).sort();
-  }, [categoryProducts]);
+  // Check if we're showing all (overridden)
+  const showingAll = filterMake === "__all__";
+  const actualEffectiveMake = showingAll ? "" : effectiveMake;
 
-  // Extract unique years from products
+  // Extract unique years from products (newest first)
   const years = useMemo(() => {
     const yearSet = new Set<number>();
     categoryProducts.forEach((p) => parseYears(p.yearRange).forEach((y) => yearSet.add(y)));
-    return Array.from(yearSet).sort((a, b) => b - a); // newest first
+    return Array.from(yearSet).sort((a, b) => b - a);
   }, [categoryProducts]);
+
+  // Makes — filtered by selected year if any
+  const makes = useMemo(() => {
+    let pool = categoryProducts;
+    if (filterYear) {
+      const y = parseInt(filterYear);
+      pool = pool.filter((p) => parseYears(p.yearRange).includes(y));
+    }
+    return [...new Set(pool.map((p) => p.make))].sort();
+  }, [categoryProducts, filterYear]);
+
+  // Models — filtered by selected make (and year if any)
+  const models = useMemo(() => {
+    let pool = categoryProducts;
+    if (filterYear) {
+      const y = parseInt(filterYear);
+      pool = pool.filter((p) => parseYears(p.yearRange).includes(y));
+    }
+    if (actualEffectiveMake) pool = pool.filter((p) => p.make === actualEffectiveMake);
+    const modelSet = new Set<string>();
+    pool.forEach((p) => p.model.forEach((m) => modelSet.add(m)));
+    return [...modelSet].sort();
+  }, [categoryProducts, actualEffectiveMake, filterYear]);
 
   // Extract unique categories
   const categoryOptions = useMemo(() => {
     const catSet = new Set(categoryProducts.map((p) => p.category));
     return collections.filter((c) => catSet.has(c.id));
   }, [categoryProducts]);
-
-  // Check if we're showing all (overridden)
-  const showingAll = filterMake === "__all__";
-  const actualEffectiveMake = showingAll ? "" : effectiveMake;
 
   const filteredFinal = useMemo(() => {
     let list = [...categoryProducts];
@@ -90,6 +109,7 @@ const CollectionTemplate = () => {
       const y = parseInt(filterYear);
       list = list.filter((p) => parseYears(p.yearRange).includes(y));
     }
+    if (filterModel) list = list.filter((p) => p.model.includes(filterModel));
     if (filterCategory) list = list.filter((p) => p.category === filterCategory);
     switch (sort) {
       case "price-ascending": list.sort((a, b) => a.price - b.price); break;
@@ -97,7 +117,7 @@ const CollectionTemplate = () => {
       case "title-ascending": list.sort((a, b) => a.title.localeCompare(b.title)); break;
     }
     return list;
-  }, [categoryProducts, sort, actualEffectiveMake, filterYear, filterCategory]);
+  }, [categoryProducts, sort, actualEffectiveMake, filterYear, filterModel, filterCategory]);
 
   const totalPagesFinal = Math.ceil(filteredFinal.length / ITEMS_PER_PAGE);
   const paginatedFinal = filteredFinal.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
