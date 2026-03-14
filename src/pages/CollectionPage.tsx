@@ -33,7 +33,7 @@ const CollectionTemplate = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
-  const filterMake = searchParams.get("filter.p.vendor") || "";
+  const filterMake = searchParams.get("filter.p.vendor") || searchParams.get("make") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
   const collection = handle === "all" ? null : collections.find((c) => c.slug === handle);
