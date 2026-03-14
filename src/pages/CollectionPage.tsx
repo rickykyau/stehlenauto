@@ -3,7 +3,7 @@
  */
 import { useMemo, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, SlidersHorizontal, X, Truck, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight, SlidersHorizontal, X, ChevronUp } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
@@ -167,38 +167,7 @@ const CollectionTemplate = () => {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      {/* Vehicle Banner */}
-      {vehicle && (
-        <div className="bg-primary/10 border-b border-primary/30 px-4 lg:px-8 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Truck className="w-4 h-4 text-primary shrink-0" />
-            <span className="font-display text-[11px] tracking-widest text-primary">SHOWING PARTS FOR:</span>
-            <span className="font-display text-[11px] tracking-widest text-foreground font-bold">{vehicleLabel.toUpperCase()}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {!showingAll && actualEffectiveMake && (
-              <button onClick={handleShowAllMakes} className="font-display text-[10px] tracking-widest text-muted-foreground hover:text-foreground border border-border px-3 py-1 transition-colors">SHOW ALL MAKES</button>
-            )}
-            {showingAll && vehicle && (
-              <button
-                onClick={() => {
-                  const params = new URLSearchParams(searchParams);
-                  params.delete("filter.p.vendor");
-                  params.delete("make");
-                  params.delete("page");
-                  setSearchParams(params);
-                }}
-                className="font-display text-[10px] tracking-widest text-primary hover:brightness-110 border border-primary/30 px-3 py-1 transition-colors"
-              >FILTER TO MY VEHICLE</button>
-            )}
-            <button onClick={handleClearVehicle} className="flex items-center gap-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-destructive transition-colors" title="Clear saved vehicle">
-              <X className="w-3 h-3" /> CLEAR
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Announcement */}
+      {/* Announcement (only if no vehicle set) */}
       {!vehicle && (
         <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
           <span className="font-display text-[11px] tracking-widest text-primary">EASY 30-DAY RETURNS | NO HASSLE, NO QUESTIONS ASKED</span>

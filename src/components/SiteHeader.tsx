@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, Filter, ChevronRight, ChevronLeft } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import { collections, products } from "@/data/products";
+import VehicleBar from "./VehicleBar";
 
 // Extract unique makes from products
 const uniqueMakes = [...new Set(products.map(p => p.make))].sort();
@@ -98,6 +99,7 @@ const SiteHeader = () => {
           </div>
         )}
       </header>
+      <VehicleBar />
 
       {/* Overlay */}
       {menuOpen && (
