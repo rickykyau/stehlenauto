@@ -20,7 +20,7 @@ import { products, collections } from "@/data/products";
 const IndexTemplate = () => {
   const [vehicle, setVehicle] = useState<{ year: string; make: string; model: string } | null>(null);
   const [searchParams] = useSearchParams();
-  const activeCategory = searchParams.get("category") || "bull-guards";
+  const activeCategory = searchParams.get("category") || "grilles";
 
   const filteredProducts = products
     .filter((p) => p.category === activeCategory)
