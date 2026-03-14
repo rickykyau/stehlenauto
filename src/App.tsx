@@ -14,6 +14,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { VehicleProvider } from "@/contexts/VehicleContext";
+import { CartProvider } from "@/contexts/CartContext";
+import CartDrawer from "@/components/CartDrawer";
 import Index from "./pages/Index.tsx";
 import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
@@ -28,9 +30,11 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <VehicleProvider>
+      <CartProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <CartDrawer />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -44,6 +48,7 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
+      </CartProvider>
     </VehicleProvider>
   </QueryClientProvider>
 );
