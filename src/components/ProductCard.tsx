@@ -6,6 +6,7 @@ import { ShoppingCart, Plus } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 interface ProductCardProps {
+  id?: string;
   image: string;
   title: string;
   price: string;
