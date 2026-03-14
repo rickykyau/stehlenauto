@@ -199,6 +199,7 @@ const ProductTemplate = () => {
             {related.map((p) => (
               <ProductCard
                 key={p.id}
+                id={p.id}
                 image={p.image}
                 title={p.title}
                 price={`$${p.price.toFixed(2)}`}
