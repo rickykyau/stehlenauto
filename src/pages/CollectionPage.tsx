@@ -295,34 +295,27 @@ const CollectionTemplate = () => {
             )}
           </div>
 
-          {/* Year filter — compact chip grid */}
+          {/* Year filter — decade groups */}
           <FilterSection title="YEAR" expanded={expandedFilters.year} onToggle={() => toggleFilter("year")}>
             <button
               onClick={() => updateParam("year", "")}
-              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors mb-2 ${
+              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors mb-1 ${
                 !filterYear ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
               }`}
             >
               All Years
             </button>
-            <div className="grid grid-cols-4 gap-1.5">
-              {years.map((year) => (
-                <button
-                  key={year}
-                  onClick={() => updateParam("year", String(year))}
-                  className={`py-1.5 font-display text-[10px] tracking-wider border transition-colors text-center ${
-                    filterYear === String(year)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
-                  }`}
-                >
-                  {String(year).slice(2)}
-                </button>
-              ))}
-            </div>
-            {filterYear && (
-              <p className="mt-2 font-display text-[10px] tracking-wider text-primary text-center">{filterYear}</p>
-            )}
+            {(() => {
+              const decades = new Map<string, number[]>();
+              years.forEach((y) => {
+                const dec = `${Math.floor(y / 10) * 10}s`;
+                if (!decades.has(dec)) decades.set(dec, []);
+                decades.get(dec)!.push(y);
+              });
+              return [...decades.entries()].map(([decade, decYears]) => (
+                <DecadeGroup key={decade} decade={decade} years={decYears} filterYear={filterYear} onSelect={(y) => updateParam("year", String(y))} />
+              ));
+            })()}
           </FilterSection>
 
           {/* Make filter */}
@@ -491,5 +484,41 @@ const FilterSection = ({ title, expanded, onToggle, children }: { title: string;
     {expanded && <div className="px-5 pb-4 space-y-0.5">{children}</div>}
   </div>
 );
+
+/** Collapsible decade group for year filter */
+const DecadeGroup = ({ decade, years, filterYear, onSelect }: { decade: string; years: number[]; filterYear: string; onSelect: (y: number) => void }) => {
+  const [open, setOpen] = useState(filterYear ? years.includes(parseInt(filterYear)) : decade === "2020s");
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`w-full flex items-center justify-between px-3 py-2 font-body text-sm transition-colors ${
+          years.some((y) => String(y) === filterYear) ? "text-primary font-semibold" : "text-secondary-foreground hover:bg-accent"
+        }`}
+      >
+        <span>{decade}</span>
+        {open ? <ChevronUp className="w-3 h-3 text-muted-foreground" /> : <ChevronDown className="w-3 h-3 text-muted-foreground" />}
+      </button>
+      {open && (
+        <div className="grid grid-cols-3 gap-1 px-3 pb-2">
+          {years.map((year) => (
+            <button
+              key={year}
+              onClick={() => onSelect(year)}
+              className={`py-1.5 font-display text-[10px] tracking-wider border transition-colors text-center ${
+                filterYear === String(year)
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/40"
+              }`}
+            >
+              {year}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default CollectionTemplate;
