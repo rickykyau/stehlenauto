@@ -13,6 +13,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { VehicleProvider } from "@/contexts/VehicleContext";
 import Index from "./pages/Index.tsx";
 import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
