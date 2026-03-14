@@ -3,7 +3,7 @@
  */
 import { Link } from "react-router-dom";
 import { ShoppingCart, Plus } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 interface ProductCardProps {
   image: string;
