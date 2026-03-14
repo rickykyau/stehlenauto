@@ -56,7 +56,7 @@ const IndexTemplate = () => {
           {featuredProducts.map((product) => (
             <ProductCard
               key={product.id}
-              image={product.image}
+              id={product.id}
               title={product.title}
               price={`$${product.price.toFixed(2)}`}
               slug={product.slug}
