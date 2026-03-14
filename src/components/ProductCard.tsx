@@ -7,9 +7,10 @@ interface ProductCardProps {
   category: string;
   inStock?: boolean;
   specs?: string;
+  href?: string;
 }
 
-const ProductCard = ({ image, title, price, category, inStock = true, specs }: ProductCardProps) => {
+const ProductCard = ({ image, title, price, category, inStock = true, specs, href }: ProductCardProps) => {
   return (
     <div className="group border border-border bg-card overflow-hidden transition-colors hover:border-primary/40">
       {/* Image */}
