@@ -1,13 +1,9 @@
 /**
  * SHOPIFY SNIPPET: snippets/product-card.liquid
- * 
- * Liquid mapping:
- * - Image: {{ product.featured_image | img_url: '400x' }}
- * - Title: {{ product.title }}
- * - Price: {{ product.price | money }}
- * - URL: {{ product.url }}
  */
 import { Link } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
   image: string;
@@ -19,6 +15,15 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ image, title, price, slug, compareAt, inStock = true }: ProductCardProps) => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toast({
+      title: "Added to cart",
+      description: title,
+    });
+  };
+
   const content = (
     <div className="group bg-card border border-border overflow-hidden transition-colors hover:border-primary/40 flex flex-col h-full">
       {/* Image */}
@@ -47,10 +52,25 @@ const ProductCard = ({ image, title, price, slug, compareAt, inStock = true }: P
         </div>
       </div>
 
-      {/* CTA */}
-      <button className="w-full h-11 border-t border-primary/50 bg-transparent text-primary font-display text-xs font-bold uppercase tracking-widest transition-colors hover:bg-primary hover:text-primary-foreground btn-press">
-        VIEW PRODUCT
-      </button>
+      {/* CTA — split: View + Add to Cart */}
+      <div className="flex border-t border-border">
+        <span className="flex-1 h-11 flex items-center justify-center text-muted-foreground font-display text-[10px] tracking-widest transition-colors group-hover:text-foreground">
+          VIEW PRODUCT
+        </span>
+        {inStock ? (
+          <button
+            onClick={handleAddToCart}
+            className="w-12 h-11 border-l border-border flex items-center justify-center bg-primary text-primary-foreground transition-colors hover:brightness-110 btn-press shrink-0"
+            aria-label="Add to cart"
+          >
+            <ShoppingCart className="w-4 h-4" />
+          </button>
+        ) : (
+          <span className="w-12 h-11 border-l border-border flex items-center justify-center bg-muted text-muted-foreground shrink-0">
+            <ShoppingCart className="w-4 h-4" />
+          </span>
+        )}
+      </div>
     </div>
   );
 
