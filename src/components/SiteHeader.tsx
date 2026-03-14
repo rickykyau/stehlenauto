@@ -99,6 +99,7 @@ const SiteHeader = () => {
           </div>
         )}
       </header>
+      <VehicleBar />
 
       {/* Overlay */}
       {menuOpen && (
