@@ -16,6 +16,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { VehicleProvider } from "@/contexts/VehicleContext";
 import { CartProvider } from "@/contexts/CartContext";
 import CartDrawer from "@/components/CartDrawer";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index.tsx";
 import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
@@ -35,6 +36,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <CartDrawer />
           <Routes>
             <Route path="/" element={<Index />} />

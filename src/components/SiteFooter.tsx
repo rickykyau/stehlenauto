@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/stehlen-logo.png";
 
 const SiteFooter = () => {
@@ -7,7 +8,7 @@ const SiteFooter = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 border-b border-border">
         {/* Brand */}
         <div className="p-8 border-b md:border-b-0 md:border-r border-border">
-          <img src={logo} alt="Stehlen Auto" className="h-6 mb-4" />
+          <Link to="/"><img src={logo} alt="Stehlen Auto" className="h-6 mb-4" /></Link>
           <p className="font-body text-sm text-muted-foreground leading-relaxed">
             Heavy-duty truck accessories. Engineered for precision. Built for the long haul.
           </p>
