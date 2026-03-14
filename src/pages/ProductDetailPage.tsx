@@ -167,56 +167,6 @@ const ProductTemplate = () => {
 
           {/* Features */}
           {product.features && product.features.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-5 bg-primary" />
-                <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">FEATURES</h2>
-              </div>
-              <ul className="space-y-2">
-                {product.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 bg-primary mt-1.5 shrink-0" />
-                    <span className="font-body text-sm text-muted-foreground">{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Vehicle Fitment */}
-          {product.fitment && product.fitment.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-5 bg-primary" />
-                <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">VEHICLE FITMENT</h2>
-              </div>
-              <ul className="space-y-1">
-                {product.fitment.map((f, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 bg-success mt-1.5 shrink-0" />
-                    <span className="font-body text-sm text-foreground/80">{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1 h-5 bg-primary" />
-                <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">FEATURES</h2>
-              </div>
-              <ul className="space-y-2">
-                {product.features.map((f, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <div className="w-1.5 h-1.5 bg-primary mt-1.5 shrink-0" />
-                    <span className="font-body text-sm text-muted-foreground">{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Technical Specs */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1 h-5 bg-primary" />
