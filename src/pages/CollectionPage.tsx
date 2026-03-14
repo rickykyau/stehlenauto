@@ -1,20 +1,14 @@
 /**
  * SHOPIFY TEMPLATE: templates/collection.liquid
- * 
- * Liquid mapping:
- * - Title: {{ collection.title }}
- * - Products: {% for product in collection.products %}
- * - Sort: ?sort_by= → {{ collection.sort_by }}
- * - Filters: {% for filter in collection.filters %}
- * - Pagination: {% paginate collection.products by 24 %}
  */
 import { useMemo, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, ChevronRight, SlidersHorizontal, X, Truck, ChevronUp } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
 import { products, collections, getProductsByCategory } from "@/data/products";
+import { useVehicle } from "@/contexts/VehicleContext";
 
 type SortOption = "best-selling" | "price-ascending" | "price-descending" | "title-ascending";
 
@@ -31,10 +25,14 @@ const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
+  const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
 
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
   const filterMake = searchParams.get("filter.p.vendor") || searchParams.get("make") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
+
+  // If vehicle is set and no explicit make filter in URL, use the vehicle's make
+  const effectiveMake = filterMake || (vehicle?.make ?? "");
 
   const collection = handle === "all" ? null : collections.find((c) => c.slug === handle);
   const isAllProducts = handle === "all" || !handle;
@@ -52,14 +50,14 @@ const CollectionTemplate = () => {
 
   const filtered = useMemo(() => {
     let list = [...categoryProducts];
-    if (filterMake) list = list.filter((p) => p.make === filterMake);
+    if (effectiveMake) list = list.filter((p) => p.make === effectiveMake);
     switch (sort) {
       case "price-ascending": list.sort((a, b) => a.price - b.price); break;
       case "price-descending": list.sort((a, b) => b.price - a.price); break;
       case "title-ascending": list.sort((a, b) => a.title.localeCompare(b.title)); break;
     }
     return list;
-  }, [categoryProducts, sort, filterMake]);
+  }, [categoryProducts, sort, effectiveMake]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -75,9 +73,47 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     if (make) params.set("filter.p.vendor", make);
     else params.delete("filter.p.vendor");
+    params.delete("make");
     params.delete("page");
     setSearchParams(params);
   };
+
+  const handleClearVehicle = () => {
+    clearVehicle();
+    // Also clear any make filter from URL
+    const params = new URLSearchParams(searchParams);
+    params.delete("filter.p.vendor");
+    params.delete("make");
+    params.delete("page");
+    setSearchParams(params);
+  };
+
+  const handleShowAllMakes = () => {
+    // Keep vehicle saved but show all makes for this session
+    const params = new URLSearchParams(searchParams);
+    params.set("filter.p.vendor", "__all__");
+    params.delete("make");
+    params.delete("page");
+    setSearchParams(params);
+  };
+
+  // Check if we're showing all (overridden)
+  const showingAll = filterMake === "__all__";
+  const actualEffectiveMake = showingAll ? "" : effectiveMake;
+
+  const filteredFinal = useMemo(() => {
+    let list = [...categoryProducts];
+    if (actualEffectiveMake) list = list.filter((p) => p.make === actualEffectiveMake);
+    switch (sort) {
+      case "price-ascending": list.sort((a, b) => a.price - b.price); break;
+      case "price-descending": list.sort((a, b) => b.price - a.price); break;
+      case "title-ascending": list.sort((a, b) => a.title.localeCompare(b.title)); break;
+    }
+    return list;
+  }, [categoryProducts, sort, actualEffectiveMake]);
+
+  const totalPagesFinal = Math.ceil(filteredFinal.length / ITEMS_PER_PAGE);
+  const paginatedFinal = filteredFinal.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
   const setPage = (p: number) => {
     const params = new URLSearchParams(searchParams);
@@ -87,18 +123,67 @@ const CollectionTemplate = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const title = isAllProducts ? "Products" : (collection?.title || "All Products");
+  const title = isAllProducts ? "All Products" : (collection?.title || "All Products");
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      {/* Announcement */}
-      <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
-        <span className="font-display text-[11px] tracking-widest text-primary">
-          EASY 30-DAY RETURNS | NO HASSLE, NO QUESTIONS ASKED
-        </span>
-      </div>
+      {/* Vehicle Banner — shown when a vehicle is saved */}
+      {vehicle && (
+        <div className="bg-primary/10 border-b border-primary/30 px-4 lg:px-8 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Truck className="w-4 h-4 text-primary shrink-0" />
+            <span className="font-display text-[11px] tracking-widest text-primary">
+              SHOWING PARTS FOR:
+            </span>
+            <span className="font-display text-[11px] tracking-widest text-foreground font-bold">
+              {vehicleLabel.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!showingAll && actualEffectiveMake && (
+              <button
+                onClick={handleShowAllMakes}
+                className="font-display text-[10px] tracking-widest text-muted-foreground hover:text-foreground border border-border px-3 py-1 transition-colors"
+              >
+                SHOW ALL MAKES
+              </button>
+            )}
+            {showingAll && vehicle && (
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams);
+                  params.delete("filter.p.vendor");
+                  params.delete("make");
+                  params.delete("page");
+                  setSearchParams(params);
+                }}
+                className="font-display text-[10px] tracking-widest text-primary hover:brightness-110 border border-primary/30 px-3 py-1 transition-colors"
+              >
+                FILTER TO MY VEHICLE
+              </button>
+            )}
+            <button
+              onClick={handleClearVehicle}
+              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-destructive transition-colors"
+              title="Clear saved vehicle"
+            >
+              <X className="w-3 h-3" />
+              CLEAR
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Announcement (only if no vehicle set) */}
+      {!vehicle && (
+        <div className="bg-primary/10 border-b border-primary/20 px-4 py-2 text-center">
+          <span className="font-display text-[11px] tracking-widest text-primary">
+            EASY 30-DAY RETURNS | NO HASSLE, NO QUESTIONS ASKED
+          </span>
+        </div>
+      )}
 
       {/* Breadcrumb */}
       <div className="border-b border-border px-4 lg:px-8 py-3 flex items-center gap-2">
@@ -110,12 +195,17 @@ const CollectionTemplate = () => {
       {/* Collection Header */}
       <div className="border-b border-border px-4 lg:px-8 py-10">
         <h1 className="text-3xl md:text-4xl font-display font-bold tracking-wider">{title.toUpperCase()}</h1>
+        {vehicle && !showingAll && actualEffectiveMake && (
+          <p className="font-body text-sm text-muted-foreground mt-2">
+            Filtered for your {vehicleLabel}. <button onClick={handleShowAllMakes} className="text-primary hover:brightness-110 underline underline-offset-2">Show all makes</button>
+          </p>
+        )}
       </div>
 
       {/* Toolbar */}
       <div className="border-b border-border px-4 lg:px-8 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="lg:hidden flex items-center gap-2 text-primary font-display text-[11px] tracking-widest"
           >
@@ -123,14 +213,14 @@ const CollectionTemplate = () => {
             REFINE RESULTS
           </button>
           <span className="font-display text-[10px] tracking-widest text-muted-foreground">
-            {filtered.length} {filtered.length === 1 ? "PRODUCT" : "PRODUCTS"}
+            {filteredFinal.length} {filteredFinal.length === 1 ? "PRODUCT" : "PRODUCTS"}
           </span>
-          {filterMake && (
-            <button 
+          {actualEffectiveMake && !vehicle && (
+            <button
               onClick={() => setMakeFilter("")}
               className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest"
             >
-              {filterMake} <X className="w-3 h-3" />
+              {actualEffectiveMake} <X className="w-3 h-3" />
             </button>
           )}
         </div>
@@ -172,9 +262,9 @@ const CollectionTemplate = () => {
             <h4 className="font-display text-[10px] tracking-[0.15em] text-muted-foreground mb-3">MAKE</h4>
             <div className="space-y-0.5">
               <button
-                onClick={() => setMakeFilter("")}
+                onClick={() => { handleShowAllMakes(); }}
                 className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                  !filterMake ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                  !actualEffectiveMake || showingAll ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
                 }`}
               >
                 All Makes
@@ -184,7 +274,7 @@ const CollectionTemplate = () => {
                   key={make}
                   onClick={() => setMakeFilter(make)}
                   className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                    filterMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                    actualEffectiveMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
                   }`}
                 >
                   {make}
@@ -223,7 +313,7 @@ const CollectionTemplate = () => {
         {/* Product Grid */}
         <div className="flex-1 p-4 lg:p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-fade-in">
-            {paginated.map((product) => (
+            {paginatedFinal.map((product) => (
               <ProductCard
                 key={product.id}
                 image={product.image}
@@ -236,19 +326,28 @@ const CollectionTemplate = () => {
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {filteredFinal.length === 0 && (
             <div className="py-20 text-center">
-              <p className="font-display text-sm tracking-wider text-muted-foreground">NO PRODUCTS FOUND</p>
-              <button onClick={() => setMakeFilter("")} className="mt-4 font-display text-xs tracking-widest text-primary hover:brightness-110">
-                CLEAR FILTERS
-              </button>
+              <p className="font-display text-sm tracking-wider text-muted-foreground">
+                NO PRODUCTS FOUND {vehicle ? `FOR YOUR ${vehicleLabel.toUpperCase()}` : ""}
+              </p>
+              <div className="flex items-center justify-center gap-4 mt-4">
+                {vehicle && (
+                  <button onClick={handleShowAllMakes} className="font-display text-xs tracking-widest text-primary hover:brightness-110">
+                    SHOW ALL MAKES
+                  </button>
+                )}
+                <button onClick={() => { setMakeFilter(""); handleClearVehicle(); }} className="font-display text-xs tracking-widest text-muted-foreground hover:text-foreground">
+                  CLEAR ALL FILTERS
+                </button>
+              </div>
             </div>
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPagesFinal > 1 && (
             <div className="mt-8 flex items-center justify-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              {Array.from({ length: totalPagesFinal }, (_, i) => i + 1).map((p) => (
                 <button
                   key={p}
                   onClick={() => setPage(p)}
