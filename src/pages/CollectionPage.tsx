@@ -3,7 +3,7 @@
  */
 import { useMemo, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, SlidersHorizontal, X, Truck, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronRight, SlidersHorizontal, X, ChevronUp } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
