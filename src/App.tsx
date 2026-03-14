@@ -18,6 +18,10 @@ import Index from "./pages/Index.tsx";
 import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import WarrantyPage from "./pages/WarrantyPage.tsx";
+import TermsPage from "./pages/TermsPage.tsx";
+import ReturnsPage from "./pages/ReturnsPage.tsx";
+import PrivacyPage from "./pages/PrivacyPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +36,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/collections/:handle" element={<CollectionPage />} />
             <Route path="/products/:slug" element={<ProductDetailPage />} />
+            <Route path="/pages/warranty" element={<WarrantyPage />} />
+            <Route path="/policies/terms-of-service" element={<TermsPage />} />
+            <Route path="/policies/refund-policy" element={<ReturnsPage />} />
+            <Route path="/policies/privacy-policy" element={<PrivacyPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

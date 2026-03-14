@@ -24,9 +24,14 @@ const SiteFooter = () => {
         <div className="p-8 border-b md:border-b-0 md:border-r border-border">
           <h4 className="font-display text-xs tracking-[0.15em] text-muted-foreground mb-4">INFORMATION</h4>
           <ul className="space-y-2">
-            {["Product Warranty", "Terms & Conditions", "Returns Policy", "Privacy Policy"].map((link) => (
-              <li key={link}>
-                <a href="#" className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link}</a>
+            {[
+              { label: "Product Warranty", to: "/pages/warranty" },
+              { label: "Terms & Conditions", to: "/policies/terms-of-service" },
+              { label: "Returns Policy", to: "/policies/refund-policy" },
+              { label: "Privacy Policy", to: "/policies/privacy-policy" },
+            ].map((link) => (
+              <li key={link.label}>
+                <a href={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</a>
               </li>
             ))}
           </ul>
