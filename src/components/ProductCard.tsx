@@ -2,7 +2,7 @@
  * SHOPIFY SNIPPET: snippets/product-card.liquid
  */
 import { Link } from "react-router-dom";
-import { ShoppingCart } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface ProductCardProps {
