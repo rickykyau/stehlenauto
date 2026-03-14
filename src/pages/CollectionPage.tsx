@@ -40,12 +40,13 @@ const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({ make: true, year: true, category: true });
+  const [expandedFilters, setExpandedFilters] = useState<Record<string, boolean>>({ year: true, make: true, model: true, category: true });
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
 
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
   const filterMake = searchParams.get("filter.p.vendor") || searchParams.get("make") || "";
   const filterYear = searchParams.get("year") || "";
+  const filterModel = searchParams.get("model") || "";
   const filterCategory = searchParams.get("category") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
 
@@ -61,27 +62,45 @@ const CollectionTemplate = () => {
     return getProductsByCategory(collection.id);
   }, [collection, isAllProducts]);
 
-  const makes = useMemo(() => {
-    const set = new Set(categoryProducts.map((p) => p.make));
-    return Array.from(set).sort();
-  }, [categoryProducts]);
+  // Check if we're showing all (overridden)
+  const showingAll = filterMake === "__all__";
+  const actualEffectiveMake = showingAll ? "" : effectiveMake;
 
-  // Extract unique years from products
+  // Extract unique years from products (newest first)
   const years = useMemo(() => {
     const yearSet = new Set<number>();
     categoryProducts.forEach((p) => parseYears(p.yearRange).forEach((y) => yearSet.add(y)));
-    return Array.from(yearSet).sort((a, b) => b - a); // newest first
+    return Array.from(yearSet).sort((a, b) => b - a);
   }, [categoryProducts]);
+
+  // Makes — filtered by selected year if any
+  const makes = useMemo(() => {
+    let pool = categoryProducts;
+    if (filterYear) {
+      const y = parseInt(filterYear);
+      pool = pool.filter((p) => parseYears(p.yearRange).includes(y));
+    }
+    return [...new Set(pool.map((p) => p.make))].sort();
+  }, [categoryProducts, filterYear]);
+
+  // Models — filtered by selected make (and year if any)
+  const models = useMemo(() => {
+    let pool = categoryProducts;
+    if (filterYear) {
+      const y = parseInt(filterYear);
+      pool = pool.filter((p) => parseYears(p.yearRange).includes(y));
+    }
+    if (actualEffectiveMake) pool = pool.filter((p) => p.make === actualEffectiveMake);
+    const modelSet = new Set<string>();
+    pool.forEach((p) => p.model.forEach((m) => modelSet.add(m)));
+    return [...modelSet].sort();
+  }, [categoryProducts, actualEffectiveMake, filterYear]);
 
   // Extract unique categories
   const categoryOptions = useMemo(() => {
     const catSet = new Set(categoryProducts.map((p) => p.category));
     return collections.filter((c) => catSet.has(c.id));
   }, [categoryProducts]);
-
-  // Check if we're showing all (overridden)
-  const showingAll = filterMake === "__all__";
-  const actualEffectiveMake = showingAll ? "" : effectiveMake;
 
   const filteredFinal = useMemo(() => {
     let list = [...categoryProducts];
@@ -90,6 +109,7 @@ const CollectionTemplate = () => {
       const y = parseInt(filterYear);
       list = list.filter((p) => parseYears(p.yearRange).includes(y));
     }
+    if (filterModel) list = list.filter((p) => p.model.includes(filterModel));
     if (filterCategory) list = list.filter((p) => p.category === filterCategory);
     switch (sort) {
       case "price-ascending": list.sort((a, b) => a.price - b.price); break;
@@ -97,7 +117,7 @@ const CollectionTemplate = () => {
       case "title-ascending": list.sort((a, b) => a.title.localeCompare(b.title)); break;
     }
     return list;
-  }, [categoryProducts, sort, actualEffectiveMake, filterYear, filterCategory]);
+  }, [categoryProducts, sort, actualEffectiveMake, filterYear, filterModel, filterCategory]);
 
   const totalPagesFinal = Math.ceil(filteredFinal.length / ITEMS_PER_PAGE);
   const paginatedFinal = filteredFinal.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
@@ -117,6 +137,7 @@ const CollectionTemplate = () => {
     if (make) params.set("filter.p.vendor", make);
     else params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model"); // clear model when make changes
     params.delete("page");
     setSearchParams(params);
   };
@@ -126,6 +147,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model");
     params.delete("page");
     setSearchParams(params);
   };
@@ -134,6 +156,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.set("filter.p.vendor", "__all__");
     params.delete("make");
+    params.delete("model");
     params.delete("page");
     setSearchParams(params);
   };
@@ -142,6 +165,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model");
     params.delete("year");
     params.delete("category");
     params.delete("page");
@@ -149,7 +173,7 @@ const CollectionTemplate = () => {
     setSearchParams(params);
   };
 
-  const activeFilterCount = [actualEffectiveMake, filterYear, filterCategory].filter(Boolean).length;
+  const activeFilterCount = [actualEffectiveMake, filterYear, filterModel, filterCategory].filter(Boolean).length;
 
   const setPage = (p: number) => {
     const params = new URLSearchParams(searchParams);
@@ -206,15 +230,20 @@ const CollectionTemplate = () => {
           </span>
 
           {/* Active filter chips */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 flex-wrap">
+            {filterYear && (
+              <button onClick={() => updateParam("year", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
+                {filterYear} <X className="w-3 h-3" />
+              </button>
+            )}
             {actualEffectiveMake && !vehicle && (
               <button onClick={() => setMakeFilter("")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
                 {actualEffectiveMake} <X className="w-3 h-3" />
               </button>
             )}
-            {filterYear && (
-              <button onClick={() => updateParam("year", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
-                {filterYear} <X className="w-3 h-3" />
+            {filterModel && (
+              <button onClick={() => updateParam("model", "")} className="flex items-center gap-1 bg-primary/10 border border-primary/30 px-2 py-1 text-primary font-display text-[10px] tracking-widest">
+                {filterModel} <X className="w-3 h-3" />
               </button>
             )}
             {filterCategory && (
@@ -266,30 +295,7 @@ const CollectionTemplate = () => {
             )}
           </div>
 
-          {/* Make filter */}
-          <FilterSection title="MAKE" expanded={expandedFilters.make} onToggle={() => toggleFilter("make")}>
-            <button
-              onClick={() => { handleShowAllMakes(); }}
-              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                !actualEffectiveMake || showingAll ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
-              }`}
-            >
-              All Makes
-            </button>
-            {makes.map((make) => (
-              <button
-                key={make}
-                onClick={() => setMakeFilter(make)}
-                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                  actualEffectiveMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
-                }`}
-              >
-                {make}
-              </button>
-            ))}
-          </FilterSection>
-
-          {/* Year filter */}
+          {/* Year filter — first, because it's the broadest vehicle identifier */}
           <FilterSection title="YEAR" expanded={expandedFilters.year} onToggle={() => toggleFilter("year")}>
             <button
               onClick={() => updateParam("year", "")}
@@ -314,7 +320,57 @@ const CollectionTemplate = () => {
             </div>
           </FilterSection>
 
-          {/* Category filter (only on "all" page) */}
+          {/* Make filter */}
+          <FilterSection title="MAKE" expanded={expandedFilters.make} onToggle={() => toggleFilter("make")}>
+            <button
+              onClick={() => { handleShowAllMakes(); }}
+              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                !actualEffectiveMake || showingAll ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+              }`}
+            >
+              All Makes
+            </button>
+            {makes.map((make) => (
+              <button
+                key={make}
+                onClick={() => setMakeFilter(make)}
+                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                  actualEffectiveMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {make}
+              </button>
+            ))}
+          </FilterSection>
+
+          {/* Model filter — only show when a make is selected */}
+          {actualEffectiveMake && models.length > 0 && (
+            <FilterSection title="MODEL" expanded={expandedFilters.model} onToggle={() => toggleFilter("model")}>
+              <button
+                onClick={() => updateParam("model", "")}
+                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                  !filterModel ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                All Models
+              </button>
+              <div className="max-h-48 overflow-y-auto">
+                {models.map((model) => (
+                  <button
+                    key={model}
+                    onClick={() => updateParam("model", model)}
+                    className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                      filterModel === model ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
+          )}
+
+          {/* Category filter */}
           {isAllProducts && categoryOptions.length > 1 && (
             <FilterSection title="CATEGORY" expanded={expandedFilters.category} onToggle={() => toggleFilter("category")}>
               <button
