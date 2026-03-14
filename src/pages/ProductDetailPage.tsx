@@ -185,6 +185,7 @@ const ProductTemplate = () => {
               ))}
             </div>
           </div>
+          )}
         </div>
       </div>
 
