@@ -15,13 +15,19 @@ interface ProductCardProps {
   inStock?: boolean;
 }
 
-const ProductCard = ({ image, title, price, slug, compareAt, inStock = true }: ProductCardProps) => {
+const ProductCard = ({ id, image, title, price, slug, compareAt, inStock = true }: ProductCardProps) => {
+  const { addItem } = useCart();
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toast({
-      title: "Added to cart",
-      description: title,
+    const numericPrice = parseFloat(price.replace(/[^0-9.]/g, ""));
+    addItem({
+      id: id || slug || title,
+      slug: slug || "",
+      title,
+      price: numericPrice,
+      image,
     });
   };
 
