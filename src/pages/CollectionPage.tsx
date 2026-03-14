@@ -295,30 +295,7 @@ const CollectionTemplate = () => {
             )}
           </div>
 
-          {/* Make filter */}
-          <FilterSection title="MAKE" expanded={expandedFilters.make} onToggle={() => toggleFilter("make")}>
-            <button
-              onClick={() => { handleShowAllMakes(); }}
-              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                !actualEffectiveMake || showingAll ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
-              }`}
-            >
-              All Makes
-            </button>
-            {makes.map((make) => (
-              <button
-                key={make}
-                onClick={() => setMakeFilter(make)}
-                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
-                  actualEffectiveMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
-                }`}
-              >
-                {make}
-              </button>
-            ))}
-          </FilterSection>
-
-          {/* Year filter */}
+          {/* Year filter — first, because it's the broadest vehicle identifier */}
           <FilterSection title="YEAR" expanded={expandedFilters.year} onToggle={() => toggleFilter("year")}>
             <button
               onClick={() => updateParam("year", "")}
@@ -343,7 +320,57 @@ const CollectionTemplate = () => {
             </div>
           </FilterSection>
 
-          {/* Category filter (only on "all" page) */}
+          {/* Make filter */}
+          <FilterSection title="MAKE" expanded={expandedFilters.make} onToggle={() => toggleFilter("make")}>
+            <button
+              onClick={() => { handleShowAllMakes(); }}
+              className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                !actualEffectiveMake || showingAll ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+              }`}
+            >
+              All Makes
+            </button>
+            {makes.map((make) => (
+              <button
+                key={make}
+                onClick={() => setMakeFilter(make)}
+                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                  actualEffectiveMake === make ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {make}
+              </button>
+            ))}
+          </FilterSection>
+
+          {/* Model filter — only show when a make is selected */}
+          {actualEffectiveMake && models.length > 0 && (
+            <FilterSection title="MODEL" expanded={expandedFilters.model} onToggle={() => toggleFilter("model")}>
+              <button
+                onClick={() => updateParam("model", "")}
+                className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                  !filterModel ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                All Models
+              </button>
+              <div className="max-h-48 overflow-y-auto">
+                {models.map((model) => (
+                  <button
+                    key={model}
+                    onClick={() => updateParam("model", model)}
+                    className={`w-full text-left px-3 py-2 font-body text-sm transition-colors ${
+                      filterModel === model ? "text-primary bg-primary/5 border-l-2 border-primary" : "text-secondary-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {model}
+                  </button>
+                ))}
+              </div>
+            </FilterSection>
+          )}
+
+          {/* Category filter */}
           {isAllProducts && categoryOptions.length > 1 && (
             <FilterSection title="CATEGORY" expanded={expandedFilters.category} onToggle={() => toggleFilter("category")}>
               <button
