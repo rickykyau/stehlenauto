@@ -60,14 +60,15 @@ const ProductCard = ({ image, title, price, slug, compareAt, inStock = true }: P
         {inStock ? (
           <button
             onClick={handleAddToCart}
-            className="w-12 h-11 border-l border-border flex items-center justify-center bg-primary text-primary-foreground transition-colors hover:brightness-110 btn-press shrink-0"
+            className="w-12 h-11 border-l border-border flex items-center justify-center bg-primary text-primary-foreground transition-colors hover:brightness-110 btn-press shrink-0 relative"
             aria-label="Add to cart"
           >
-            <Plus className="w-5 h-5" strokeWidth={2.5} />
+            <ShoppingCart className="w-4 h-4" />
+            <Plus className="w-2.5 h-2.5 absolute top-1.5 right-1.5" strokeWidth={3} />
           </button>
         ) : (
-          <span className="w-12 h-11 border-l border-border flex items-center justify-center bg-muted text-muted-foreground shrink-0">
-            <Plus className="w-5 h-5" />
+          <span className="w-12 h-11 border-l border-border flex items-center justify-center bg-muted text-muted-foreground shrink-0 relative">
+            <ShoppingCart className="w-4 h-4" />
           </span>
         )}
       </div>
