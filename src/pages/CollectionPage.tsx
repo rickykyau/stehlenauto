@@ -137,6 +137,7 @@ const CollectionTemplate = () => {
     if (make) params.set("filter.p.vendor", make);
     else params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model"); // clear model when make changes
     params.delete("page");
     setSearchParams(params);
   };
@@ -146,6 +147,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model");
     params.delete("page");
     setSearchParams(params);
   };
@@ -154,6 +156,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.set("filter.p.vendor", "__all__");
     params.delete("make");
+    params.delete("model");
     params.delete("page");
     setSearchParams(params);
   };
@@ -162,6 +165,7 @@ const CollectionTemplate = () => {
     const params = new URLSearchParams(searchParams);
     params.delete("filter.p.vendor");
     params.delete("make");
+    params.delete("model");
     params.delete("year");
     params.delete("category");
     params.delete("page");
@@ -169,7 +173,7 @@ const CollectionTemplate = () => {
     setSearchParams(params);
   };
 
-  const activeFilterCount = [actualEffectiveMake, filterYear, filterCategory].filter(Boolean).length;
+  const activeFilterCount = [actualEffectiveMake, filterYear, filterModel, filterCategory].filter(Boolean).length;
 
   const setPage = (p: number) => {
     const params = new URLSearchParams(searchParams);
