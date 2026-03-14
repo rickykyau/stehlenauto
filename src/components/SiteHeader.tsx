@@ -77,9 +77,9 @@ const SiteHeader = () => {
             >
               SELECT YOUR VEHICLE
             </Link>
-            <button className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
+            <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-primary-foreground font-display text-[9px] flex items-center justify-center">0</span>
+              <span className={`absolute top-1 right-1 w-4 h-4 font-display text-[9px] flex items-center justify-center ${itemCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{itemCount}</span>
             </button>
           </div>
         </div>
