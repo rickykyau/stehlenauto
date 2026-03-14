@@ -63,11 +63,11 @@ const ProductCard = ({ image, title, price, slug, compareAt, inStock = true }: P
             className="w-12 h-11 border-l border-border flex items-center justify-center bg-primary text-primary-foreground transition-colors hover:brightness-110 btn-press shrink-0"
             aria-label="Add to cart"
           >
-            <ShoppingCart className="w-4 h-4" />
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
           </button>
         ) : (
           <span className="w-12 h-11 border-l border-border flex items-center justify-center bg-muted text-muted-foreground shrink-0">
-            <ShoppingCart className="w-4 h-4" />
+            <Plus className="w-5 h-5" />
           </span>
         )}
       </div>
