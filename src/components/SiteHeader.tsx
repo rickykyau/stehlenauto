@@ -3,13 +3,13 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2 } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
-import { collections } from "@/data/products";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
