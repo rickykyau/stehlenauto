@@ -23,16 +23,13 @@ const IndexTemplate = () => {
     'headlights',
   ];
 
-  const categoryCollections = (shopifyCollections || [])
-    .filter(col => {
-      const handle = col.node.handle;
-      return allowedHandles.includes(handle) && !handle.endsWith('-parts') && handle !== 'frontpage';
-    })
+  const categoryCollections = topCategoryHandles
+    .map(h => (shopifyCollections || []).find(col => col.node.handle === h))
+    .filter(Boolean)
     .map(col => ({
-      ...col,
-      productCount: col.node.products?.edges?.length || 0
-    }))
-    .sort((a, b) => b.productCount - a.productCount);
+      ...col!,
+      productCount: col!.node.products?.edges?.length || 0,
+    }));
 
   return (
     <div className="min-h-screen bg-background">

@@ -1,8 +1,8 @@
 /**
  * SHOPIFY SECTION: sections/header.liquid
  */
-import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2 } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
@@ -10,6 +10,7 @@ import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyCollections } from "@/hooks/useShopifyProducts";
+import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
 
 const SiteHeader = () => {
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
@@ -18,15 +19,27 @@ const SiteHeader = () => {
   const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category">(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const { vehicle, vehicleLabel } = useVehicle();
   const fitmentRef = useRef<HTMLDivElement>(null);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ShopifyProduct[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
   // Close menu on route change
   useEffect(() => {
     setMenuOpen(false);
     setSubMenu(null);
+    setSearchDropdownOpen(false);
+    setSearchQuery("");
   }, [location.pathname]);
 
   // Prevent body scroll when menu is open
@@ -34,6 +47,98 @@ const SiteHeader = () => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
+
+  // Click outside to close search dropdown
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        searchRef.current && !searchRef.current.contains(e.target as Node) &&
+        mobileSearchRef.current && !mobileSearchRef.current.contains(e.target as Node)
+      ) {
+        setSearchDropdownOpen(false);
+      }
+      if (!searchRef.current?.contains(e.target as Node) && !mobileSearchRef.current) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const doSearch = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setSearchDropdownOpen(false);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchDropdownOpen(true);
+    try {
+      const result = await storefrontApiRequest(PRODUCTS_QUERY, {
+        first: 8,
+        query,
+        sortKey: "RELEVANCE",
+        reverse: false,
+        after: null,
+      });
+      const products = (result?.data?.products?.edges || []) as ShopifyProduct[];
+      setSearchResults(products);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => doSearch(value), 300);
+  };
+
+  const handleSearchSubmit = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      setSearchDropdownOpen(false);
+      navigate(`/collections/all?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const SearchDropdown = () => {
+    if (!searchDropdownOpen) return null;
+    return (
+      <div className="absolute top-full left-0 right-0 z-50 border border-border bg-card shadow-lg max-h-[400px] overflow-y-auto">
+        {searchLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          </div>
+        ) : searchResults.length === 0 ? (
+          <div className="py-6 text-center">
+            <p className="font-display text-[10px] tracking-widest text-muted-foreground">NO RESULTS FOUND</p>
+          </div>
+        ) : (
+          searchResults.map((product) => {
+            const p = product.node;
+            const image = p.images.edges[0]?.node?.url || "/placeholder.svg";
+            const price = parseFloat(p.priceRange.minVariantPrice.amount);
+            return (
+              <Link
+                key={p.id}
+                to={`/products/${p.handle}`}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
+                onClick={() => setSearchDropdownOpen(false)}
+              >
+                <img src={image} alt={p.title} className="w-12 h-12 object-cover bg-muted shrink-0" loading="lazy" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-sm text-foreground truncate">{p.title}</p>
+                  <p className="font-display text-sm text-primary font-bold">${price.toFixed(2)}</p>
+                </div>
+              </Link>
+            );
+          })
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -54,17 +159,22 @@ const SiteHeader = () => {
           </div>
 
           {/* Center: Search bar (desktop) */}
-          <div className="hidden md:flex flex-1 max-w-xl mx-8">
+          <div className="hidden md:flex flex-1 max-w-xl mx-8 relative" ref={searchRef}>
             <div className="flex w-full border border-border bg-card">
               <div className="flex items-center px-3">
                 <Search className="w-4 h-4 text-muted-foreground" />
               </div>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+                onFocus={() => { if (searchQuery.length >= 2) setSearchDropdownOpen(true); }}
                 placeholder="Search by Make Model Year, Product Type, or Part Number"
                 className="flex-1 h-10 bg-transparent text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
+            <SearchDropdown />
           </div>
 
           {/* Right: actions */}
@@ -91,18 +201,23 @@ const SiteHeader = () => {
 
         {/* Mobile search */}
         {searchOpen && (
-          <div className="md:hidden border-t border-border p-3">
+          <div className="md:hidden border-t border-border p-3 relative" ref={mobileSearchRef}>
             <div className="flex border border-border bg-card">
               <div className="flex items-center px-3">
                 <Search className="w-4 h-4 text-muted-foreground" />
               </div>
               <input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchInput(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+                onFocus={() => { if (searchQuery.length >= 2) setSearchDropdownOpen(true); }}
                 placeholder="Search products..."
                 className="flex-1 h-10 bg-transparent text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none"
                 autoFocus
               />
             </div>
+            <SearchDropdown />
           </div>
         )}
         {/* Fitment dropdown */}
