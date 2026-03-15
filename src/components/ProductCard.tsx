@@ -8,9 +8,10 @@ import type { ShopifyProduct } from "@/lib/shopify";
 
 interface ProductCardProps {
   product: ShopifyProduct;
+  compact?: boolean;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, compact = false }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
   const firstVariant = p.variants.edges[0]?.node;
@@ -40,7 +41,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     <Link to={`/products/${p.handle}`} className="block h-full">
       <div className="group bg-card border border-border overflow-hidden transition-colors hover:border-primary/40 flex flex-col h-full">
         {/* Image */}
-        <div className="relative aspect-square bg-muted overflow-hidden">
+        <div className={`relative ${compact ? "aspect-[4/3]" : "aspect-square"} bg-muted overflow-hidden`}>
           <img
             src={image}
             alt={p.images.edges[0]?.node?.altText || p.title}
@@ -55,8 +56,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
 
         {/* Content */}
-        <div className="p-4 flex flex-col flex-1">
-          <h4 className="font-body text-sm leading-relaxed mb-3 text-foreground/90 line-clamp-2 flex-1">{p.title}</h4>
+        <div className={`${compact ? "p-3" : "p-4"} flex flex-col flex-1`}>
+          <h4 className={`font-body ${compact ? "text-xs" : "text-sm"} leading-relaxed mb-2 text-foreground/90 line-clamp-2 flex-1`}>{p.title}</h4>
           <div className="flex items-baseline gap-2">
             <span className="font-display text-lg text-primary font-bold">${price.toFixed(2)}</span>
             {compareAt && compareAt > price && (
