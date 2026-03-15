@@ -25,6 +25,7 @@ import WarrantyPage from "./pages/WarrantyPage.tsx";
 import TermsPage from "./pages/TermsPage.tsx";
 import ReturnsPage from "./pages/ReturnsPage.tsx";
 import PrivacyPage from "./pages/PrivacyPage.tsx";
+import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const AppInner = () => {
         <Route path="/policies/terms-of-service" element={<TermsPage />} />
         <Route path="/policies/refund-policy" element={<ReturnsPage />} />
         <Route path="/policies/privacy-policy" element={<PrivacyPage />} />
+        <Route path="/help" element={<HelpCenterPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
