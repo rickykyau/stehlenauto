@@ -33,15 +33,28 @@ const SORT_MAP: Record<SortOption, { sortKey: 'BEST_SELLING' | 'PRICE' | 'TITLE'
 
 const ITEMS_PER_PAGE = 48;
 
+/** Map category handles to search keywords for product_type matching */
+const CATEGORY_KEYWORDS: Record<string, string> = {
+  "bull-guards-grille-guards": "bull guard",
+  "tonneau-covers": "tonneau cover",
+  "trailer-hitches": "trailer hitch",
+  "front-grilles": "grille",
+  "headlights": "headlight",
+  "truck-bed-mats": "truck bed mat",
+  "floor-mats": "floor mat",
+  "running-boards-side-steps": "running board",
+  "roof-racks-baskets": "roof rack",
+  "chase-racks-sport-bars": "chase rack",
+  "molle-panels": "molle panel",
+  "under-seat-storage": "under seat storage",
+};
+
 /** Parse year range from a product title. Returns [startYear, endYear] or null. */
 function parseYearRange(title: string): [number, number] | null {
-  // Match "2019-2025", "2019–2025"
   const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
   if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
-  // Match "2022+"
   const plusMatch = title.match(/(\d{4})\+/);
   if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
-  // Match single year at start "2021 Honda..."
   const singleMatch = title.match(/^(\d{4})\s/);
   if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
   return null;
@@ -58,17 +71,19 @@ function matchesYear(title: string, year: string): boolean {
 /** Build a Shopify query string from the active filters (excluding year, which is client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
-  collectionTitle: string | null
+  collectionTitle: string | null,
+  categoryHandle: string | null
 ): string | undefined {
   const parts: string[] = [];
 
   if (collectionTitle) {
     parts.push(`product_type:${collectionTitle}`);
+  } else if (categoryHandle && CATEGORY_KEYWORDS[categoryHandle]) {
+    parts.push(`product_type:*${CATEGORY_KEYWORDS[categoryHandle]}*`);
   }
 
   if (filters.make) parts.push(`title:*${filters.make}*`);
   if (filters.model) parts.push(`title:*${filters.model}*`);
-  // Year is filtered client-side for range matching, NOT via API keyword search
 
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
