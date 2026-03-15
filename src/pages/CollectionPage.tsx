@@ -14,6 +14,7 @@ import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailableFilterOptions } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { isUniversalProduct } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type SortOption = "best-selling" | "price-ascending" | "price-descending" | "title-ascending";
