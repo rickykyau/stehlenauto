@@ -41,7 +41,7 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
     <Link to={`/products/${p.handle}`} className="block h-full">
       <div className="group bg-card border border-border overflow-hidden transition-colors hover:border-primary/40 flex flex-col h-full">
         {/* Image */}
-        <div className="relative aspect-square bg-muted overflow-hidden">
+        <div className={`relative ${compact ? "aspect-[4/3]" : "aspect-square"} bg-muted overflow-hidden`}>
           <img
             src={image}
             alt={p.images.edges[0]?.node?.altText || p.title}
