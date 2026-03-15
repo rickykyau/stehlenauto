@@ -1,66 +1,63 @@
 /**
  * SHOPIFY TEMPLATE: templates/index.liquid
- * SECTIONS: hero, category-grid (top 4), featured-products, trust-badges
+ * SECTIONS: hero, category-carousel (12), featured-products carousel, trust-badges
  */
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
+import HorizontalCarousel from "@/components/HorizontalCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 import { useQuery } from "@tanstack/react-query";
-import { storefrontApiRequest } from "@/lib/shopify";
+import { storefrontApiRequest, PRODUCTS_QUERY } from "@/lib/shopify";
+import type { ShopifyProduct } from "@/lib/shopify";
 
-const TOP_CATEGORIES = [
-  {
-    handle: "bull-guards-grille-guards",
-    title: "Bull Guards & Grille Guards",
-    fallbackCount: 190,
-    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061",
-  },
-  {
-    handle: "trailer-hitches",
-    title: "Trailer Hitches",
-    fallbackCount: 288,
-    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068",
-  },
-  {
-    handle: "tonneau-covers",
-    title: "Tonneau Covers",
-    fallbackCount: 287,
-    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065",
-  },
-  {
-    handle: "headlights",
-    title: "Headlights",
-    fallbackCount: 161,
-    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075",
-  },
+/* ─── All 12 Categories ─── */
+
+const ALL_CATEGORIES = [
+  { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", fallbackCount: 190, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
+  { handle: "trailer-hitches", title: "Trailer Hitches", fallbackCount: 288, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
+  { handle: "tonneau-covers", title: "Tonneau Covers", fallbackCount: 287, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065" },
+  { handle: "headlights", title: "Headlights", fallbackCount: 161, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075" },
+  { handle: "front-grilles", title: "Front Grilles", fallbackCount: 50 },
+  { handle: "truck-bed-mats", title: "Truck Bed Mats", fallbackCount: 30 },
+  { handle: "floor-mats", title: "Floor Mats", fallbackCount: 40 },
+  { handle: "running-boards-side-steps", title: "Running Boards & Side Steps", fallbackCount: 100 },
+  { handle: "roof-racks-baskets", title: "Roof Racks & Baskets", fallbackCount: 20 },
+  { handle: "chase-racks-sport-bars", title: "Chase Racks & Sport Bars", fallbackCount: 30 },
+  { handle: "molle-panels", title: "MOLLE Panels", fallbackCount: 15 },
+  { handle: "under-seat-storage", title: "Under Seat Storage", fallbackCount: 25 },
 ];
 
-const COLLECTION_COUNT_QUERY = `
-  query GetCollectionCount($handle: String!) {
+const COLLECTION_IMAGE_QUERY = `
+  query GetCollectionInfo($handle: String!) {
     collectionByHandle(handle: $handle) {
+      image { url }
       products(first: 250) {
-        edges { node { id } }
+        edges { node { id featuredImage { url } } }
       }
     }
   }
 `;
 
-function useCategoryCounts() {
+function useCategoryData() {
   return useQuery({
-    queryKey: ["category-counts"],
+    queryKey: ["category-data-all"],
     queryFn: async () => {
-      const results: Record<string, number> = {};
+      const results: Record<string, { count: number; image: string }> = {};
       await Promise.all(
-        TOP_CATEGORIES.map(async (cat) => {
+        ALL_CATEGORIES.map(async (cat) => {
           try {
-            const data = await storefrontApiRequest(COLLECTION_COUNT_QUERY, { handle: cat.handle });
-            results[cat.handle] = data?.data?.collectionByHandle?.products?.edges?.length || cat.fallbackCount;
+            const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
+            const col = data?.data?.collectionByHandle;
+            const count = col?.products?.edges?.length || cat.fallbackCount;
+            const image = cat.image || col?.image?.url || col?.products?.edges?.[0]?.node?.featuredImage?.url || "";
+            results[cat.handle] = { count, image };
           } catch {
-            results[cat.handle] = cat.fallbackCount;
+            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "" };
           }
         })
       );
@@ -70,17 +67,113 @@ function useCategoryCounts() {
   });
 }
 
+/* ─── Featured Products with lazy loading ─── */
+
+const MAX_FEATURED = 20;
+const BATCH = 8;
+
+function FeaturedProductsCarousel() {
+  const { data, isLoading } = useShopifyProducts({ first: BATCH, sortKey: "BEST_SELLING" });
+  const [products, setProducts] = useState<ShopifyProduct[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const syncedRef = useRef(false);
+
+  const initialProducts = data?.products || [];
+  const pageInfo = data?.pageInfo;
+
+  useEffect(() => {
+    if (!syncedRef.current && initialProducts.length > 0) {
+      syncedRef.current = true;
+      setProducts(initialProducts);
+      setCursor(pageInfo?.endCursor || null);
+      setHasMore(pageInfo?.hasNextPage || false);
+    }
+  }, [initialProducts, pageInfo]);
+
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore || products.length >= MAX_FEATURED || !cursor) return;
+    setLoading(true);
+    try {
+      const result = await storefrontApiRequest(PRODUCTS_QUERY, {
+        first: BATCH,
+        query: null,
+        sortKey: "BEST_SELLING",
+        reverse: false,
+        after: cursor,
+      });
+      const newProducts = (result?.data?.products?.edges || []) as ShopifyProduct[];
+      const newPageInfo = result?.data?.products?.pageInfo;
+      setProducts((prev) => {
+        const existing = new Set(prev.map((p) => p.node.id));
+        const unique = newProducts.filter((p) => !existing.has(p.node.id));
+        return [...prev, ...unique].slice(0, MAX_FEATURED);
+      });
+      setCursor(newPageInfo?.endCursor || null);
+      setHasMore(newPageInfo?.hasNextPage || false);
+    } catch (err) {
+      console.error("Failed to load more featured products:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, products.length, cursor]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <p className="font-display text-xs tracking-widest text-muted-foreground">NO PRODUCTS FOUND</p>
+      </div>
+    );
+  }
+
+  return (
+    <HorizontalCarousel onNearEnd={loadMore}>
+      {products.map((product) => (
+        <ProductCard key={product.node.id} product={product} compact />
+      ))}
+    </HorizontalCarousel>
+  );
+}
+
+/* ─── Category Card ─── */
+
+function CategoryCard({ handle, title, count, image }: { handle: string; title: string; count: number; image: string }) {
+  return (
+    <Link to={`/collections/${handle}`} className="group relative aspect-[4/3] border border-border overflow-hidden block">
+      {image ? (
+        <img src={image} alt={title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+      ) : (
+        <div className="w-full h-full bg-card" />
+      )}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
+      <div className="absolute bottom-0 left-0 p-4">
+        <span className="font-display text-xs tracking-wider block mb-1">{title.toUpperCase()}</span>
+        <span className="font-body text-xs text-muted-foreground">{count} Products</span>
+      </div>
+    </Link>
+  );
+}
+
+/* ─── Main Page ─── */
+
 const IndexTemplate = () => {
-  const { data, isLoading } = useShopifyProducts({ first: 4, sortKey: 'BEST_SELLING' });
-  const { data: categoryCounts } = useCategoryCounts();
-  const featuredProducts = data?.products || [];
+  const { data: categoryData } = useCategoryData();
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <HeroSection />
 
-      {/* Category Grid */}
+      {/* Shop by Category Carousel */}
       <section className="border-b border-border">
         <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
           <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">SHOP BY CATEGORY</h2>
@@ -88,28 +181,23 @@ const IndexTemplate = () => {
             VIEW ALL <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4">
-          {TOP_CATEGORIES.map((cat) => {
-            const count = categoryCounts?.[cat.handle] ?? cat.fallbackCount;
+        <HorizontalCarousel loop>
+          {ALL_CATEGORIES.map((cat) => {
+            const info = categoryData?.[cat.handle];
             return (
-              <Link
+              <CategoryCard
                 key={cat.handle}
-                to={`/collections/${cat.handle}`}
-                className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
-              >
-                <img src={cat.image} alt={cat.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
-                <div className="absolute bottom-0 left-0 p-4">
-                  <span className="font-display text-xs tracking-wider block mb-1">{cat.title.toUpperCase()}</span>
-                  <span className="font-body text-xs text-muted-foreground">{count} Products</span>
-                </div>
-              </Link>
+                handle={cat.handle}
+                title={cat.title}
+                count={info?.count ?? cat.fallbackCount}
+                image={info?.image || cat.image || ""}
+              />
             );
           })}
-        </div>
+        </HorizontalCarousel>
       </section>
 
-      {/* Featured Products */}
+      {/* Featured Products Carousel */}
       <section className="border-b border-border">
         <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
           <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
@@ -117,21 +205,7 @@ const IndexTemplate = () => {
             SHOP ALL <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <div className="p-4 lg:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-          {isLoading ? (
-            <div className="col-span-full flex items-center justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : featuredProducts.length === 0 ? (
-            <div className="col-span-full text-center py-20">
-              <p className="font-display text-xs tracking-widest text-muted-foreground">NO PRODUCTS FOUND</p>
-            </div>
-          ) : (
-            featuredProducts.map((product) => (
-              <ProductCard key={product.node.id} product={product} />
-            ))
-          )}
-        </div>
+        <FeaturedProductsCarousel />
       </section>
 
       {/* Trust Badges */}
