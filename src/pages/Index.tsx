@@ -8,28 +8,57 @@ import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
-import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
+import { useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useQuery } from "@tanstack/react-query";
+import { storefrontApiRequest } from "@/lib/shopify";
+
+const TOP_CATEGORIES = [
+  { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", count: 190 },
+  { handle: "trailer-hitches", title: "Trailer Hitches", count: 288 },
+  { handle: "tonneau-covers", title: "Tonneau Covers", count: 287 },
+  { handle: "headlights", title: "Headlights", count: 161 },
+];
+
+const COLLECTION_IMAGE_QUERY = `
+  query GetCollectionImage($handle: String!) {
+    collectionByHandle(handle: $handle) {
+      image { url }
+      products(first: 1) {
+        edges { node { featuredImage { url } } }
+      }
+    }
+  }
+`;
+
+function useCategoryImages() {
+  return useQuery({
+    queryKey: ["category-images"],
+    queryFn: async () => {
+      const results: Record<string, string> = {};
+      await Promise.all(
+        TOP_CATEGORIES.map(async (cat) => {
+          try {
+            const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
+            const col = data?.data?.collectionByHandle;
+            results[cat.handle] =
+              col?.image?.url ||
+              col?.products?.edges?.[0]?.node?.featuredImage?.url ||
+              "";
+          } catch {
+            results[cat.handle] = "";
+          }
+        })
+      );
+      return results;
+    },
+    staleTime: 300_000,
+  });
+}
 
 const IndexTemplate = () => {
   const { data, isLoading } = useShopifyProducts({ first: 4, sortKey: 'BEST_SELLING' });
-  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
+  const { data: categoryImages } = useCategoryImages();
   const featuredProducts = data?.products || [];
-
-  // Filter to only show product-type category collections
-  const topCategoryHandles = [
-    'bull-guards-grille-guards',
-    'tonneau-covers',
-    'trailer-hitches',
-    'headlights',
-  ];
-
-  const categoryCollections = topCategoryHandles
-    .map(h => (shopifyCollections || []).find(col => col.node.handle === h))
-    .filter(Boolean)
-    .map(col => ({
-      ...col!,
-      productCount: col!.node.products?.edges?.length || 0,
-    }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,32 +73,29 @@ const IndexTemplate = () => {
             VIEW ALL <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        {collectionsLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4">
-            {categoryCollections.map((col) => (
+        <div className="grid grid-cols-2 lg:grid-cols-4">
+          {TOP_CATEGORIES.map((cat) => {
+            const imageUrl = categoryImages?.[cat.handle];
+            return (
               <Link
-                key={col.node.id}
-                to={`/collections/${col.node.handle}`}
+                key={cat.handle}
+                to={`/collections/${cat.handle}`}
                 className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
               >
-                {col.node.image ? (
-                  <img src={col.node.image.url} alt={col.node.image.altText || col.node.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+                {imageUrl ? (
+                  <img src={imageUrl} alt={cat.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-muted" />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 p-4">
-                  <span className="font-display text-xs tracking-wider block mb-1">{col.node.title.toUpperCase()}</span>
-                  <span className="font-body text-xs text-muted-foreground">{col.productCount} Products</span>
+                  <span className="font-display text-xs tracking-wider block mb-1">{cat.title.toUpperCase()}</span>
+                  <span className="font-body text-xs text-muted-foreground">{cat.count} Products</span>
                 </div>
               </Link>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </section>
 
       {/* Featured Products */}
