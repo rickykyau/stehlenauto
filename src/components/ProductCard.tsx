@@ -15,6 +15,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, compact = false }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
+  const universal = isUniversalProduct(product);
   const firstVariant = p.variants.edges[0]?.node;
   const image = p.images.edges[0]?.node?.url || "/placeholder.svg";
   const price = parseFloat(p.priceRange.minVariantPrice.amount);
