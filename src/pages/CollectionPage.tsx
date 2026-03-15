@@ -145,7 +145,13 @@ const CollectionTemplate = () => {
 
   const initialProducts = data?.products || [];
   const pageInfo = data?.pageInfo;
-  const displayProducts = allProducts.length > 0 ? allProducts : initialProducts;
+  const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
+
+  // Client-side year range filtering
+  const displayProducts = useMemo(() => {
+    if (!filters.year) return rawDisplayProducts;
+    return rawDisplayProducts.filter((p) => matchesYear(p.node.title, filters.year!));
+  }, [rawDisplayProducts, filters.year]);
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
