@@ -1,12 +1,13 @@
 /**
  * SHOPIFY TEMPLATE: templates/collection.liquid
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
+import FitmentSelector from "@/components/FitmentSelector";
 import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
