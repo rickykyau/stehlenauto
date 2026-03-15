@@ -2,9 +2,10 @@
  * SHOPIFY SNIPPET: snippets/product-card.liquid
  */
 import { Link } from "react-router-dom";
-import { ShoppingCart, Plus, Loader2 } from "lucide-react";
+import { ShoppingCart, Plus, Loader2, Truck } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { isUniversalProduct } from "@/lib/shopify";
 
 interface ProductCardProps {
   product: ShopifyProduct;
