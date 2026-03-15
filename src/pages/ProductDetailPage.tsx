@@ -530,19 +530,12 @@ const ProductTemplate = () => {
         </div>
       </div>
 
-      {/* ── Related Products ── */}
-      {relatedProducts.length > 0 && (
-        <section className="border-b border-border">
-          <div className="px-4 lg:px-8 py-4 border-b border-border">
-            <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">YOU MAY ALSO LIKE</h2>
-          </div>
-          <div className="p-4 lg:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {relatedProducts.map((p) => (
-              <ProductCard key={p.node.id} product={p} compact />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Related Products Carousel ── */}
+      <RelatedProductsCarousel
+        initialProducts={relatedProducts}
+        excludeHandle={slug || ""}
+        productType={product.productType}
+      />
 
       <SiteFooter />
     </div>
