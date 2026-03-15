@@ -83,6 +83,20 @@ const CollectionTemplate = () => {
   const isMobile = useIsMobile();
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
 
+  // Sync filters from saved vehicle on mount (once)
+  useEffect(() => {
+    if (vehicle && !vehicleSyncedRef.current) {
+      vehicleSyncedRef.current = true;
+      setFilters((prev) => ({
+        ...prev,
+        year: vehicle.year,
+        make: vehicle.make,
+        model: vehicle.model,
+      }));
+      setVehicleOverridden(false);
+    }
+  }, [vehicle]);
+
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
   const isAllProducts = handle === "all" || !handle;
   const collection = !isAllProducts
