@@ -153,6 +153,36 @@ const Lightbox = ({ src, alt, onClose }: { src: string; alt: string; onClose: ()
   </div>
 );
 
+/* ─── Fitment List (deduplicated) ─── */
+
+const FitmentList = ({ html }: { html: string }) => {
+  const lines = stripHtml(html)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 3);
+
+  const seen = new Set<string>();
+  const unique = lines.filter((l) => {
+    const key = l.toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (unique.length === 0) return null;
+
+  return (
+    <ul className="space-y-1.5">
+      {unique.map((line, i) => (
+        <li key={i} className="flex items-start gap-3">
+          <span className="w-1 h-1 mt-2 bg-primary shrink-0" />
+          <span className="font-body text-sm text-muted-foreground leading-relaxed">{line}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 /* ─── Tab Types ─── */
 
 type TabKey = "overview" | "features" | "fitment" | "specifications";
@@ -444,8 +474,8 @@ const ProductTemplate = () => {
               ))}
             </div>
 
-            {/* Tab content — scrollable on desktop */}
-            <div className="pt-4 lg:max-h-[350px] lg:overflow-y-auto lg:[&::-webkit-scrollbar]:w-1 lg:[&::-webkit-scrollbar-track]:bg-transparent lg:[&::-webkit-scrollbar-thumb]:bg-border lg:[&::-webkit-scrollbar-thumb]:rounded-full">
+            {/* Tab content */}
+            <div className="pt-4">
               {activeTab === "overview" && (
                 <div className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                   {parsed.overview || product.description}
@@ -477,13 +507,7 @@ const ProductTemplate = () => {
                       </span>
                     </div>
                   )}
-                  <div
-                    className="font-body text-sm text-muted-foreground leading-relaxed [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-display [&_th]:text-[10px] [&_th]:tracking-widest [&_th]:text-foreground"
-                    dangerouslySetInnerHTML={{ __html: parsed.fitment }}
-                  />
-                  {!parsed.fitment.includes("<") && (
-                    <div className="whitespace-pre-line">{stripHtml(parsed.fitment)}</div>
-                  )}
+                  <FitmentList html={parsed.fitment} />
                 </div>
               )}
 
