@@ -149,7 +149,29 @@ const CollectionTemplate = () => {
   const handleFilterChange = useCallback((newFilters: RefineFilters) => {
     setFilters(newFilters);
     setAllProducts([]);
-  }, []);
+    // If user manually changes YMM filters, mark vehicle as overridden
+    if (vehicle) {
+      const ymChanged =
+        newFilters.year !== vehicle.year ||
+        newFilters.make !== vehicle.make ||
+        newFilters.model !== vehicle.model;
+      if (ymChanged) setVehicleOverridden(true);
+    }
+  }, [vehicle]);
+
+  const showAllMakes = () => {
+    setVehicleOverridden(true);
+    setFilters((prev) => ({ ...prev, year: null, make: null, model: null }));
+    setAllProducts([]);
+  };
+
+  const handleClearVehicle = () => {
+    clearVehicle();
+    setVehicleOverridden(false);
+    vehicleSyncedRef.current = false;
+    setFilters((prev) => ({ ...prev, year: null, make: null, model: null }));
+    setAllProducts([]);
+  };
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !currentCursor) return;
