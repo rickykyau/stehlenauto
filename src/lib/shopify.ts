@@ -231,7 +231,12 @@ export const COLLECTIONS_QUERY = `
             url
             altText
           }
-          products(first: 1) {
+          products(first: 250) {
+            edges {
+              node {
+                id
+              }
+            }
             filters {
               label
               values {
@@ -257,6 +262,11 @@ export interface ShopifyCollection {
       altText: string | null;
     } | null;
     products?: {
+      edges: Array<{
+        node: {
+          id: string;
+        };
+      }>;
       filters?: Array<{
         label: string;
         values: Array<{ label: string; count: number }>;
