@@ -14,10 +14,13 @@ import { useVehicle } from "@/contexts/VehicleContext";
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category">(null);
   const location = useLocation();
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const { vehicle, vehicleLabel } = useVehicle();
+  const fitmentRef = useRef<HTMLDivElement>(null);
 
   // Close menu on route change
   useEffect(() => {
