@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 
-const CATEGORY_HANDLES = [
-  "bull-guards-grille-guards",
-  "tonneau-covers",
-  "trailer-hitches",
-  "front-grilles",
-  "headlights",
-  "truck-bed-mats",
-  "floor-mats",
-  "running-boards-side-steps",
-  "roof-racks-baskets",
-  "chase-racks-sport-bars",
-  "molle-panels",
-  "under-seat-storage",
+const CATEGORIES = [
+  { handle: "bull-guards-grille-guards", label: "Bull Guards & Grille Guards" },
+  { handle: "tonneau-covers", label: "Tonneau Covers" },
+  { handle: "trailer-hitches", label: "Trailer Hitches" },
+  { handle: "front-grilles", label: "Front Grilles" },
+  { handle: "headlights", label: "Headlights" },
+  { handle: "truck-bed-mats", label: "Truck Bed Mats" },
+  { handle: "floor-mats", label: "Floor Mats" },
+  { handle: "running-boards-side-steps", label: "Running Boards & Side Steps" },
+  { handle: "roof-racks-baskets", label: "Roof Racks & Baskets" },
+  { handle: "chase-racks-sport-bars", label: "Chase Racks & Sport Bars" },
+  { handle: "molle-panels", label: "MOLLE Panels" },
+  { handle: "under-seat-storage", label: "Under Seat Storage" },
 ];
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
