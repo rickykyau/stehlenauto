@@ -60,6 +60,11 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
         {/* Content */}
         <div className={`${compact ? "p-3" : "p-4"} flex flex-col flex-1`}>
           <h4 className={`font-body ${compact ? "text-xs" : "text-sm"} leading-relaxed mb-2 text-foreground/90 line-clamp-2 flex-1`}>{p.title}</h4>
+          {universal && (
+            <span className="inline-flex items-center gap-1 mb-1 w-fit px-1.5 py-0.5 border border-primary/40 text-primary font-display text-[8px] tracking-widest">
+              UNIVERSAL FIT
+            </span>
+          )}
           <div className="flex items-baseline gap-2">
             <span className="font-display text-lg text-primary font-bold">${price.toFixed(2)}</span>
             {compareAt && compareAt > price && (

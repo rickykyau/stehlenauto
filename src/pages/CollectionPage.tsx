@@ -70,17 +70,6 @@ function matchesYear(title: string, year: string): boolean {
   return y >= range[0] && y <= range[1];
 }
 
-/** Check if a product is universal fit */
-function isUniversalProduct(product: ShopifyProduct): boolean {
-  const title = product.node.title.toLowerCase();
-  if (title.includes("universal")) return true;
-  // No year range in title = likely universal
-  const hasYearRange = parseYearRange(product.node.title) !== null;
-  const hasMakeInTitle = KNOWN_MAKES_LC.some((m) => title.includes(m));
-  if (!hasYearRange && !hasMakeInTitle) return true;
-  return false;
-}
-
 const KNOWN_MAKES_LC = [
   "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
   "jeep", "nissan", "ram", "toyota", "volkswagen",
