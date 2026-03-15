@@ -305,8 +305,9 @@ const CollectionTemplate = () => {
           )}
 
           <span className="font-display text-[10px] tracking-widest text-muted-foreground">
-            {displayProducts.length} {displayProducts.length === 1 ? "PRODUCT" : "PRODUCTS"}
-            {currentHasMore && "+"}
+            {currentHasMore
+              ? `${displayProducts.length}+ PRODUCTS`
+              : `${displayProducts.length} ${displayProducts.length === 1 ? "PRODUCT" : "PRODUCTS"}`}
           </span>
         </div>
 

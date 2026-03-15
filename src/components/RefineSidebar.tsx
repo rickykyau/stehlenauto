@@ -195,13 +195,12 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
               ALL MAKES
             </FilterButton>
             {MAKES.map((m) => {
-              if (hasOptions && !availableOptions.makes.has(m)) return null;
+              const hasCount = hasOptions && availableOptions.makes.has(m);
               return (
                 <FilterButton
                   key={m}
                   active={filters.make === m}
                   onClick={() => update({ make: filters.make === m ? null : m, model: null })}
-                  count={hasOptions ? availableOptions.makes.get(m) : undefined}
                 >
                   {m.toUpperCase()}
                 </FilterButton>
@@ -223,13 +222,11 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
               </p>
             )}
             {currentModels.map((m) => {
-              if (hasOptions && !availableOptions.models.has(m)) return null;
               return (
                 <FilterButton
                   key={m}
                   active={filters.model === m}
                   onClick={() => update({ model: filters.model === m ? null : m })}
-                  count={hasOptions ? availableOptions.models.get(m) : undefined}
                 >
                   {m.toUpperCase()}
                 </FilterButton>
@@ -245,19 +242,15 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
             <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
               ALL CATEGORIES
             </FilterButton>
-            {CATEGORIES.map((cat) => {
-              if (hasOptions && !availableOptions.categories.has(cat.handle)) return null;
-              return (
-                <FilterButton
-                  key={cat.handle}
-                  active={filters.category === cat.handle}
-                  onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
-                  count={hasOptions ? availableOptions.categories.get(cat.handle) : undefined}
-                >
-                  {cat.label.toUpperCase()}
-                </FilterButton>
-              );
-            })}
+            {CATEGORIES.map((cat) => (
+              <FilterButton
+                key={cat.handle}
+                active={filters.category === cat.handle}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
+              >
+                {cat.label.toUpperCase()}
+              </FilterButton>
+            ))}
           </div>
         )}
       </div>
