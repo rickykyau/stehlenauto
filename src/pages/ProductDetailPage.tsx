@@ -153,6 +153,36 @@ const Lightbox = ({ src, alt, onClose }: { src: string; alt: string; onClose: ()
   </div>
 );
 
+/* ─── Fitment List (deduplicated) ─── */
+
+const FitmentList = ({ html }: { html: string }) => {
+  const lines = stripHtml(html)
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.length > 3);
+
+  const seen = new Set<string>();
+  const unique = lines.filter((l) => {
+    const key = l.toLowerCase().replace(/\s+/g, " ");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  if (unique.length === 0) return null;
+
+  return (
+    <ul className="space-y-1.5">
+      {unique.map((line, i) => (
+        <li key={i} className="flex items-start gap-3">
+          <span className="w-1 h-1 mt-2 bg-primary shrink-0" />
+          <span className="font-body text-sm text-muted-foreground leading-relaxed">{line}</span>
+        </li>
+      ))}
+    </ul>
+  );
+};
+
 /* ─── Tab Types ─── */
 
 type TabKey = "overview" | "features" | "fitment" | "specifications";
