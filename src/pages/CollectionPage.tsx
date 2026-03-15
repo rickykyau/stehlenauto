@@ -12,6 +12,7 @@ import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAvailableFilterOptions } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -238,11 +239,15 @@ const CollectionTemplate = () => {
     (filters.model ? 1 : 0) +
     (filters.category ? 1 : 0);
 
+  // Compute available filter options from loaded products
+  const availableOptions = useAvailableFilterOptions(rawDisplayProducts, filters);
+
   const sidebarContent = (
     <RefineSidebar
       filters={filters}
       onFilterChange={handleFilterChange}
       collections={shopifyCollections || []}
+      availableOptions={availableOptions}
     />
   );
 

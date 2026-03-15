@@ -55,6 +55,7 @@ export interface ShopifyProduct {
         };
       }>;
     };
+    productType: string;
     options: Array<{
       name: string;
       values: string[];
@@ -109,6 +110,7 @@ export const PRODUCTS_QUERY = `
           title
           description
           handle
+          productType
           priceRange {
             minVariantPrice {
               amount
