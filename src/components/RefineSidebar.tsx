@@ -83,19 +83,35 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
 
   const currentModels = filters.make ? (MODELS_BY_MAKE[filters.make] || []) : [];
 
-  const SectionHeader = ({ section, label }: { section: Section; label: string }) => (
-    <button
-      onClick={() => toggle(section)}
-      className="w-full flex items-center justify-between py-2"
-    >
-      <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">{label}</h3>
-      {expanded[section] ? (
-        <ChevronDown className="w-3 h-3 text-muted-foreground" />
-      ) : (
-        <ChevronRight className="w-3 h-3 text-muted-foreground" />
-      )}
-    </button>
-  );
+  const sectionValue = (section: Section): string | null => {
+    if (section === "year") return filters.year;
+    if (section === "make") return filters.make;
+    if (section === "model") return filters.model;
+    if (section === "category") {
+      const cat = collections.find((c) => c.node.handle === filters.category);
+      return cat ? cat.node.title : filters.category;
+    }
+    return null;
+  };
+
+  const SectionHeader = ({ section, label }: { section: Section; label: string }) => {
+    const val = sectionValue(section);
+    return (
+      <button
+        onClick={() => toggle(section)}
+        className="w-full flex items-center justify-between py-2"
+      >
+        <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">
+          {label}{val && !expanded[section] ? `: ${val.toUpperCase()}` : ""}
+        </h3>
+        {expanded[section] ? (
+          <ChevronDown className="w-3 h-3 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="w-3 h-3 text-muted-foreground" />
+        )}
+      </button>
+    );
+  };
 
   const FilterButton = ({
     active,
@@ -197,7 +213,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
         {/* ── MODEL ── */}
         <SectionHeader section="model" label="MODEL" />
         {expanded.model && (
-          <div className="pb-3 max-h-[200px] overflow-y-auto">
+          <div className="pb-3">
             <FilterButton active={!filters.model} onClick={() => update({ model: null })}>
               ALL MODELS
             </FilterButton>

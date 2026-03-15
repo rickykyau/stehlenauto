@@ -306,7 +306,7 @@ const CollectionTemplate = () => {
       <div className="flex">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <aside className="w-[220px] shrink-0 border-r border-border p-4 overflow-y-auto sticky top-0 self-start max-h-[calc(100vh-64px)]">
+          <aside className="w-[220px] shrink-0 border-r border-border p-4 overflow-y-auto sticky top-0 self-start max-h-[calc(100vh-64px)] sidebar-scroll">
             {sidebarContent}
           </aside>
         )}
