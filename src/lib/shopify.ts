@@ -256,8 +256,11 @@ export interface ShopifyCollection {
       url: string;
       altText: string | null;
     } | null;
-    productsCount: {
-      count: number;
+    products?: {
+      filters?: Array<{
+        label: string;
+        values: Array<{ label: string; count: number }>;
+      }>;
     };
   };
 }
