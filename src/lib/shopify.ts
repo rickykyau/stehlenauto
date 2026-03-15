@@ -216,6 +216,46 @@ export const PRODUCT_BY_HANDLE_QUERY = `
   }
 `;
 
+// ── Collections Query ──────────────────────────────────
+
+export const COLLECTIONS_QUERY = `
+  query GetCollections($first: Int!) {
+    collections(first: $first) {
+      edges {
+        node {
+          id
+          title
+          handle
+          description
+          image {
+            url
+            altText
+          }
+          productsCount {
+            count
+          }
+        }
+      }
+    }
+  }
+`;
+
+export interface ShopifyCollection {
+  node: {
+    id: string;
+    title: string;
+    handle: string;
+    description: string;
+    image: {
+      url: string;
+      altText: string | null;
+    } | null;
+    productsCount: {
+      count: number;
+    };
+  };
+}
+
 // ── Cart Mutations ─────────────────────────────────────
 
 export const CART_QUERY = `
