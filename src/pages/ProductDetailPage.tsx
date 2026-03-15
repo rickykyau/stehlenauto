@@ -477,13 +477,7 @@ const ProductTemplate = () => {
                       </span>
                     </div>
                   )}
-                  <div
-                    className="font-body text-sm text-muted-foreground leading-relaxed [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-display [&_th]:text-[10px] [&_th]:tracking-widest [&_th]:text-foreground"
-                    dangerouslySetInnerHTML={{ __html: parsed.fitment }}
-                  />
-                  {!parsed.fitment.includes("<") && (
-                    <div className="whitespace-pre-line">{stripHtml(parsed.fitment)}</div>
-                  )}
+                  <FitmentList html={parsed.fitment} />
                 </div>
               )}
 
