@@ -11,7 +11,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 const IndexTemplate = () => {
-  const { data, isLoading } = useShopifyProducts({ first: 8 });
+  const { data, isLoading } = useShopifyProducts({ first: 4, sortKey: 'BEST_SELLING' });
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const featuredProducts = data?.products || [];
 
