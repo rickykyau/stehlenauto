@@ -1,16 +1,34 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2 } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Loader2, ExternalLink } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
 
 const CartDrawer = () => {
-  const { items, isOpen, closeCart, removeItem, updateQuantity, clearCart, itemCount, subtotal } = useCart();
+  const {
+    items, isOpen, isLoading, isSyncing,
+    closeCart, removeItem, updateQuantity, clearCart,
+    syncCart, getCheckoutUrl,
+  } = useCartStore();
+
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
 
   // Prevent body scroll when open
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
+
+  // Sync cart when drawer opens
+  useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
+
+  const handleCheckout = () => {
+    const checkoutUrl = getCheckoutUrl();
+    if (checkoutUrl) {
+      window.open(checkoutUrl, '_blank');
+      closeCart();
+    }
+  };
 
   return (
     <>
@@ -62,54 +80,63 @@ const CartDrawer = () => {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-4 p-5 border-b border-border">
-                  {/* Thumbnail */}
-                  <Link to={`/products/${item.slug}`} onClick={closeCart} className="w-20 h-20 bg-muted shrink-0 overflow-hidden border border-border">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
-                  </Link>
-
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <Link to={`/products/${item.slug}`} onClick={closeCart} className="font-body text-sm leading-snug text-foreground hover:text-primary transition-colors line-clamp-2 block">
-                      {item.title}
+              {items.map((item) => {
+                const image = item.product.node.images?.edges?.[0]?.node?.url || "/placeholder.svg";
+                return (
+                  <div key={item.variantId} className="flex gap-4 p-5 border-b border-border">
+                    {/* Thumbnail */}
+                    <Link to={`/products/${item.product.node.handle}`} onClick={closeCart} className="w-20 h-20 bg-muted shrink-0 overflow-hidden border border-border">
+                      <img src={image} alt={item.product.node.title} className="w-full h-full object-cover" />
                     </Link>
-                    <p className="font-display text-sm text-primary font-bold mt-1">
-                      ${(item.price * item.quantity).toFixed(2)}
-                    </p>
 
-                    {/* Quantity controls */}
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center border border-border">
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <Link to={`/products/${item.product.node.handle}`} onClick={closeCart} className="font-body text-sm leading-snug text-foreground hover:text-primary transition-colors line-clamp-2 block">
+                        {item.product.node.title}
+                      </Link>
+                      {item.variantTitle !== "Default Title" && (
+                        <p className="font-body text-xs text-muted-foreground mt-0.5">{item.variantTitle}</p>
+                      )}
+                      <p className="font-display text-sm text-primary font-bold mt-1">
+                        ${(parseFloat(item.price.amount) * item.quantity).toFixed(2)}
+                      </p>
+
+                      {/* Quantity controls */}
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center border border-border">
+                          <button
+                            onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                            disabled={isLoading}
+                            className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-8 h-8 flex items-center justify-center font-display text-xs border-x border-border">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                            disabled={isLoading}
+                            className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label="Decrease quantity"
+                          onClick={() => removeItem(item.variantId)}
+                          disabled={isLoading}
+                          className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                          aria-label="Remove item"
                         >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="w-8 h-8 flex items-center justify-center font-display text-xs border-x border-border">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-muted-foreground hover:text-destructive transition-colors"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Footer */}
@@ -127,12 +154,21 @@ const CartDrawer = () => {
               {/* Actions */}
               <div className="px-5 pb-5 space-y-2">
                 <button
-                  className="w-full h-12 bg-primary text-primary-foreground font-display text-xs font-bold tracking-widest hover:brightness-110 transition-all btn-press"
+                  onClick={handleCheckout}
+                  disabled={isLoading || isSyncing}
+                  className="w-full h-12 bg-primary text-primary-foreground font-display text-xs font-bold tracking-widest hover:brightness-110 transition-all btn-press flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  CHECKOUT
+                  {isLoading || isSyncing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4" />
+                      CHECKOUT
+                    </>
+                  )}
                 </button>
                 <button
-                  onClick={() => { closeCart(); }}
+                  onClick={closeCart}
                   className="w-full h-10 border border-border text-muted-foreground font-display text-[10px] tracking-widest hover:text-foreground hover:border-foreground/30 transition-colors"
                 >
                   CONTINUE SHOPPING
