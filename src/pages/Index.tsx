@@ -97,8 +97,8 @@ const IndexTemplate = () => {
                 to={`/collections/${cat.handle}`}
                 className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
               >
-                <img src={cat.image} alt={cat.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                <img src={cat.image} alt={cat.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
                 <div className="absolute bottom-0 left-0 p-4">
                   <span className="font-display text-xs tracking-wider block mb-1">{cat.title.toUpperCase()}</span>
                   <span className="font-body text-xs text-muted-foreground">{count} Products</span>
