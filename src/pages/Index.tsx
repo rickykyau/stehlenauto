@@ -1,6 +1,6 @@
 /**
  * SHOPIFY TEMPLATE: templates/index.liquid
- * SECTIONS: hero, category-grid, featured-products, trust-badges
+ * SECTIONS: hero, category-grid (top 4), featured-products, trust-badges
  */
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
