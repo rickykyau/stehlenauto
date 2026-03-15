@@ -266,7 +266,7 @@ const ProductTemplate = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 border-b border-border">
 
         {/* Left: Image Gallery */}
-        <div className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6">
+        <div className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6 lg:sticky lg:top-0 lg:self-start">
           <div className="flex gap-3">
             {/* Vertical Thumbnails */}
             {images.length > 1 && (
@@ -302,7 +302,7 @@ const ProductTemplate = () => {
           </div>
         </div>
 
-        {/* Right: Product Info */}
+        {/* Right: Product Info + Tabs */}
         <div className="p-4 lg:p-6 flex flex-col">
           {/* Title */}
           <h1 className="text-lg lg:text-xl font-display font-bold tracking-wider leading-tight mb-3">
@@ -425,96 +425,84 @@ const ProductTemplate = () => {
             ))}
           </div>
 
-          {/* SKU / Specs summary */}
-          {Object.keys(parsed.specifications).length > 0 && (
-            <div className="border-t border-border pt-3 space-y-1">
-              {Object.entries(parsed.specifications).slice(0, 3).map(([key, val]) => (
-                <div key={key} className="flex gap-2">
-                  <span className="font-display text-[10px] tracking-widest text-muted-foreground">{key.toUpperCase()}:</span>
-                  <span className="font-display text-[10px] tracking-widest text-foreground">{val}</span>
-                </div>
+          {/* ── Tabbed Content (inside right column) ── */}
+          <div className="border-t border-border pt-3 flex flex-col min-h-0">
+            {/* Tab bar */}
+            <div className="flex border-b border-border overflow-x-auto shrink-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 font-display text-[10px] tracking-widest whitespace-nowrap transition-colors border-b-2 -mb-px ${
+                    activeTab === tab
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {TAB_LABELS[tab]}
+                </button>
               ))}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* ── Tabbed Content ── */}
-      <div className="border-b border-border">
-        {/* Tab bar */}
-        <div className="flex border-b border-border px-4 lg:px-8 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-3 font-display text-[10px] tracking-widest whitespace-nowrap transition-colors border-b-2 -mb-px ${
-                activeTab === tab
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab content */}
-        <div className="px-4 lg:px-8 py-6 max-w-4xl">
-          {activeTab === "overview" && (
-            <div className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-              {parsed.overview || product.description}
-            </div>
-          )}
-
-          {activeTab === "features" && (
-            <ul className="space-y-2">
-              {parsed.features.map((feat, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="w-1.5 h-1.5 mt-1.5 bg-primary shrink-0" />
-                  <span className="font-body text-sm text-muted-foreground leading-relaxed">{feat}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {activeTab === "fitment" && (
-            <div>
-              {vehicle && (
-                <div className={`flex items-center gap-2 px-3 py-2 mb-4 border ${
-                  fitmentStatus
-                    ? "border-green-600/40 bg-green-600/10 text-green-400"
-                    : "border-red-600/40 bg-red-600/10 text-red-400"
-                }`}>
-                  {fitmentStatus ? <Check className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
-                  <span className="font-display text-[10px] tracking-widest">
-                    {fitmentStatus ? `FITS YOUR ${vehicleLabel.toUpperCase()}` : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
-                  </span>
+            {/* Tab content — scrollable on desktop */}
+            <div className="pt-4 lg:max-h-[350px] lg:overflow-y-auto lg:[&::-webkit-scrollbar]:w-1 lg:[&::-webkit-scrollbar-track]:bg-transparent lg:[&::-webkit-scrollbar-thumb]:bg-border lg:[&::-webkit-scrollbar-thumb]:rounded-full">
+              {activeTab === "overview" && (
+                <div className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {parsed.overview || product.description}
                 </div>
               )}
-              <div
-                className="font-body text-sm text-muted-foreground leading-relaxed [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-display [&_th]:text-[10px] [&_th]:tracking-widest [&_th]:text-foreground"
-                dangerouslySetInnerHTML={{ __html: parsed.fitment }}
-              />
-              {!parsed.fitment.includes("<") && (
-                <div className="whitespace-pre-line">{stripHtml(parsed.fitment)}</div>
+
+              {activeTab === "features" && (
+                <ul className="space-y-2">
+                  {parsed.features.map((feat, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-1.5 h-1.5 mt-1.5 bg-primary shrink-0" />
+                      <span className="font-body text-sm text-muted-foreground leading-relaxed">{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {activeTab === "fitment" && (
+                <div>
+                  {vehicle && (
+                    <div className={`flex items-center gap-2 px-3 py-2 mb-4 border ${
+                      fitmentStatus
+                        ? "border-green-600/40 bg-green-600/10 text-green-400"
+                        : "border-red-600/40 bg-red-600/10 text-red-400"
+                    }`}>
+                      {fitmentStatus ? <Check className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                      <span className="font-display text-[10px] tracking-widest">
+                        {fitmentStatus ? `FITS YOUR ${vehicleLabel.toUpperCase()}` : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                      </span>
+                    </div>
+                  )}
+                  <div
+                    className="font-body text-sm text-muted-foreground leading-relaxed [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-border [&_td]:px-3 [&_td]:py-2 [&_th]:border [&_th]:border-border [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-display [&_th]:text-[10px] [&_th]:tracking-widest [&_th]:text-foreground"
+                    dangerouslySetInnerHTML={{ __html: parsed.fitment }}
+                  />
+                  {!parsed.fitment.includes("<") && (
+                    <div className="whitespace-pre-line">{stripHtml(parsed.fitment)}</div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === "specifications" && (
+                <div className="border border-border">
+                  {Object.entries(parsed.specifications).map(([key, val], i) => (
+                    <div key={key} className={`flex ${i > 0 ? "border-t border-border" : ""}`}>
+                      <div className="w-1/3 px-3 py-2 bg-card font-display text-[10px] tracking-widest text-muted-foreground border-r border-border">
+                        {key.toUpperCase()}
+                      </div>
+                      <div className="flex-1 px-3 py-2 font-body text-sm text-foreground">
+                        {val}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          )}
-
-          {activeTab === "specifications" && (
-            <div className="border border-border">
-              {Object.entries(parsed.specifications).map(([key, val], i) => (
-                <div key={key} className={`flex ${i > 0 ? "border-t border-border" : ""}`}>
-                  <div className="w-1/3 px-4 py-2.5 bg-card font-display text-[10px] tracking-widest text-muted-foreground border-r border-border">
-                    {key.toUpperCase()}
-                  </div>
-                  <div className="flex-1 px-4 py-2.5 font-body text-sm text-foreground">
-                    {val}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
       </div>
 
