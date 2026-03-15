@@ -170,11 +170,29 @@ const CollectionTemplate = () => {
   const pageInfo = data?.pageInfo;
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
-  // Client-side year range filtering
+  // Client-side year/make/model filtering (includes universal products)
   const displayProducts = useMemo(() => {
-    if (!filters.year) return rawDisplayProducts;
-    return rawDisplayProducts.filter((p) => matchesYear(p.node.title, filters.year!));
-  }, [rawDisplayProducts, filters.year]);
+    let filtered = rawDisplayProducts;
+    if (filters.make && filters.make !== "Universal") {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.make!.toLowerCase())
+      );
+    }
+    if (filters.make === "Universal") {
+      filtered = filtered.filter((p) => isUniversalProduct(p));
+    }
+    if (filters.model) {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
+      );
+    }
+    if (filters.year) {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
+      );
+    }
+    return filtered;
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model]);
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
