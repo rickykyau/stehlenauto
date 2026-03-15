@@ -267,7 +267,7 @@ const SiteHeader = () => {
           <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu ? "-translate-x-full" : "translate-x-0"}`}>
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
-              <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="#" />
+              <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
               <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="#" />
             </div>
 
