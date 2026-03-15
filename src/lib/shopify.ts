@@ -231,7 +231,12 @@ export const COLLECTIONS_QUERY = `
             url
             altText
           }
-          products(first: 1) {
+          products(first: 250) {
+            edges {
+              node {
+                id
+              }
+            }
             filters {
               label
               values {
