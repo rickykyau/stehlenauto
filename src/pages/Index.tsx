@@ -103,7 +103,6 @@ const IndexTemplate = () => {
                   <span className="font-display text-xs tracking-wider block mb-1">{cat.title.toUpperCase()}</span>
                   <span className="font-body text-xs text-muted-foreground">{count} Products</span>
                 </div>
-                </div>
               </Link>
             );
           })}
