@@ -16,19 +16,11 @@ const IndexTemplate = () => {
   const featuredProducts = data?.products || [];
 
   // Filter to only show product-type category collections
-  const allowedHandles = [
+  const topCategoryHandles = [
     'bull-guards-grille-guards',
     'tonneau-covers',
     'trailer-hitches',
-    'front-grilles',
     'headlights',
-    'truck-bed-mats',
-    'floor-mats',
-    'running-boards-side-steps',
-    'roof-racks-baskets',
-    'chase-racks-sport-bars',
-    'molle-panels',
-    'under-seat-storage'
   ];
 
   const categoryCollections = (shopifyCollections || [])
