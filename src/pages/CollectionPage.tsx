@@ -69,12 +69,15 @@ const CollectionTemplate = () => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [showVehicleChange, setShowVehicleChange] = useState(false);
+  const [vehicleOverridden, setVehicleOverridden] = useState(false);
   const [filters, setFilters] = useState<RefineFilters>({
     year: null,
     make: null,
     model: null,
     category: null,
   });
+  const vehicleSyncedRef = useRef(false);
 
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
   const isMobile = useIsMobile();
