@@ -213,7 +213,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
         {/* ── MODEL ── */}
         <SectionHeader section="model" label="MODEL" />
         {expanded.model && (
-          <div className="pb-3 max-h-[200px] overflow-y-auto">
+          <div className="pb-3">
             <FilterButton active={!filters.model} onClick={() => update({ model: null })}>
               ALL MODELS
             </FilterButton>
