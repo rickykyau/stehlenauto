@@ -69,7 +69,23 @@ function matchesYear(title: string, year: string): boolean {
   return y >= range[0] && y <= range[1];
 }
 
-/** Build a Shopify query string from the active filters (excluding year, which is client-side) */
+/** Check if a product is universal fit */
+function isUniversalProduct(product: ShopifyProduct): boolean {
+  const title = product.node.title.toLowerCase();
+  if (title.includes("universal")) return true;
+  // No year range in title = likely universal
+  const hasYearRange = parseYearRange(product.node.title) !== null;
+  const hasMakeInTitle = KNOWN_MAKES_LC.some((m) => title.includes(m));
+  if (!hasYearRange && !hasMakeInTitle) return true;
+  return false;
+}
+
+const KNOWN_MAKES_LC = [
+  "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
+  "jeep", "nissan", "ram", "toyota", "volkswagen",
+];
+
+/** Build a Shopify query string from the active filters (excluding year/make/model which are client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
   collectionTitle: string | null,
@@ -83,9 +99,7 @@ function buildShopifyQuery(
     parts.push(`product_type:*${CATEGORY_KEYWORDS[categoryHandle]}*`);
   }
 
-  if (filters.make) parts.push(`title:*${filters.make}*`);
-  if (filters.model) parts.push(`title:*${filters.model}*`);
-
+  // Make/model filtering is done client-side to include universal products
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
