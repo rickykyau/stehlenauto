@@ -61,7 +61,7 @@ const IndexTemplate = () => {
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4">
-            {(shopifyCollections || []).map((col) => (
+            {categoryCollections.map((col) => (
               <Link
                 key={col.node.id}
                 to={`/collections/${col.node.handle}`}
@@ -74,7 +74,8 @@ const IndexTemplate = () => {
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 p-4">
-                  <span className="font-display text-xs tracking-wider block">{col.node.title.toUpperCase()}</span>
+                  <span className="font-display text-xs tracking-wider block mb-1">{col.node.title.toUpperCase()}</span>
+                  <span className="font-body text-xs text-muted-foreground">{col.productCount} Products</span>
                 </div>
               </Link>
             ))}

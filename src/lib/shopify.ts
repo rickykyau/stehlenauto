@@ -262,6 +262,11 @@ export interface ShopifyCollection {
       altText: string | null;
     } | null;
     products?: {
+      edges: Array<{
+        node: {
+          id: string;
+        };
+      }>;
       filters?: Array<{
         label: string;
         values: Array<{ label: string; count: number }>;
