@@ -2,7 +2,6 @@
  * SHOPIFY TEMPLATE: templates/index.liquid
  * SECTIONS: hero, category-carousel (12), featured-products carousel, trust-badges
  */
-import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
@@ -10,9 +9,8 @@ import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import HorizontalCarousel from "@/components/HorizontalCarousel";
 import SiteFooter from "@/components/SiteFooter";
-import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 import { useQuery } from "@tanstack/react-query";
-import { storefrontApiRequest, PRODUCTS_QUERY } from "@/lib/shopify";
+import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
 
 /* ─── All 12 Categories ─── */
