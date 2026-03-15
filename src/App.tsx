@@ -25,6 +25,7 @@ import WarrantyPage from "./pages/WarrantyPage.tsx";
 import TermsPage from "./pages/TermsPage.tsx";
 import ReturnsPage from "./pages/ReturnsPage.tsx";
 import PrivacyPage from "./pages/PrivacyPage.tsx";
+import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 
 const queryClient = new QueryClient();
 
