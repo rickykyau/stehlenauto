@@ -2,9 +2,10 @@
  * SHOPIFY SNIPPET: snippets/product-card.liquid
  */
 import { Link } from "react-router-dom";
-import { ShoppingCart, Plus, Loader2 } from "lucide-react";
+import { ShoppingCart, Plus, Loader2, Truck } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { isUniversalProduct } from "@/lib/shopify";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -14,6 +15,7 @@ interface ProductCardProps {
 const ProductCard = ({ product, compact = false }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
+  const universal = isUniversalProduct(product);
   const firstVariant = p.variants.edges[0]?.node;
   const image = p.images.edges[0]?.node?.url || "/placeholder.svg";
   const price = parseFloat(p.priceRange.minVariantPrice.amount);
@@ -58,6 +60,11 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
         {/* Content */}
         <div className={`${compact ? "p-3" : "p-4"} flex flex-col flex-1`}>
           <h4 className={`font-body ${compact ? "text-xs" : "text-sm"} leading-relaxed mb-2 text-foreground/90 line-clamp-2 flex-1`}>{p.title}</h4>
+          {universal && (
+            <span className="inline-flex items-center gap-1 mb-1 w-fit px-1.5 py-0.5 border border-primary/40 text-primary font-display text-[8px] tracking-widest">
+              UNIVERSAL FIT
+            </span>
+          )}
           <div className="flex items-baseline gap-2">
             <span className="font-display text-lg text-primary font-bold">${price.toFixed(2)}</span>
             {compareAt && compareAt > price && (

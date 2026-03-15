@@ -14,6 +14,7 @@ import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailableFilterOptions } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { isUniversalProduct } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 type SortOption = "best-selling" | "price-ascending" | "price-descending" | "title-ascending";
@@ -69,7 +70,7 @@ function matchesYear(title: string, year: string): boolean {
   return y >= range[0] && y <= range[1];
 }
 
-/** Build a Shopify query string from the active filters (excluding year, which is client-side) */
+/** Build a Shopify query string from the active filters (excluding year/make/model which are client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
   collectionTitle: string | null,
@@ -83,9 +84,7 @@ function buildShopifyQuery(
     parts.push(`product_type:*${CATEGORY_KEYWORDS[categoryHandle]}*`);
   }
 
-  if (filters.make) parts.push(`title:*${filters.make}*`);
-  if (filters.model) parts.push(`title:*${filters.model}*`);
-
+  // Make/model filtering is done client-side to include universal products
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
@@ -156,11 +155,29 @@ const CollectionTemplate = () => {
   const pageInfo = data?.pageInfo;
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
-  // Client-side year range filtering
+  // Client-side year/make/model filtering (includes universal products)
   const displayProducts = useMemo(() => {
-    if (!filters.year) return rawDisplayProducts;
-    return rawDisplayProducts.filter((p) => matchesYear(p.node.title, filters.year!));
-  }, [rawDisplayProducts, filters.year]);
+    let filtered = rawDisplayProducts;
+    if (filters.make && filters.make !== "Universal") {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.make!.toLowerCase())
+      );
+    }
+    if (filters.make === "Universal") {
+      filtered = filtered.filter((p) => isUniversalProduct(p));
+    }
+    if (filters.model) {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
+      );
+    }
+    if (filters.year) {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
+      );
+    }
+    return filtered;
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model]);
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
