@@ -1,21 +1,26 @@
 /**
  * SHOPIFY SECTION: sections/header.liquid
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import { collections } from "@/data/products";
 import VehicleBar from "./VehicleBar";
+import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
+import { useVehicle } from "@/contexts/VehicleContext";
 
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category">(null);
   const location = useLocation();
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
+  const { vehicle, vehicleLabel } = useVehicle();
+  const fitmentRef = useRef<HTMLDivElement>(null);
 
   // Close menu on route change
   useEffect(() => {
@@ -69,12 +74,13 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
-            <Link
-              to="/collections/all"
+            <button
+              onClick={() => setFitmentOpen(!fitmentOpen)}
               className="hidden lg:flex items-center gap-2 border border-primary/30 bg-primary/5 px-4 py-2 text-primary font-display text-[11px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
             >
-              SELECT YOUR VEHICLE
-            </Link>
+              <Truck className="w-3.5 h-3.5" />
+              {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
+            </button>
             <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
               <span className={`absolute top-1 right-1 w-4 h-4 font-display text-[9px] flex items-center justify-center ${itemCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{itemCount}</span>
@@ -98,7 +104,19 @@ const SiteHeader = () => {
             </div>
           </div>
         )}
+        {/* Fitment dropdown */}
+        {fitmentOpen && (
+          <div ref={fitmentRef} className="absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
+            <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+          </div>
+        )}
       </header>
+
+      {/* Fitment overlay */}
+      {fitmentOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setFitmentOpen(false)} />
+      )}
+
       <VehicleBar />
 
       {/* Overlay */}
