@@ -134,18 +134,11 @@ const CollectionTemplate = () => {
     ? "All Products"
     : collection?.node.title || handle || "All Products";
 
-  // Resolve category: from sidebar filter or from URL collection handle
-  const categoryCollection = filters.category
-    ? (shopifyCollections || []).find((c) => c.node.handle === filters.category)
-    : null;
-  const resolvedCategoryTitle = collection
-    ? collection.node.title
-    : categoryCollection
-      ? categoryCollection.node.title
-      : null;
+  // Resolve category title for URL-based collections (non-"all" routes)
+  const resolvedCategoryTitle = collection ? collection.node.title : null;
 
   const shopifyQuery = useMemo(
-    () => buildShopifyQuery(filters, resolvedCategoryTitle),
+    () => buildShopifyQuery(filters, resolvedCategoryTitle, filters.category),
     [filters, resolvedCategoryTitle]
   );
 
