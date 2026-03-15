@@ -11,7 +11,7 @@ interface ProductCardProps {
   compact?: boolean;
 }
 
-const ProductCard = ({ product }: ProductCardProps) => {
+const ProductCard = ({ product, compact = false }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
   const firstVariant = p.variants.edges[0]?.node;
