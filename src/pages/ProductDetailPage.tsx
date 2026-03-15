@@ -207,8 +207,8 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const { data: relatedData } = useShopifyProducts({ first: 5 });
-  const relatedProducts = (relatedData?.products || []).filter((p) => p.node.handle !== slug).slice(0, 4);
+  const { data: relatedData } = useShopifyProducts({ first: 9 });
+  const relatedProducts = (relatedData?.products || []).filter((p) => p.node.handle !== slug).slice(0, 8);
 
   const parsed = useMemo(
     () => parseDescription(product?.descriptionHtml, product?.description),
