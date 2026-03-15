@@ -1,7 +1,7 @@
 /**
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
-import ProductCard from "@/components/ProductCard";
+import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
 import { useShopifyProduct, useShopifyProducts } from "@/hooks/useShopifyProducts";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
@@ -207,8 +207,8 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const { data: relatedData } = useShopifyProducts({ first: 5 });
-  const relatedProducts = (relatedData?.products || []).filter((p) => p.node.handle !== slug).slice(0, 4);
+  const { data: relatedData } = useShopifyProducts({ first: 9 });
+  const relatedProducts = (relatedData?.products || []).filter((p) => p.node.handle !== slug).slice(0, 8);
 
   const parsed = useMemo(
     () => parseDescription(product?.descriptionHtml, product?.description),
@@ -530,19 +530,12 @@ const ProductTemplate = () => {
         </div>
       </div>
 
-      {/* ── Related Products ── */}
-      {relatedProducts.length > 0 && (
-        <section className="border-b border-border">
-          <div className="px-4 lg:px-8 py-4 border-b border-border">
-            <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">YOU MAY ALSO LIKE</h2>
-          </div>
-          <div className="p-4 lg:p-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {relatedProducts.map((p) => (
-              <ProductCard key={p.node.id} product={p} compact />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ── Related Products Carousel ── */}
+      <RelatedProductsCarousel
+        initialProducts={relatedProducts}
+        excludeHandle={slug || ""}
+        productType={product.productType}
+      />
 
       <SiteFooter />
     </div>
