@@ -33,7 +33,29 @@ const SORT_MAP: Record<SortOption, { sortKey: 'BEST_SELLING' | 'PRICE' | 'TITLE'
 
 const ITEMS_PER_PAGE = 48;
 
-/** Build a Shopify query string from the active filters */
+/** Parse year range from a product title. Returns [startYear, endYear] or null. */
+function parseYearRange(title: string): [number, number] | null {
+  // Match "2019-2025", "2019–2025"
+  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
+  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
+  // Match "2022+"
+  const plusMatch = title.match(/(\d{4})\+/);
+  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
+  // Match single year at start "2021 Honda..."
+  const singleMatch = title.match(/^(\d{4})\s/);
+  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
+  return null;
+}
+
+/** Check if a product title's year range includes the selected year */
+function matchesYear(title: string, year: string): boolean {
+  const y = parseInt(year);
+  const range = parseYearRange(title);
+  if (!range) return false;
+  return y >= range[0] && y <= range[1];
+}
+
+/** Build a Shopify query string from the active filters (excluding year, which is client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
   collectionTitle: string | null
@@ -46,7 +68,7 @@ function buildShopifyQuery(
 
   if (filters.make) parts.push(`title:*${filters.make}*`);
   if (filters.model) parts.push(`title:*${filters.model}*`);
-  if (filters.year) parts.push(`title:*${filters.year}*`);
+  // Year is filtered client-side for range matching, NOT via API keyword search
 
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
