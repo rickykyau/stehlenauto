@@ -444,8 +444,8 @@ const ProductTemplate = () => {
               ))}
             </div>
 
-            {/* Tab content — scrollable on desktop */}
-            <div className="pt-4 lg:max-h-[350px] lg:overflow-y-auto lg:[&::-webkit-scrollbar]:w-1 lg:[&::-webkit-scrollbar-track]:bg-transparent lg:[&::-webkit-scrollbar-thumb]:bg-border lg:[&::-webkit-scrollbar-thumb]:rounded-full">
+            {/* Tab content */}
+            <div className="pt-4">
               {activeTab === "overview" && (
                 <div className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                   {parsed.overview || product.description}
