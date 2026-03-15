@@ -241,13 +241,13 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
             <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
               ALL CATEGORIES
             </FilterButton>
-            {categoryCollections.map((c) => (
+            {CATEGORIES.map((cat) => (
               <FilterButton
-                key={c.node.id}
-                active={filters.category === c.node.handle}
-                onClick={() => update({ category: filters.category === c.node.handle ? null : c.node.handle })}
+                key={cat.handle}
+                active={filters.category === cat.handle}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
               >
-                {c.node.title.toUpperCase()}
+                {cat.label.toUpperCase()}
               </FilterButton>
             ))}
           </div>
