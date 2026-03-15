@@ -222,13 +222,11 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
               </p>
             )}
             {currentModels.map((m) => {
-              if (hasOptions && !availableOptions.models.has(m)) return null;
               return (
                 <FilterButton
                   key={m}
                   active={filters.model === m}
                   onClick={() => update({ model: filters.model === m ? null : m })}
-                  count={hasOptions ? availableOptions.models.get(m) : undefined}
                 >
                   {m.toUpperCase()}
                 </FilterButton>
