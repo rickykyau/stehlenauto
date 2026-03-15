@@ -159,7 +159,7 @@ function FeaturedProductsCarousel() {
   }
 
   return (
-    <HorizontalCarousel onNearEnd={loadMore}>
+    <HorizontalCarousel>
       {products.map((product) => (
         <ProductCard key={product.node.id} product={product} compact />
       ))}
