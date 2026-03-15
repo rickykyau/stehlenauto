@@ -233,12 +233,31 @@ const CollectionTemplate = () => {
               {vehicleLabel.toUpperCase()}
             </span>
           </div>
-          <button
-            onClick={clearVehicle}
-            className="font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors"
-          >
-            SHOW ALL MAKES
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowVehicleChange(!showVehicleChange)}
+              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors"
+            >
+              CHANGE
+              <ChevronDown className={`w-3 h-3 transition-transform ${showVehicleChange ? "rotate-180" : ""}`} />
+            </button>
+            <button
+              onClick={handleClearVehicle}
+              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-destructive transition-colors"
+              title="Clear saved vehicle"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Expandable vehicle change panel */}
+      {vehicle && showVehicleChange && (
+        <div className="border-b border-border px-4 lg:px-8 py-4">
+          <div className="max-w-lg">
+            <FitmentSelector onVehicleSelect={() => setShowVehicleChange(false)} />
+          </div>
         </div>
       )}
 
@@ -252,6 +271,19 @@ const CollectionTemplate = () => {
       {/* Collection Header */}
       <div className="border-b border-border px-4 lg:px-8 py-10">
         <h1 className="text-3xl md:text-4xl font-display font-bold tracking-wider">{title.toUpperCase()}</h1>
+        {vehicle && !vehicleOverridden && (
+          <div className="mt-2">
+            <span className="font-display text-xs tracking-widest text-muted-foreground">
+              Filtered for your {vehicleLabel}.
+            </span>
+            <button
+              onClick={showAllMakes}
+              className="ml-3 font-display text-xs tracking-widest text-primary hover:brightness-110 transition-colors"
+            >
+              Show all makes
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
