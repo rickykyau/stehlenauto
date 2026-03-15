@@ -1,12 +1,13 @@
 /**
  * SHOPIFY TEMPLATE: templates/collection.liquid
  */
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
+import FitmentSelector from "@/components/FitmentSelector";
 import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
@@ -32,29 +33,20 @@ const SORT_MAP: Record<SortOption, { sortKey: 'BEST_SELLING' | 'PRICE' | 'TITLE'
 
 const ITEMS_PER_PAGE = 48;
 
-/** Build a Shopify query string from the active filters + vehicle */
+/** Build a Shopify query string from the active filters */
 function buildShopifyQuery(
   filters: RefineFilters,
-  vehicle: { year: string; make: string; model: string } | null,
   collectionTitle: string | null
 ): string | undefined {
   const parts: string[] = [];
 
-  // Category filter via collection title (product_type)
   if (collectionTitle) {
     parts.push(`product_type:${collectionTitle}`);
   }
 
-  // Vehicle context or manual year/make/model filters
-  const year = filters.year || vehicle?.year || null;
-  const make = filters.make || vehicle?.make || null;
-  const model = filters.model || vehicle?.model || null;
-
-  // Build title search terms for vehicle fitment
-  // Products have titles like "2019-2023 Ford Ranger Tonneau Cover"
-  if (make) parts.push(`title:*${make}*`);
-  if (model) parts.push(`title:*${model}*`);
-  if (year) parts.push(`title:*${year}*`);
+  if (filters.make) parts.push(`title:*${filters.make}*`);
+  if (filters.model) parts.push(`title:*${filters.model}*`);
+  if (filters.year) parts.push(`title:*${filters.year}*`);
 
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
@@ -68,16 +60,33 @@ const CollectionTemplate = () => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [showVehicleChange, setShowVehicleChange] = useState(false);
+  const [vehicleOverridden, setVehicleOverridden] = useState(false);
   const [filters, setFilters] = useState<RefineFilters>({
     year: null,
     make: null,
     model: null,
     category: null,
   });
+  const vehicleSyncedRef = useRef(false);
 
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
   const isMobile = useIsMobile();
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
+
+  // Sync filters from saved vehicle on mount (once)
+  useEffect(() => {
+    if (vehicle && !vehicleSyncedRef.current) {
+      vehicleSyncedRef.current = true;
+      setFilters((prev) => ({
+        ...prev,
+        year: vehicle.year,
+        make: vehicle.make,
+        model: vehicle.model,
+      }));
+      setVehicleOverridden(false);
+    }
+  }, [vehicle]);
 
   const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
   const isAllProducts = handle === "all" || !handle;
@@ -99,8 +108,8 @@ const CollectionTemplate = () => {
       : null;
 
   const shopifyQuery = useMemo(
-    () => buildShopifyQuery(filters, vehicle, resolvedCategoryTitle),
-    [filters, vehicle, resolvedCategoryTitle]
+    () => buildShopifyQuery(filters, resolvedCategoryTitle),
+    [filters, resolvedCategoryTitle]
   );
 
   const { sortKey, reverse } = SORT_MAP[sort];
@@ -131,7 +140,29 @@ const CollectionTemplate = () => {
   const handleFilterChange = useCallback((newFilters: RefineFilters) => {
     setFilters(newFilters);
     setAllProducts([]);
-  }, []);
+    // If user manually changes YMM filters, mark vehicle as overridden
+    if (vehicle) {
+      const ymChanged =
+        newFilters.year !== vehicle.year ||
+        newFilters.make !== vehicle.make ||
+        newFilters.model !== vehicle.model;
+      if (ymChanged) setVehicleOverridden(true);
+    }
+  }, [vehicle]);
+
+  const showAllMakes = () => {
+    setVehicleOverridden(true);
+    setFilters((prev) => ({ ...prev, year: null, make: null, model: null }));
+    setAllProducts([]);
+  };
+
+  const handleClearVehicle = () => {
+    clearVehicle();
+    setVehicleOverridden(false);
+    vehicleSyncedRef.current = false;
+    setFilters((prev) => ({ ...prev, year: null, make: null, model: null }));
+    setAllProducts([]);
+  };
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !currentCursor) return;
@@ -193,12 +224,31 @@ const CollectionTemplate = () => {
               {vehicleLabel.toUpperCase()}
             </span>
           </div>
-          <button
-            onClick={clearVehicle}
-            className="font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors"
-          >
-            SHOW ALL MAKES
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowVehicleChange(!showVehicleChange)}
+              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors"
+            >
+              CHANGE
+              <ChevronDown className={`w-3 h-3 transition-transform ${showVehicleChange ? "rotate-180" : ""}`} />
+            </button>
+            <button
+              onClick={handleClearVehicle}
+              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-destructive transition-colors"
+              title="Clear saved vehicle"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Expandable vehicle change panel */}
+      {vehicle && showVehicleChange && (
+        <div className="border-b border-border px-4 lg:px-8 py-4">
+          <div className="max-w-lg">
+            <FitmentSelector onVehicleSelect={() => setShowVehicleChange(false)} />
+          </div>
         </div>
       )}
 
@@ -212,6 +262,19 @@ const CollectionTemplate = () => {
       {/* Collection Header */}
       <div className="border-b border-border px-4 lg:px-8 py-10">
         <h1 className="text-3xl md:text-4xl font-display font-bold tracking-wider">{title.toUpperCase()}</h1>
+        {vehicle && !vehicleOverridden && (
+          <div className="mt-2">
+            <span className="font-display text-xs tracking-widest text-muted-foreground">
+              Filtered for your {vehicleLabel}.
+            </span>
+            <button
+              onClick={showAllMakes}
+              className="ml-3 font-display text-xs tracking-widest text-primary hover:brightness-110 transition-colors"
+            >
+              Show all makes
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
