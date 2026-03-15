@@ -148,4 +148,26 @@
   .snap-section {
     scroll-snap-align: start;
   }
+
+  /* Sidebar custom scrollbar */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .sidebar-scroll:hover {
+    scrollbar-color: hsl(220 8% 25%) transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+  .sidebar-scroll:hover::-webkit-scrollbar-thumb {
+    background: hsl(220 8% 25%);
+  }
 }
