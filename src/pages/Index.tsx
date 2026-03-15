@@ -19,17 +19,17 @@ import type { ShopifyProduct } from "@/lib/shopify";
 
 const ALL_CATEGORIES = [
   { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", fallbackCount: 190, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
-  { handle: "trailer-hitches", title: "Trailer Hitches", fallbackCount: 288, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
   { handle: "tonneau-covers", title: "Tonneau Covers", fallbackCount: 287, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065" },
+  { handle: "trailer-hitches", title: "Trailer Hitches", fallbackCount: 288, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
+  { handle: "front-grilles", title: "Front Grilles", fallbackCount: 168, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_fg-zh-mus05gt-me-bk-ws-1.jpg?v=1773608072" },
   { handle: "headlights", title: "Headlights", fallbackCount: 161, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075" },
-  { handle: "front-grilles", title: "Front Grilles", fallbackCount: 50 },
-  { handle: "truck-bed-mats", title: "Truck Bed Mats", fallbackCount: 30 },
-  { handle: "floor-mats", title: "Floor Mats", fallbackCount: 40 },
-  { handle: "running-boards-side-steps", title: "Running Boards & Side Steps", fallbackCount: 100 },
-  { handle: "roof-racks-baskets", title: "Roof Racks & Baskets", fallbackCount: 20 },
-  { handle: "chase-racks-sport-bars", title: "Chase Racks & Sport Bars", fallbackCount: 30 },
-  { handle: "molle-panels", title: "MOLLE Panels", fallbackCount: 15 },
-  { handle: "under-seat-storage", title: "Under Seat Storage", fallbackCount: 25 },
+  { handle: "truck-bed-mats", title: "Truck Bed Mats", fallbackCount: 119, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-tun22-5.5-rb-v2-w-1.jpg?v=1773608078" },
+  { handle: "floor-mats", title: "Floor Mats", fallbackCount: 52, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
+  { handle: "running-boards-side-steps", title: "Running Boards & Side Steps", fallbackCount: 51, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_sbrs-rs2-tb-ws-1.jpg?v=1773608085" },
+  { handle: "roof-racks-baskets", title: "Roof Racks & Baskets", fallbackCount: 6, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_rr-lp-fullsize-uni-ws-1_b80d4918-e311-4039-8d13-c3c613105c8b.jpg?v=1773608088" },
+  { handle: "chase-racks-sport-bars", title: "Chase Racks & Sport Bars", fallbackCount: 3, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_crjz-raz-1000-st-mb-ws-1_135fbf61-e2a7-409b-9228-51a321b81ac9.jpg?v=1773608092" },
+  { handle: "molle-panels", title: "MOLLE Panels", fallbackCount: 3, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_mp-colo23-5-3p-ws-1_de4c08ed-efa7-41bf-93b1-57376cde9caa.jpg?v=1773608095" },
+  { handle: "under-seat-storage", title: "Under Seat Storage", fallbackCount: 2, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
 ];
 
 const COLLECTION_IMAGE_QUERY = `
