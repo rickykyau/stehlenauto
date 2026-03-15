@@ -108,8 +108,8 @@ const CollectionTemplate = () => {
       : null;
 
   const shopifyQuery = useMemo(
-    () => buildShopifyQuery(filters, vehicle, resolvedCategoryTitle),
-    [filters, vehicle, resolvedCategoryTitle]
+    () => buildShopifyQuery(filters, resolvedCategoryTitle),
+    [filters, resolvedCategoryTitle]
   );
 
   const { sortKey, reverse } = SORT_MAP[sort];
