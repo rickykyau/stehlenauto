@@ -231,8 +231,14 @@ export const COLLECTIONS_QUERY = `
             url
             altText
           }
-          productsCount {
-            count
+          products(first: 1) {
+            filters {
+              label
+              values {
+                label
+                count
+              }
+            }
           }
         }
       }
