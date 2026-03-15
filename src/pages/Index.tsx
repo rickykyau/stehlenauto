@@ -65,63 +65,112 @@ function useCategoryData() {
   });
 }
 
-/* ─── Featured Products — diverse best-sellers ─── */
+/* ─── Featured Products — minimal query + client-side diversification ─── */
 
 const FEATURED_PRODUCTS_QUERY = `
   query GetFeaturedProducts {
-    products(first: 50, sortKey: BEST_SELLING) {
+    products(first: 12) {
       edges {
         node {
           id
           title
-          description
           handle
           productType
-          priceRange { minVariantPrice { amount currencyCode } }
-          compareAtPriceRange { minVariantPrice { amount currencyCode } }
-          images(first: 5) { edges { node { url altText } } }
-          variants(first: 10) {
+          featuredImage {
+            url
+            altText
+          }
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          variants(first: 1) {
             edges {
               node {
                 id
                 title
-                price { amount currencyCode }
-                compareAtPrice { amount currencyCode }
+                price {
+                  amount
+                  currencyCode
+                }
+                compareAtPrice {
+                  amount
+                  currencyCode
+                }
                 availableForSale
-                selectedOptions { name value }
+                selectedOptions {
+                  name
+                  value
+                }
               }
             }
           }
-          options { name values }
         }
       }
     }
   }
 `;
 
+function normalizeFeaturedProducts(data: any): ShopifyProduct[] {
+  const edges = data?.data?.products?.edges || [];
+
+  return edges.map((edge: any) => {
+    const node = edge.node;
+    const firstVariant = node.variants?.edges?.[0]?.node;
+
+    return {
+      node: {
+        id: node.id,
+        title: node.title,
+        description: "",
+        handle: node.handle,
+        productType: node.productType || "",
+        priceRange: node.priceRange,
+        compareAtPriceRange: firstVariant?.compareAtPrice
+          ? { minVariantPrice: firstVariant.compareAtPrice }
+          : undefined,
+        images: {
+          edges: node.featuredImage
+            ? [{ node: { url: node.featuredImage.url, altText: node.featuredImage.altText ?? null } }]
+            : [],
+        },
+        variants: {
+          edges: node.variants?.edges || [],
+        },
+        options: [],
+      },
+    };
+  });
+}
+
 function useFeaturedProducts() {
   return useQuery({
-    queryKey: ["featured-products-diverse"],
+    queryKey: ["featured-products-minimal"],
     queryFn: async () => {
       try {
-        const data = await storefrontApiRequest(FEATURED_PRODUCTS_QUERY);
-        const allProducts = (data?.data?.products?.edges || []) as ShopifyProduct[];
+        const response = await storefrontApiRequest(FEATURED_PRODUCTS_QUERY);
+        console.log("Featured products API response:", response);
 
-        if (allProducts.length === 0) return [];
+        const products = normalizeFeaturedProducts(response);
 
-        // Deduplicate by productType — keep first (best-selling) per type
-        const seen = new Set<string>();
-        const diverse: ShopifyProduct[] = [];
-        for (const p of allProducts) {
-          const pt = (p.node.productType || "").toLowerCase().trim();
-          if (!pt || seen.has(pt)) continue;
-          seen.add(pt);
-          diverse.push(p);
+        if (!products.length) {
+          console.error("No products returned from Storefront API", response);
+          return [];
         }
 
-        return diverse.length > 0 ? diverse : allProducts.slice(0, 12);
-      } catch (err) {
-        console.error("Failed to fetch featured products:", err);
+        const seen = new Set<string>();
+        const diverse = products.filter((product) => {
+          const type = product.node.productType?.trim().toLowerCase() || "other";
+          if (seen.has(type)) return false;
+          seen.add(type);
+          return true;
+        });
+
+        return diverse;
+      } catch (error) {
+        console.error("Featured products fetch failed:", error);
         return [];
       }
     },
@@ -129,25 +178,41 @@ function useFeaturedProducts() {
   });
 }
 
-function FeaturedProductsCarousel() {
+function FeaturedProductsSection() {
   const { data: products, isLoading } = useFeaturedProducts();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
+      <section className="border-b border-border">
+        <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
+          <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
+          <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
+            SHOP ALL <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      </section>
     );
   }
 
   if (!products || products.length === 0) return null;
 
   return (
-    <HorizontalCarousel>
-      {products.map((product) => (
-        <ProductCard key={product.node.id} product={product} compact />
-      ))}
-    </HorizontalCarousel>
+    <section className="border-b border-border">
+      <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
+        <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
+        <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
+          SHOP ALL <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+      <HorizontalCarousel>
+        {products.map((product) => (
+          <ProductCard key={product.node.id} product={product} compact />
+        ))}
+      </HorizontalCarousel>
+    </section>
   );
 }
 
@@ -204,16 +269,7 @@ const IndexTemplate = () => {
         </HorizontalCarousel>
       </section>
 
-      {/* Featured Products Carousel */}
-      <section className="border-b border-border">
-        <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
-          <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
-          <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
-            SHOP ALL <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-        <FeaturedProductsCarousel />
-      </section>
+      <FeaturedProductsSection />
 
       {/* Trust Badges */}
       <section className="border-t border-border grid grid-cols-2 md:grid-cols-4">
