@@ -65,73 +65,65 @@ function useCategoryData() {
   });
 }
 
-/* ─── Featured Products — 1 best-seller per category ─── */
+/* ─── Featured Products — diverse best-sellers ─── */
 
-const FEATURED_QUERY = `
-  query GetFeaturedFromCollection($handle: String!) {
-    collectionByHandle(handle: $handle) {
-      products(first: 1, sortKey: BEST_SELLING) {
-        edges {
-          node {
-            id
-            title
-            description
-            handle
-            productType
-            priceRange { minVariantPrice { amount currencyCode } }
-            compareAtPriceRange { minVariantPrice { amount currencyCode } }
-            images(first: 5) { edges { node { url altText } } }
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  title
-                  price { amount currencyCode }
-                  compareAtPrice { amount currencyCode }
-                  availableForSale
-                  selectedOptions { name value }
-                }
+const FEATURED_PRODUCTS_QUERY = `
+  query GetFeaturedProducts {
+    products(first: 50, sortKey: BEST_SELLING) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          productType
+          priceRange { minVariantPrice { amount currencyCode } }
+          compareAtPriceRange { minVariantPrice { amount currencyCode } }
+          images(first: 5) { edges { node { url altText } } }
+          variants(first: 10) {
+            edges {
+              node {
+                id
+                title
+                price { amount currencyCode }
+                compareAtPrice { amount currencyCode }
+                availableForSale
+                selectedOptions { name value }
               }
             }
-            options { name values }
           }
+          options { name values }
         }
       }
     }
   }
 `;
 
-// Ordered by category size (largest first)
-const FEATURED_HANDLES = [
-  "trailer-hitches",
-  "tonneau-covers",
-  "bull-guards-grille-guards",
-  "front-grilles",
-  "headlights",
-  "truck-bed-mats",
-  "floor-mats",
-  "running-boards-side-steps",
-  "roof-racks-baskets",
-  "chase-racks-sport-bars",
-  "molle-panels",
-  "under-seat-storage",
-];
-
 function useFeaturedProducts() {
   return useQuery({
     queryKey: ["featured-products-diverse"],
     queryFn: async () => {
-      const results: ShopifyProduct[] = [];
-      await Promise.all(
-        FEATURED_HANDLES.map(async (handle, idx) => {
-          try {
-            const data = await storefrontApiRequest(FEATURED_QUERY, { handle });
-            const product = data?.data?.collectionByHandle?.products?.edges?.[0];
-            if (product) results[idx] = product;
-          } catch { /* skip */ }
-        })
-      );
-      return results.filter(Boolean);
+      try {
+        const data = await storefrontApiRequest(FEATURED_PRODUCTS_QUERY);
+        const allProducts = (data?.data?.products?.edges || []) as ShopifyProduct[];
+
+        if (allProducts.length === 0) return [];
+
+        // Deduplicate by productType — keep first (best-selling) per type
+        const seen = new Set<string>();
+        const diverse: ShopifyProduct[] = [];
+        for (const p of allProducts) {
+          const pt = (p.node.productType || "").toLowerCase().trim();
+          if (!pt || seen.has(pt)) continue;
+          seen.add(pt);
+          diverse.push(p);
+        }
+
+        return diverse.length > 0 ? diverse : allProducts.slice(0, 12);
+      } catch (err) {
+        console.error("Failed to fetch featured products:", err);
+        return [];
+      }
     },
     staleTime: 300_000,
   });
@@ -148,13 +140,7 @@ function FeaturedProductsCarousel() {
     );
   }
 
-  if (!products || products.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <p className="font-display text-xs tracking-widest text-muted-foreground">NO PRODUCTS FOUND</p>
-      </div>
-    );
-  }
+  if (!products || products.length === 0) return null;
 
   return (
     <HorizontalCarousel>
