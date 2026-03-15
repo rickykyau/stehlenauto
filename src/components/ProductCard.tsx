@@ -8,6 +8,7 @@ import type { ShopifyProduct } from "@/lib/shopify";
 
 interface ProductCardProps {
   product: ShopifyProduct;
+  compact?: boolean;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {
