@@ -242,43 +242,6 @@ const CollectionTemplate = () => {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      {/* Vehicle Filter Bar */}
-      {vehicle && (
-        <div className="border-b border-primary/20 bg-sidebar px-4 lg:px-8 h-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span className="font-display text-[10px] tracking-widest text-muted-foreground hidden sm:inline">MY VEHICLE:</span>
-            <span className="font-display text-[11px] tracking-widest text-foreground font-bold">
-              {vehicleLabel.toUpperCase()}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowVehicleChange(!showVehicleChange)}
-              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors"
-            >
-              CHANGE
-              <ChevronDown className={`w-3 h-3 transition-transform ${showVehicleChange ? "rotate-180" : ""}`} />
-            </button>
-            <button
-              onClick={handleClearVehicle}
-              className="flex items-center gap-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-destructive transition-colors"
-              title="Clear saved vehicle"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Expandable vehicle change panel */}
-      {vehicle && showVehicleChange && (
-        <div className="border-b border-border px-4 lg:px-8 py-4">
-          <div className="max-w-lg">
-            <FitmentSelector onVehicleSelect={() => setShowVehicleChange(false)} />
-          </div>
-        </div>
-      )}
 
       {/* Breadcrumb */}
       <div className="border-b border-border px-4 lg:px-8 py-3 flex items-center gap-2">
