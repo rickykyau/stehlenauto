@@ -54,8 +54,8 @@ function useCategoryData() {
             const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
             const col = data?.data?.collectionByHandle;
             const count = col?.products?.edges?.length || cat.fallbackCount;
-            const image = cat.image || col?.image?.url || col?.products?.edges?.[0]?.node?.featuredImage?.url || "";
-            results[cat.handle] = { count, image };
+            const apiImage = col?.image?.url || null;
+            results[cat.handle] = { count, image: apiImage || cat.image || "" };
           } catch {
             results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "" };
           }
