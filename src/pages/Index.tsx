@@ -13,39 +13,54 @@ import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
 
 const TOP_CATEGORIES = [
-  { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", count: 190 },
-  { handle: "trailer-hitches", title: "Trailer Hitches", count: 288 },
-  { handle: "tonneau-covers", title: "Tonneau Covers", count: 287 },
-  { handle: "headlights", title: "Headlights", count: 161 },
+  {
+    handle: "bull-guards-grille-guards",
+    title: "Bull Guards & Grille Guards",
+    fallbackCount: 190,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061",
+  },
+  {
+    handle: "trailer-hitches",
+    title: "Trailer Hitches",
+    fallbackCount: 288,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068",
+  },
+  {
+    handle: "tonneau-covers",
+    title: "Tonneau Covers",
+    fallbackCount: 287,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065",
+  },
+  {
+    handle: "headlights",
+    title: "Headlights",
+    fallbackCount: 161,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075",
+  },
 ];
 
-const COLLECTION_IMAGE_QUERY = `
-  query GetCollectionImage($handle: String!) {
+const COLLECTION_COUNT_QUERY = `
+  query GetCollectionCount($handle: String!) {
     collectionByHandle(handle: $handle) {
-      image { url }
-      products(first: 1) {
-        edges { node { featuredImage { url } } }
+      products(first: 250) {
+        edges { node { id } }
       }
     }
   }
 `;
 
-function useCategoryImages() {
+function useCategoryCounts() {
   return useQuery({
-    queryKey: ["category-images"],
+    queryKey: ["category-counts"],
     queryFn: async () => {
-      const results: Record<string, string> = {};
+      const results: Record<string, number> = {};
       await Promise.all(
         TOP_CATEGORIES.map(async (cat) => {
           try {
-            const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
-            const col = data?.data?.collectionByHandle;
-            results[cat.handle] =
-              col?.image?.url ||
-              col?.products?.edges?.[0]?.node?.featuredImage?.url ||
-              "";
+            const data = await storefrontApiRequest(COLLECTION_COUNT_QUERY, { handle: cat.handle });
+            results[cat.handle] = data?.data?.collectionByHandle?.products?.edges?.length || cat.fallbackCount;
           } catch {
-            results[cat.handle] = "";
+            results[cat.handle] = cat.fallbackCount;
           }
         })
       );
@@ -57,7 +72,7 @@ function useCategoryImages() {
 
 const IndexTemplate = () => {
   const { data, isLoading } = useShopifyProducts({ first: 4, sortKey: 'BEST_SELLING' });
-  const { data: categoryImages } = useCategoryImages();
+  const { data: categoryCounts } = useCategoryCounts();
   const featuredProducts = data?.products || [];
 
   return (
@@ -75,22 +90,18 @@ const IndexTemplate = () => {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4">
           {TOP_CATEGORIES.map((cat) => {
-            const imageUrl = categoryImages?.[cat.handle];
+            const count = categoryCounts?.[cat.handle] ?? cat.fallbackCount;
             return (
               <Link
                 key={cat.handle}
                 to={`/collections/${cat.handle}`}
                 className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
               >
-                {imageUrl ? (
-                  <img src={imageUrl} alt={cat.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full bg-muted" />
-                )}
+                <img src={cat.image} alt={cat.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 p-4">
                   <span className="font-display text-xs tracking-wider block mb-1">{cat.title.toUpperCase()}</span>
-                  <span className="font-body text-xs text-muted-foreground">{cat.count} Products</span>
+                  <span className="font-body text-xs text-muted-foreground">{count} Products</span>
                 </div>
               </Link>
             );
