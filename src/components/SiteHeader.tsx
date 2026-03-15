@@ -191,14 +191,17 @@ const SiteHeader = () => {
             <div className="px-5 pt-4 pb-2">
               <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY CATEGORY</span>
             </div>
-            {collections.map((c) => (
+            {collectionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : (shopifyCollections || []).map((c) => (
               <Link
-                key={c.id}
-                to={`/collections/${c.slug}`}
+                key={c.node.id}
+                to={`/collections/${c.node.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
-                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.title}</span>
-                <span className="font-display text-[10px] text-muted-foreground">{c.count}</span>
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.node.title}</span>
               </Link>
             ))}
           </div>
