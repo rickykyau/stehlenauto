@@ -231,8 +231,14 @@ export const COLLECTIONS_QUERY = `
             url
             altText
           }
-          productsCount {
-            count
+          products(first: 1) {
+            filters {
+              label
+              values {
+                label
+                count
+              }
+            }
           }
         }
       }
@@ -250,8 +256,11 @@ export interface ShopifyCollection {
       url: string;
       altText: string | null;
     } | null;
-    productsCount: {
-      count: number;
+    products?: {
+      filters?: Array<{
+        label: string;
+        values: Array<{ label: string; count: number }>;
+      }>;
     };
   };
 }

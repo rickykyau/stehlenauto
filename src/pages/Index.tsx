@@ -48,7 +48,6 @@ const IndexTemplate = () => {
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
                 <div className="absolute bottom-0 left-0 p-4">
                   <span className="font-display text-xs tracking-wider block">{col.node.title.toUpperCase()}</span>
-                  <span className="font-display text-[10px] tracking-widest text-primary">{col.node.productsCount.count} PARTS</span>
                 </div>
               </Link>
             ))}
