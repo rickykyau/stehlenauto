@@ -12,6 +12,7 @@ import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAvailableFilterOptions } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
