@@ -79,7 +79,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
     onFilterChange({ year: null, make: null, model: null, category: null });
   };
 
-  const categoryCollections = collections.filter((c) => CATEGORY_HANDLES.includes(c.node.handle));
+  // Categories are hardcoded, no dependency on collections prop
 
   const currentModels = filters.make ? (MODELS_BY_MAKE[filters.make] || []) : [];
 
