@@ -72,7 +72,7 @@ function useCategoryCounts() {
 
 const IndexTemplate = () => {
   const { data, isLoading } = useShopifyProducts({ first: 4, sortKey: 'BEST_SELLING' });
-  const { data: categoryImages } = useCategoryImages();
+  const { data: categoryCounts } = useCategoryCounts();
   const featuredProducts = data?.products || [];
 
   return (
