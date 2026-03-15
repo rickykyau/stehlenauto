@@ -70,11 +70,6 @@ function matchesYear(title: string, year: string): boolean {
   return y >= range[0] && y <= range[1];
 }
 
-const KNOWN_MAKES_LC = [
-  "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
-  "jeep", "nissan", "ram", "toyota", "volkswagen",
-];
-
 /** Build a Shopify query string from the active filters (excluding year/make/model which are client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
