@@ -458,7 +458,7 @@ const ProductTemplate = () => {
           {/* ── Tabbed Content (inside right column) ── */}
           <div className="border-t border-border pt-3">
             {/* Tab bar */}
-            <div className="flex border-b border-border overflow-x-auto shrink-0">
+            <div className="flex border-b border-border overflow-x-auto overflow-y-hidden scrollbar-none">
               {tabs.map((tab) => (
                 <button
                   key={tab}
