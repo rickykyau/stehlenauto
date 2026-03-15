@@ -104,7 +104,19 @@ const SiteHeader = () => {
             </div>
           </div>
         )}
+        {/* Fitment dropdown */}
+        {fitmentOpen && (
+          <div ref={fitmentRef} className="absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
+            <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+          </div>
+        )}
       </header>
+
+      {/* Fitment overlay */}
+      {fitmentOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setFitmentOpen(false)} />
+      )}
+
       <VehicleBar />
 
       {/* Overlay */}
