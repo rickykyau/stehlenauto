@@ -88,8 +88,8 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
     if (section === "make") return filters.make;
     if (section === "model") return filters.model;
     if (section === "category") {
-      const cat = collections.find((c) => c.node.handle === filters.category);
-      return cat ? cat.node.title : filters.category;
+      const cat = CATEGORIES.find((c) => c.handle === filters.category);
+      return cat ? cat.label : filters.category;
     }
     return null;
   };
