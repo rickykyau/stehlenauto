@@ -16,8 +16,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const firstVariant = p.variants.edges[0]?.node;
   const image = p.images.edges[0]?.node?.url || "/placeholder.svg";
   const price = parseFloat(p.priceRange.minVariantPrice.amount);
-  const compareAt = p.compareAtPriceRange?.minVariantPrice?.amount
-    ? parseFloat(p.compareAtPriceRange.minVariantPrice.amount)
+  const compareAtRaw = p.compareAtPriceRange?.minVariantPrice?.amount;
+  const compareAt = compareAtRaw && parseFloat(compareAtRaw) > 0
+    ? parseFloat(compareAtRaw)
     : null;
   const inStock = firstVariant?.availableForSale ?? true;
 
