@@ -2,7 +2,6 @@
  * SHOPIFY TEMPLATE: templates/index.liquid
  * SECTIONS: hero, category-carousel (12), featured-products carousel, trust-badges
  */
-import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
@@ -10,9 +9,8 @@ import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import HorizontalCarousel from "@/components/HorizontalCarousel";
 import SiteFooter from "@/components/SiteFooter";
-import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 import { useQuery } from "@tanstack/react-query";
-import { storefrontApiRequest, PRODUCTS_QUERY } from "@/lib/shopify";
+import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
 
 /* ─── All 12 Categories ─── */
@@ -67,57 +65,80 @@ function useCategoryData() {
   });
 }
 
-/* ─── Featured Products with lazy loading ─── */
+/* ─── Featured Products — 1 best-seller per category ─── */
 
-const MAX_FEATURED = 20;
-const BATCH = 8;
+const FEATURED_QUERY = `
+  query GetFeaturedFromCollection($handle: String!) {
+    collectionByHandle(handle: $handle) {
+      products(first: 1, sortKey: BEST_SELLING) {
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            productType
+            priceRange { minVariantPrice { amount currencyCode } }
+            compareAtPriceRange { minVariantPrice { amount currencyCode } }
+            images(first: 5) { edges { node { url altText } } }
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  price { amount currencyCode }
+                  compareAtPrice { amount currencyCode }
+                  availableForSale
+                  selectedOptions { name value }
+                }
+              }
+            }
+            options { name values }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// Ordered by category size (largest first)
+const FEATURED_HANDLES = [
+  "trailer-hitches",
+  "tonneau-covers",
+  "bull-guards-grille-guards",
+  "front-grilles",
+  "headlights",
+  "truck-bed-mats",
+  "floor-mats",
+  "running-boards-side-steps",
+  "roof-racks-baskets",
+  "chase-racks-sport-bars",
+  "molle-panels",
+  "under-seat-storage",
+];
+
+function useFeaturedProducts() {
+  return useQuery({
+    queryKey: ["featured-products-diverse"],
+    queryFn: async () => {
+      const results: ShopifyProduct[] = [];
+      await Promise.all(
+        FEATURED_HANDLES.map(async (handle, idx) => {
+          try {
+            const data = await storefrontApiRequest(FEATURED_QUERY, { handle });
+            const product = data?.data?.collectionByHandle?.products?.edges?.[0];
+            if (product) results[idx] = product;
+          } catch { /* skip */ }
+        })
+      );
+      return results.filter(Boolean);
+    },
+    staleTime: 300_000,
+  });
+}
 
 function FeaturedProductsCarousel() {
-  const { data, isLoading } = useShopifyProducts({ first: BATCH, sortKey: "BEST_SELLING" });
-  const [products, setProducts] = useState<ShopifyProduct[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const syncedRef = useRef(false);
-
-  const initialProducts = data?.products || [];
-  const pageInfo = data?.pageInfo;
-
-  useEffect(() => {
-    if (!syncedRef.current && initialProducts.length > 0) {
-      syncedRef.current = true;
-      setProducts(initialProducts);
-      setCursor(pageInfo?.endCursor || null);
-      setHasMore(pageInfo?.hasNextPage || false);
-    }
-  }, [initialProducts, pageInfo]);
-
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore || products.length >= MAX_FEATURED || !cursor) return;
-    setLoading(true);
-    try {
-      const result = await storefrontApiRequest(PRODUCTS_QUERY, {
-        first: BATCH,
-        query: null,
-        sortKey: "BEST_SELLING",
-        reverse: false,
-        after: cursor,
-      });
-      const newProducts = (result?.data?.products?.edges || []) as ShopifyProduct[];
-      const newPageInfo = result?.data?.products?.pageInfo;
-      setProducts((prev) => {
-        const existing = new Set(prev.map((p) => p.node.id));
-        const unique = newProducts.filter((p) => !existing.has(p.node.id));
-        return [...prev, ...unique].slice(0, MAX_FEATURED);
-      });
-      setCursor(newPageInfo?.endCursor || null);
-      setHasMore(newPageInfo?.hasNextPage || false);
-    } catch (err) {
-      console.error("Failed to load more featured products:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [loading, hasMore, products.length, cursor]);
+  const { data: products, isLoading } = useFeaturedProducts();
 
   if (isLoading) {
     return (
@@ -127,7 +148,7 @@ function FeaturedProductsCarousel() {
     );
   }
 
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     return (
       <div className="text-center py-20">
         <p className="font-display text-xs tracking-widest text-muted-foreground">NO PRODUCTS FOUND</p>
@@ -136,7 +157,7 @@ function FeaturedProductsCarousel() {
   }
 
   return (
-    <HorizontalCarousel onNearEnd={loadMore}>
+    <HorizontalCarousel>
       {products.map((product) => (
         <ProductCard key={product.node.id} product={product} compact />
       ))}
