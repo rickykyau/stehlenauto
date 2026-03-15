@@ -12,8 +12,35 @@ import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyPro
 
 const IndexTemplate = () => {
   const { data, isLoading } = useShopifyProducts({ first: 8 });
-  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(8);
+  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const featuredProducts = data?.products || [];
+
+  // Filter to only show product-type category collections
+  const allowedHandles = [
+    'bull-guards-grille-guards',
+    'tonneau-covers',
+    'trailer-hitches',
+    'front-grilles',
+    'headlights',
+    'truck-bed-mats',
+    'floor-mats',
+    'running-boards-side-steps',
+    'roof-racks-baskets',
+    'chase-racks-sport-bars',
+    'molle-panels',
+    'under-seat-storage'
+  ];
+
+  const categoryCollections = (shopifyCollections || [])
+    .filter(col => {
+      const handle = col.node.handle;
+      return allowedHandles.includes(handle) && !handle.endsWith('-parts') && handle !== 'frontpage';
+    })
+    .map(col => ({
+      ...col,
+      productCount: col.node.products?.edges?.length || 0
+    }))
+    .sort((a, b) => b.productCount - a.productCount);
 
   return (
     <div className="min-h-screen bg-background">
