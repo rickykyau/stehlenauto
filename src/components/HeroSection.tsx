@@ -34,17 +34,17 @@ const HeroSection = () => {
         </p>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center gap-4 mb-12">
+        <div className="flex flex-wrap items-center gap-5 mb-12">
           <Link
             to="/collections/all"
-            className="inline-flex items-center gap-3 h-13 px-8 bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all"
+            className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
           >
             SHOP ALL PARTS
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
             to="/collections/bull-bars"
-            className="inline-flex items-center gap-2 h-13 px-6 border border-foreground/20 text-foreground font-display text-[11px] tracking-widest hover:border-primary hover:text-primary transition-colors btn-press"
+            className="inline-flex items-center gap-2 h-16 px-10 border-2 border-foreground/20 text-foreground font-display text-base tracking-widest hover:border-primary hover:text-primary transition-colors btn-press"
           >
             BEST SELLERS
           </Link>

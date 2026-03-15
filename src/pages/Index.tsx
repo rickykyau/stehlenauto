@@ -8,11 +8,11 @@ import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
-import { collections } from "@/data/products";
-import { useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 const IndexTemplate = () => {
   const { data, isLoading } = useShopifyProducts({ first: 8 });
+  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(8);
   const featuredProducts = data?.products || [];
 
   return (
@@ -28,22 +28,32 @@ const IndexTemplate = () => {
             VIEW ALL <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4">
-          {collections.slice(0, 8).map((cat) => (
-            <Link
-              key={cat.id}
-              to={`/collections/${cat.slug}`}
-              className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
-            >
-              <img src={cat.image} alt={cat.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-              <div className="absolute bottom-0 left-0 p-4">
-                <span className="font-display text-xs tracking-wider block">{cat.title.toUpperCase()}</span>
-                <span className="font-display text-[10px] tracking-widest text-primary">{cat.count} PARTS</span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {collectionsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4">
+            {(shopifyCollections || []).map((col) => (
+              <Link
+                key={col.node.id}
+                to={`/collections/${col.node.handle}`}
+                className="group relative aspect-[4/3] border-r border-b border-border last:border-r-0 overflow-hidden"
+              >
+                {col.node.image ? (
+                  <img src={col.node.image.url} alt={col.node.image.altText || col.node.title} className="w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+                ) : (
+                  <div className="w-full h-full bg-muted" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 p-4">
+                  <span className="font-display text-xs tracking-wider block">{col.node.title.toUpperCase()}</span>
+                  <span className="font-display text-[10px] tracking-widest text-primary">{col.node.productsCount.count} PARTS</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Featured Products */}

@@ -7,8 +7,7 @@ import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
-import { collections } from "@/data/products";
-import { useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 type SortOption = "best-selling" | "price-ascending" | "price-descending" | "title-ascending";
 
@@ -33,13 +32,15 @@ const CollectionTemplate = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showSortMenu, setShowSortMenu] = useState(false);
 
-  const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
-  const collection = handle === "all" ? null : collections.find((c) => c.slug === handle);
-  const isAllProducts = handle === "all" || !handle;
-  const title = isAllProducts ? "All Products" : (collection?.title || "All Products");
+  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
 
-  // Map collection to a Shopify search query
-  const shopifyQuery = !isAllProducts && collection ? `product_type:${collection.title}` : undefined;
+  const sort = (searchParams.get("sort_by") as SortOption) || "best-selling";
+  const isAllProducts = handle === "all" || !handle;
+  const collection = !isAllProducts ? (shopifyCollections || []).find((c) => c.node.handle === handle) : null;
+  const title = isAllProducts ? "All Products" : (collection?.node.title || handle || "All Products");
+
+  // Use collection title as search query for filtering
+  const shopifyQuery = collection ? `product_type:${collection.node.title}` : undefined;
   const { sortKey, reverse } = SORT_MAP[sort];
 
   const { data, isLoading } = useShopifyProducts({
@@ -128,24 +129,30 @@ const CollectionTemplate = () => {
         )}
       </div>
 
-      {/* Collection links */}
+      {/* Collection links — from Shopify */}
       <section className="border-t border-border">
         <div className="px-4 lg:px-8 py-4 border-b border-border">
           <h3 className="font-display text-xs tracking-[0.15em] text-muted-foreground">ALL CATEGORIES</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4">
-          {collections.map((c) => (
-            <Link
-              key={c.id}
-              to={`/collections/${c.slug}`}
-              className={`px-4 py-3 border-r border-b border-border font-display text-[10px] tracking-widest transition-colors ${
-                handle === c.slug ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {c.title.toUpperCase()}
-            </Link>
-          ))}
-        </div>
+        {collectionsLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4">
+            {(shopifyCollections || []).map((c) => (
+              <Link
+                key={c.node.id}
+                to={`/collections/${c.node.handle}`}
+                className={`px-4 py-3 border-r border-b border-border font-display text-[10px] tracking-widest transition-colors ${
+                  handle === c.node.handle ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.node.title.toUpperCase()}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <SiteFooter />

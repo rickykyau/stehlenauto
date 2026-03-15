@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { storefrontApiRequest, PRODUCTS_QUERY, PRODUCT_BY_HANDLE_QUERY, type ShopifyProduct } from '@/lib/shopify';
+import { storefrontApiRequest, PRODUCTS_QUERY, PRODUCT_BY_HANDLE_QUERY, COLLECTIONS_QUERY, type ShopifyProduct, type ShopifyCollection } from '@/lib/shopify';
 
 type SortKey = 'BEST_SELLING' | 'PRICE' | 'TITLE' | 'CREATED_AT';
 
@@ -41,6 +41,17 @@ export function useShopifyProduct(handle: string) {
       return data?.data?.productByHandle || null;
     },
     enabled: !!handle,
+    staleTime: 60_000,
+  });
+}
+
+export function useShopifyCollections(first = 20) {
+  return useQuery({
+    queryKey: ['shopify-collections', first],
+    queryFn: async () => {
+      const data = await storefrontApiRequest(COLLECTIONS_QUERY, { first });
+      return (data?.data?.collections?.edges || []) as ShopifyCollection[];
+    },
     staleTime: 60_000,
   });
 }
