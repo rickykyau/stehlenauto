@@ -1,28 +1,38 @@
 /**
  * SHOPIFY TEMPLATE: templates/product.liquid
- * 
- * Liquid mapping:
- * - Title: {{ product.title }}
- * - Price: {{ product.price | money }}
- * - Images: {% for image in product.images %}
- * - Variants: {% for variant in product.variants %}
- * - Description: {{ product.description }}
- * - Add to cart: <form action="/cart/add" method="post">
- * - Related: {% for product in collection.products limit: 4 %}
  */
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield } from "lucide-react";
+import { ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import ProductCard from "@/components/ProductCard";
-import { getProductBySlug, products } from "@/data/products";
+import { useShopifyProduct, useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useCartStore } from "@/stores/cartStore";
 
 const ProductTemplate = () => {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProductBySlug(slug || "");
+  const { data: product, isLoading: productLoading } = useShopifyProduct(slug || "");
+  const { addItem, isLoading: cartLoading } = useCartStore();
   const [selectedImage, setSelectedImage] = useState(0);
   const [qty, setQty] = useState(1);
+  const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
+
+  // Fetch related products
+  const { data: relatedData } = useShopifyProducts({ first: 4 });
+  const relatedProducts = (relatedData?.products || []).filter(p => p.node.handle !== slug).slice(0, 4);
+
+  if (productLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+        <SiteFooter />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -37,9 +47,23 @@ const ProductTemplate = () => {
     );
   }
 
-  const related = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  const images = product.images?.edges || [];
+  const variants = product.variants?.edges || [];
+  const selectedVariant = variants[selectedVariantIdx]?.node || variants[0]?.node;
+  const price = parseFloat(selectedVariant?.price?.amount || "0");
+  const compareAt = selectedVariant?.compareAtPrice ? parseFloat(selectedVariant.compareAtPrice.amount) : null;
+
+  const handleAddToCart = async () => {
+    if (!selectedVariant) return;
+    await addItem({
+      product: { node: product },
+      variantId: selectedVariant.id,
+      variantTitle: selectedVariant.title,
+      price: selectedVariant.price,
+      quantity: qty,
+      selectedOptions: selectedVariant.selectedOptions || [],
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -69,15 +93,15 @@ const ProductTemplate = () => {
         <div className="border-b lg:border-b-0 lg:border-r border-border">
           <div className="relative aspect-square bg-card">
             <img
-              src={product.images[selectedImage] || product.image}
-              alt={product.title}
+              src={images[selectedImage]?.node?.url || "/placeholder.svg"}
+              alt={images[selectedImage]?.node?.altText || product.title}
               className="w-full h-full object-cover"
             />
           </div>
 
-          {product.images.length > 1 && (
+          {images.length > 1 && (
             <div className="flex gap-2 p-4 border-t border-border overflow-x-auto">
-              {product.images.map((img, i) => (
+              {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
@@ -85,7 +109,7 @@ const ProductTemplate = () => {
                     selectedImage === i ? "border-primary" : "border-border opacity-60 hover:opacity-100"
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={img.node.url} alt="" className="w-full h-full object-cover" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -101,13 +125,52 @@ const ProductTemplate = () => {
 
           {/* Price */}
           <div className="flex items-baseline gap-3 mb-6 pb-6 border-b border-border">
-            <span className="font-display text-3xl font-bold text-primary">${product.price.toFixed(2)}</span>
-            {product.compareAt && (
+            <span className="font-display text-3xl font-bold text-primary">${price.toFixed(2)}</span>
+            {compareAt && compareAt > price && (
               <span className="font-display text-sm text-muted-foreground line-through">
-                ${product.compareAt.toFixed(2)}
+                ${compareAt.toFixed(2)}
               </span>
             )}
           </div>
+
+          {/* Variant selector */}
+          {variants.length > 1 && product.options?.some((o: { name: string }) => o.name !== "Title") && (
+            <div className="mb-6">
+              {product.options
+                .filter((o: { name: string }) => o.name !== "Title")
+                .map((option: { name: string; values: string[] }) => (
+                  <div key={option.name} className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1 h-5 bg-primary" />
+                      <h3 className="font-display text-xs tracking-[0.15em] text-muted-foreground">{option.name.toUpperCase()}</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {option.values.map((value: string) => {
+                        const variantIdx = variants.findIndex(v =>
+                          v.node.selectedOptions.some(so => so.name === option.name && so.value === value)
+                        );
+                        const isSelected = selectedVariant?.selectedOptions.some(
+                          so => so.name === option.name && so.value === value
+                        );
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => variantIdx >= 0 && setSelectedVariantIdx(variantIdx)}
+                            className={`px-4 py-2 border font-display text-xs tracking-wider transition-colors ${
+                              isSelected
+                                ? "border-primary bg-primary/10 text-primary"
+                                : "border-border text-muted-foreground hover:border-primary/40"
+                            }`}
+                          >
+                            {value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
 
           {/* Quantity + Add to cart */}
           <div className="flex gap-3 mb-6">
@@ -129,11 +192,20 @@ const ProductTemplate = () => {
               </button>
             </div>
             <button
-              type="submit"
-              className="flex-1 h-12 bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all flex items-center justify-center gap-2"
+              onClick={handleAddToCart}
+              disabled={cartLoading || !selectedVariant?.availableForSale}
+              className="flex-1 h-12 bg-primary text-primary-foreground font-display text-sm font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <ShoppingCart className="w-4 h-4" />
-              ADD TO CART
+              {cartLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : !selectedVariant?.availableForSale ? (
+                "SOLD OUT"
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4" />
+                  ADD TO CART
+                </>
+              )}
             </button>
           </div>
 
@@ -155,57 +227,29 @@ const ProductTemplate = () => {
           </div>
 
           {/* Product Overview */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-5 bg-primary" />
-              <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">PRODUCT OVERVIEW</h2>
+          {product.description && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-1 h-5 bg-primary" />
+                <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">PRODUCT OVERVIEW</h2>
+              </div>
+              <p className="font-body text-sm text-muted-foreground leading-relaxed">
+                {product.description}
+              </p>
             </div>
-            <p className="font-body text-sm text-muted-foreground leading-relaxed">
-              {product.description}
-            </p>
-          </div>
-
-          {/* Features */}
-          {product.features && product.features.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-5 bg-primary" />
-              <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">SPECIFICATIONS</h2>
-            </div>
-            <div className="border border-border">
-              {Object.entries(product.specs).map(([key, value], i) => (
-                <div key={key} className={`flex ${i > 0 ? "border-t border-border" : ""}`}>
-                  <div className="w-40 shrink-0 px-4 py-3 bg-card font-display text-[10px] tracking-widest text-muted-foreground border-r border-border">
-                    {key.toUpperCase()}
-                  </div>
-                  <div className="flex-1 px-4 py-3 font-body text-sm text-foreground/80">
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
           )}
         </div>
       </div>
 
       {/* Related Products */}
-      {related.length > 0 && (
+      {relatedProducts.length > 0 && (
         <section className="border-t border-border">
           <div className="px-4 lg:px-8 py-6 border-b border-border">
             <h2 className="font-display text-sm tracking-[0.15em] text-muted-foreground">YOU MAY ALSO LIKE</h2>
           </div>
           <div className="p-4 lg:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-            {related.map((p) => (
-              <ProductCard
-                key={p.id}
-                id={p.id}
-                image={p.image}
-                title={p.title}
-                price={`$${p.price.toFixed(2)}`}
-                slug={p.slug}
-                inStock={p.inStock}
-              />
+            {relatedProducts.map((p) => (
+              <ProductCard key={p.node.id} product={p} />
             ))}
           </div>
         </section>

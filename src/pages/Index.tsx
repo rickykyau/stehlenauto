@@ -3,15 +3,17 @@
  * SECTIONS: hero, category-grid, featured-products, trust-badges
  */
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
-import { products, collections } from "@/data/products";
+import { collections } from "@/data/products";
+import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 
 const IndexTemplate = () => {
-  const featuredProducts = products.slice(0, 8);
+  const { data, isLoading } = useShopifyProducts({ first: 8 });
+  const featuredProducts = data?.products || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,18 +55,19 @@ const IndexTemplate = () => {
           </Link>
         </div>
         <div className="p-4 lg:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-          {featuredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              image={product.image}
-              title={product.title}
-              price={`$${product.price.toFixed(2)}`}
-              slug={product.slug}
-              compareAt={product.compareAt ? `$${product.compareAt.toFixed(2)}` : undefined}
-              inStock={product.inStock}
-            />
-          ))}
+          {isLoading ? (
+            <div className="col-span-full flex items-center justify-center py-20">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="col-span-full text-center py-20">
+              <p className="font-display text-xs tracking-widest text-muted-foreground">NO PRODUCTS FOUND</p>
+            </div>
+          ) : (
+            featuredProducts.map((product) => (
+              <ProductCard key={product.node.id} product={product} />
+            ))
+          )}
         </div>
       </section>
 

@@ -3,21 +3,19 @@
  */
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, Filter, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
-import { collections, products } from "@/data/products";
+import { collections } from "@/data/products";
 import VehicleBar from "./VehicleBar";
-import { useCart } from "@/contexts/CartContext";
-
-// Extract unique makes from products
-const uniqueMakes = [...new Set(products.map(p => p.make))].sort();
+import { useCartStore } from "@/stores/cartStore";
 
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [subMenu, setSubMenu] = useState<null | "category" | "make">(null);
+  const [subMenu, setSubMenu] = useState<null | "category">(null);
   const location = useLocation();
-  const { toggleCart, itemCount } = useCart();
+  const toggleCart = useCartStore((s) => s.toggleCart);
+  const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
 
   // Close menu on route change
   useEffect(() => {
@@ -129,18 +127,16 @@ const SiteHeader = () => {
           </button>
         </div>
 
-        {/* Content area with sub-menu sliding */}
+        {/* Content area */}
         <div className="flex-1 overflow-hidden relative">
           {/* Main menu */}
           <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu ? "-translate-x-full" : "translate-x-0"}`}>
-            {/* Top links */}
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="#" />
               <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="#" />
             </div>
 
-            {/* Shop navigation */}
             <div className="border-b border-border">
               <button
                 onClick={() => setSubMenu("category")}
@@ -152,19 +148,8 @@ const SiteHeader = () => {
                 </span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
-              <button
-                onClick={() => setSubMenu("make")}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors group"
-              >
-                <span className="flex items-center gap-3">
-                  <Filter className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  <span className="font-body text-sm text-foreground">Shop by Make</span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </button>
             </div>
 
-            {/* Quick links */}
             <div className="px-5 py-4">
               <Link
                 to="/collections/all"
@@ -195,32 +180,6 @@ const SiteHeader = () => {
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.title}</span>
                 <span className="font-display text-[10px] text-muted-foreground">{c.count}</span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Sub-menu: Make */}
-          <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu === "make" ? "translate-x-0" : "translate-x-full"}`}>
-            <button
-              onClick={() => setSubMenu(null)}
-              className="w-full flex items-center gap-2 px-5 py-4 border-b border-border hover:bg-accent/50 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 text-primary" />
-              <span className="font-display text-xs tracking-widest text-primary">BACK</span>
-            </button>
-            <div className="px-5 pt-4 pb-2">
-              <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY MAKE</span>
-            </div>
-            {uniqueMakes.map((make) => (
-              <Link
-                key={make}
-                to={`/collections/all?make=${encodeURIComponent(make)}`}
-                className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
-              >
-                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{make}</span>
-                <span className="font-display text-[10px] text-muted-foreground">
-                  {products.filter(p => p.make === make).length}
-                </span>
               </Link>
             ))}
           </div>
