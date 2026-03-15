@@ -13,39 +13,54 @@ import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
 
 const TOP_CATEGORIES = [
-  { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", count: 190 },
-  { handle: "trailer-hitches", title: "Trailer Hitches", count: 288 },
-  { handle: "tonneau-covers", title: "Tonneau Covers", count: 287 },
-  { handle: "headlights", title: "Headlights", count: 161 },
+  {
+    handle: "bull-guards-grille-guards",
+    title: "Bull Guards & Grille Guards",
+    fallbackCount: 190,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061",
+  },
+  {
+    handle: "trailer-hitches",
+    title: "Trailer Hitches",
+    fallbackCount: 288,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068",
+  },
+  {
+    handle: "tonneau-covers",
+    title: "Tonneau Covers",
+    fallbackCount: 287,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065",
+  },
+  {
+    handle: "headlights",
+    title: "Headlights",
+    fallbackCount: 161,
+    image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075",
+  },
 ];
 
-const COLLECTION_IMAGE_QUERY = `
-  query GetCollectionImage($handle: String!) {
+const COLLECTION_COUNT_QUERY = `
+  query GetCollectionCount($handle: String!) {
     collectionByHandle(handle: $handle) {
-      image { url }
-      products(first: 1) {
-        edges { node { featuredImage { url } } }
+      products(first: 250) {
+        edges { node { id } }
       }
     }
   }
 `;
 
-function useCategoryImages() {
+function useCategoryCounts() {
   return useQuery({
-    queryKey: ["category-images"],
+    queryKey: ["category-counts"],
     queryFn: async () => {
-      const results: Record<string, string> = {};
+      const results: Record<string, number> = {};
       await Promise.all(
         TOP_CATEGORIES.map(async (cat) => {
           try {
-            const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
-            const col = data?.data?.collectionByHandle;
-            results[cat.handle] =
-              col?.image?.url ||
-              col?.products?.edges?.[0]?.node?.featuredImage?.url ||
-              "";
+            const data = await storefrontApiRequest(COLLECTION_COUNT_QUERY, { handle: cat.handle });
+            results[cat.handle] = data?.data?.collectionByHandle?.products?.edges?.length || cat.fallbackCount;
           } catch {
-            results[cat.handle] = "";
+            results[cat.handle] = cat.fallbackCount;
           }
         })
       );
