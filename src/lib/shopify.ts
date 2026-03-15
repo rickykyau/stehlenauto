@@ -63,6 +63,26 @@ export interface ShopifyProduct {
   };
 }
 
+// ── Universal Product Detection ────────────────────────
+
+const KNOWN_MAKES_LC = [
+  "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
+  "jeep", "nissan", "ram", "toyota", "volkswagen",
+];
+
+function parseYearRangeFromTitle(title: string): boolean {
+  return /(\d{4})\s*[-–]\s*(\d{4})/.test(title) || /(\d{4})\+/.test(title) || /^(\d{4})\s/.test(title);
+}
+
+export function isUniversalProduct(product: ShopifyProduct): boolean {
+  const title = product.node.title.toLowerCase();
+  if (title.includes("universal")) return true;
+  const hasYear = parseYearRangeFromTitle(product.node.title);
+  const hasMake = KNOWN_MAKES_LC.some((m) => title.includes(m));
+  if (!hasYear && !hasMake) return true;
+  return false;
+}
+
 // ── API Helper ─────────────────────────────────────────
 
 export async function storefrontApiRequest(query: string, variables: Record<string, unknown> = {}) {
