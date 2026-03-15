@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 
-const CATEGORY_HANDLES = [
-  "bull-guards-grille-guards",
-  "tonneau-covers",
-  "trailer-hitches",
-  "front-grilles",
-  "headlights",
-  "truck-bed-mats",
-  "floor-mats",
-  "running-boards-side-steps",
-  "roof-racks-baskets",
-  "chase-racks-sport-bars",
-  "molle-panels",
-  "under-seat-storage",
+const CATEGORIES = [
+  { handle: "bull-guards-grille-guards", label: "Bull Guards & Grille Guards" },
+  { handle: "tonneau-covers", label: "Tonneau Covers" },
+  { handle: "trailer-hitches", label: "Trailer Hitches" },
+  { handle: "front-grilles", label: "Front Grilles" },
+  { handle: "headlights", label: "Headlights" },
+  { handle: "truck-bed-mats", label: "Truck Bed Mats" },
+  { handle: "floor-mats", label: "Floor Mats" },
+  { handle: "running-boards-side-steps", label: "Running Boards & Side Steps" },
+  { handle: "roof-racks-baskets", label: "Roof Racks & Baskets" },
+  { handle: "chase-racks-sport-bars", label: "Chase Racks & Sport Bars" },
+  { handle: "molle-panels", label: "MOLLE Panels" },
+  { handle: "under-seat-storage", label: "Under Seat Storage" },
 ];
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
@@ -79,7 +79,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
     onFilterChange({ year: null, make: null, model: null, category: null });
   };
 
-  const categoryCollections = collections.filter((c) => CATEGORY_HANDLES.includes(c.node.handle));
+  // Categories are hardcoded, no dependency on collections prop
 
   const currentModels = filters.make ? (MODELS_BY_MAKE[filters.make] || []) : [];
 
@@ -88,8 +88,8 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
     if (section === "make") return filters.make;
     if (section === "model") return filters.model;
     if (section === "category") {
-      const cat = collections.find((c) => c.node.handle === filters.category);
-      return cat ? cat.node.title : filters.category;
+      const cat = CATEGORIES.find((c) => c.handle === filters.category);
+      return cat ? cat.label : filters.category;
     }
     return null;
   };
@@ -241,13 +241,13 @@ const RefineSidebar = ({ filters, onFilterChange, collections }: RefineSidebarPr
             <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
               ALL CATEGORIES
             </FilterButton>
-            {categoryCollections.map((c) => (
+            {CATEGORIES.map((cat) => (
               <FilterButton
-                key={c.node.id}
-                active={filters.category === c.node.handle}
-                onClick={() => update({ category: filters.category === c.node.handle ? null : c.node.handle })}
+                key={cat.handle}
+                active={filters.category === cat.handle}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
               >
-                {c.node.title.toUpperCase()}
+                {cat.label.toUpperCase()}
               </FilterButton>
             ))}
           </div>
