@@ -244,19 +244,15 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
             <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
               ALL CATEGORIES
             </FilterButton>
-            {CATEGORIES.map((cat) => {
-              if (hasOptions && !availableOptions.categories.has(cat.handle)) return null;
-              return (
-                <FilterButton
-                  key={cat.handle}
-                  active={filters.category === cat.handle}
-                  onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
-                  count={hasOptions ? availableOptions.categories.get(cat.handle) : undefined}
-                >
-                  {cat.label.toUpperCase()}
-                </FilterButton>
-              );
-            })}
+            {CATEGORIES.map((cat) => (
+              <FilterButton
+                key={cat.handle}
+                active={filters.category === cat.handle}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
+              >
+                {cat.label.toUpperCase()}
+              </FilterButton>
+            ))}
           </div>
         )}
       </div>
