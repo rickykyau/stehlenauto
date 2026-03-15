@@ -3,15 +3,16 @@
  */
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2 } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
-import { collections } from "@/data/products";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 const SiteHeader = () => {
+  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
@@ -190,14 +191,17 @@ const SiteHeader = () => {
             <div className="px-5 pt-4 pb-2">
               <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY CATEGORY</span>
             </div>
-            {collections.map((c) => (
+            {collectionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : (shopifyCollections || []).map((c) => (
               <Link
-                key={c.id}
-                to={`/collections/${c.slug}`}
+                key={c.node.id}
+                to={`/collections/${c.node.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
-                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.title}</span>
-                <span className="font-display text-[10px] text-muted-foreground">{c.count}</span>
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.node.title}</span>
               </Link>
             ))}
           </div>
