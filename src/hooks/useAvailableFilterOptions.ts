@@ -35,7 +35,7 @@ const CATEGORIES = [
 
 const MAKES = [
   "Chevy", "Chrysler", "Dodge", "Ford", "GMC", "Honda",
-  "Jeep", "Nissan", "Ram", "Toyota", "Universal", "Volkswagen",
+  "Jeep", "Nissan", "Ram", "Toyota", "Volkswagen", "Universal",
 ];
 
 const MODELS_BY_MAKE: Record<string, string[]> = {
