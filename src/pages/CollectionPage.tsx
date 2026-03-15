@@ -239,11 +239,15 @@ const CollectionTemplate = () => {
     (filters.model ? 1 : 0) +
     (filters.category ? 1 : 0);
 
+  // Compute available filter options from loaded products
+  const availableOptions = useAvailableFilterOptions(rawDisplayProducts, filters);
+
   const sidebarContent = (
     <RefineSidebar
       filters={filters}
       onFilterChange={handleFilterChange}
       collections={shopifyCollections || []}
+      availableOptions={availableOptions}
     />
   );
 
