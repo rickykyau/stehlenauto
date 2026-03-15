@@ -33,29 +33,20 @@ const SORT_MAP: Record<SortOption, { sortKey: 'BEST_SELLING' | 'PRICE' | 'TITLE'
 
 const ITEMS_PER_PAGE = 48;
 
-/** Build a Shopify query string from the active filters + vehicle */
+/** Build a Shopify query string from the active filters */
 function buildShopifyQuery(
   filters: RefineFilters,
-  vehicle: { year: string; make: string; model: string } | null,
   collectionTitle: string | null
 ): string | undefined {
   const parts: string[] = [];
 
-  // Category filter via collection title (product_type)
   if (collectionTitle) {
     parts.push(`product_type:${collectionTitle}`);
   }
 
-  // Vehicle context or manual year/make/model filters
-  const year = filters.year || vehicle?.year || null;
-  const make = filters.make || vehicle?.make || null;
-  const model = filters.model || vehicle?.model || null;
-
-  // Build title search terms for vehicle fitment
-  // Products have titles like "2019-2023 Ford Ranger Tonneau Cover"
-  if (make) parts.push(`title:*${make}*`);
-  if (model) parts.push(`title:*${model}*`);
-  if (year) parts.push(`title:*${year}*`);
+  if (filters.make) parts.push(`title:*${filters.make}*`);
+  if (filters.model) parts.push(`title:*${filters.model}*`);
+  if (filters.year) parts.push(`title:*${filters.year}*`);
 
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
