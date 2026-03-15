@@ -456,7 +456,7 @@ const ProductTemplate = () => {
           </div>
 
           {/* ── Tabbed Content (inside right column) ── */}
-          <div className="border-t border-border pt-3 flex flex-col min-h-0">
+          <div className="border-t border-border pt-3">
             {/* Tab bar */}
             <div className="flex border-b border-border overflow-x-auto shrink-0">
               {tabs.map((tab) => (
