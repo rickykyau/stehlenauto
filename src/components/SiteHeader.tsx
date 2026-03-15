@@ -12,6 +12,7 @@ import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyCollections } from "@/hooks/useShopifyProducts";
 
 const SiteHeader = () => {
+  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
