@@ -269,16 +269,7 @@ const IndexTemplate = () => {
         </HorizontalCarousel>
       </section>
 
-      {/* Featured Products Carousel */}
-      <section className="border-b border-border">
-        <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
-          <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
-          <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
-            SHOP ALL <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-        <FeaturedProductsCarousel />
-      </section>
+      <FeaturedProductsSection />
 
       {/* Trust Badges */}
       <section className="border-t border-border grid grid-cols-2 md:grid-cols-4">
