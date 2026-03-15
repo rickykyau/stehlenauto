@@ -195,13 +195,12 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
               ALL MAKES
             </FilterButton>
             {MAKES.map((m) => {
-              if (hasOptions && !availableOptions.makes.has(m)) return null;
+              const hasCount = hasOptions && availableOptions.makes.has(m);
               return (
                 <FilterButton
                   key={m}
                   active={filters.make === m}
                   onClick={() => update({ make: filters.make === m ? null : m, model: null })}
-                  count={hasOptions ? availableOptions.makes.get(m) : undefined}
                 >
                   {m.toUpperCase()}
                 </FilterButton>
