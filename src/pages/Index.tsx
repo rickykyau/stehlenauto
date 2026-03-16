@@ -12,6 +12,8 @@ import SiteFooter from "@/components/SiteFooter";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { useVehicle } from "@/contexts/VehicleContext";
+import { isUniversalProduct } from "@/lib/shopify";
 
 /* ─── All 12 Categories ─── */
 
@@ -35,27 +37,66 @@ const COLLECTION_IMAGE_QUERY = `
     collectionByHandle(handle: $handle) {
       image { url }
       products(first: 250) {
-        edges { node { id featuredImage { url } } }
+        edges { node { id title productType featuredImage { url } } }
       }
     }
   }
 `;
 
+/** Parse year range from a product title. Returns [startYear, endYear] or null. */
+function parseYearRange(title: string): [number, number] | null {
+  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
+  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
+  const plusMatch = title.match(/(\d{4})\+/);
+  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
+  const singleMatch = title.match(/^(\d{4})\s/);
+  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
+  return null;
+}
+
+interface CategoryProductNode {
+  id: string;
+  title: string;
+  productType: string;
+  featuredImage: { url: string } | null;
+}
+
+function countVehicleMatches(
+  products: CategoryProductNode[],
+  vehicle: { year: string; make: string; model: string }
+): number {
+  return products.filter((p) => {
+    const title = p.title.toLowerCase();
+    // Universal products always count
+    if (title.includes("universal")) return true;
+    // Check make
+    if (!title.includes(vehicle.make.toLowerCase())) return false;
+    // Check model
+    if (!title.includes(vehicle.model.toLowerCase())) return false;
+    // Check year
+    const y = parseInt(vehicle.year);
+    const range = parseYearRange(p.title);
+    if (!range) return false;
+    return y >= range[0] && y <= range[1];
+  }).length;
+}
+
 function useCategoryData() {
   return useQuery({
     queryKey: ["category-data-all"],
     queryFn: async () => {
-      const results: Record<string, { count: number; image: string }> = {};
+      const results: Record<string, { count: number; image: string; products: CategoryProductNode[] }> = {};
       await Promise.all(
         ALL_CATEGORIES.map(async (cat) => {
           try {
             const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
             const col = data?.data?.collectionByHandle;
-            const count = col?.products?.edges?.length || cat.fallbackCount;
+            const products = (col?.products?.edges || []).map((e: any) => e.node) as CategoryProductNode[];
+            const count = products.length || cat.fallbackCount;
             const apiImage = col?.image?.url || null;
-            results[cat.handle] = { count, image: apiImage || cat.image || "" };
+            results[cat.handle] = { count, image: apiImage || cat.image || "", products };
           } catch {
-            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "" };
+            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "", products: [] };
           }
         })
       );
@@ -195,9 +236,15 @@ function FeaturedProductsSection() {
 
 /* ─── Category Card ─── */
 
-function CategoryCard({ handle, title, count, image }: { handle: string; title: string; count: number; image: string }) {
+function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel }: { handle: string; title: string; count: number; image: string; vehicleCount?: number; vehicleModel?: string }) {
+  const hasVehicle = vehicleCount !== undefined;
+  const dimmed = hasVehicle && vehicleCount === 0;
+
   return (
-    <Link to={`/collections/all?category=${handle}`} className="group relative aspect-[4/3] border border-border overflow-hidden block">
+    <Link
+      to={`/collections/all?category=${handle}`}
+      className={`group relative aspect-[4/3] border border-border overflow-hidden block transition-opacity duration-300 ${dimmed ? "opacity-50" : ""}`}
+    >
       {image ? (
         <img src={image} alt={title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
       ) : (
@@ -206,7 +253,11 @@ function CategoryCard({ handle, title, count, image }: { handle: string; title: 
       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
       <div className="absolute bottom-0 left-0 p-4">
         <span className="font-display text-xs tracking-wider block mb-1">{title.toUpperCase()}</span>
-        <span className="font-body text-xs text-muted-foreground">{count} Products</span>
+        <span className="font-body text-xs text-muted-foreground">
+          {hasVehicle
+            ? `${vehicleCount} Product${vehicleCount !== 1 ? "s" : ""} for your ${vehicleModel}`
+            : `${count} Products`}
+        </span>
       </div>
     </Link>
   );
@@ -216,6 +267,7 @@ function CategoryCard({ handle, title, count, image }: { handle: string; title: 
 
 const IndexTemplate = () => {
   const { data: categoryData } = useCategoryData();
+  const { vehicle } = useVehicle();
 
   return (
     <div className="min-h-screen bg-background">
@@ -233,6 +285,9 @@ const IndexTemplate = () => {
         <HorizontalCarousel loop>
           {ALL_CATEGORIES.map((cat) => {
             const info = categoryData?.[cat.handle];
+            const vehicleCount = vehicle && info?.products
+              ? countVehicleMatches(info.products, vehicle)
+              : undefined;
             return (
               <CategoryCard
                 key={cat.handle}
@@ -240,6 +295,8 @@ const IndexTemplate = () => {
                 title={cat.title}
                 count={info?.count ?? cat.fallbackCount}
                 image={info?.image || cat.image || ""}
+                vehicleCount={vehicleCount}
+                vehicleModel={vehicle?.model}
               />
             );
           })}
