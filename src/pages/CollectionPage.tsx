@@ -474,35 +474,19 @@ const CollectionTemplate = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
+          ) : vehicleProducts.length === 0 && (filters.year || filters.make || filters.model) && filters.make !== "Universal" ? (
+            <EmptyVehicleState
+              filters={filters}
+              activeCategoryLabel={activeCategoryLabel}
+              universalProducts={universalProducts}
+              onFilterChange={handleFilterChange}
+            />
           ) : displayProducts.length === 0 ? (
             <div className="text-center py-20">
-              <p className="font-display text-sm tracking-widest text-muted-foreground mb-4">
-                {activeCategoryLabel && (filters.year || filters.make || filters.model)
-                  ? `NO ${activeCategoryLabel.toUpperCase()} FOUND FOR YOUR ${[filters.year, filters.make, filters.model].filter(Boolean).join(" ").toUpperCase()}.`
-                  : "NO PRODUCTS FOUND"}
-              </p>
-              <div className="flex flex-col items-center gap-3">
-                {activeCategoryLabel && (filters.year || filters.make || filters.model) ? (
-                  <>
-                    <button
-                      onClick={() => handleFilterChange({ ...filters, year: null, make: null, model: null })}
-                      className="font-display text-xs tracking-widest text-primary hover:brightness-110"
-                    >
-                      VIEW ALL {activeCategoryLabel.toUpperCase()} →
-                    </button>
-                    <button
-                      onClick={() => handleFilterChange({ ...filters, category: null })}
-                      className="font-display text-xs tracking-widest text-primary hover:brightness-110"
-                    >
-                      BROWSE OTHER CATEGORIES FOR YOUR {[filters.year, filters.make, filters.model].filter(Boolean).join(" ").toUpperCase()} →
-                    </button>
-                  </>
-                ) : (
-                  <Link to="/collections/all" className="font-display text-xs tracking-widest text-primary hover:brightness-110">
-                    ← VIEW ALL PRODUCTS
-                  </Link>
-                )}
-              </div>
+              <p className="font-display text-sm tracking-widest text-muted-foreground mb-4">NO PRODUCTS FOUND</p>
+              <Link to="/collections/all" className="font-display text-xs tracking-widest text-primary hover:brightness-110">
+                ← VIEW ALL PRODUCTS
+              </Link>
             </div>
           ) : (
             <>
