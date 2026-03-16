@@ -66,6 +66,7 @@ const SiteHeader = () => {
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const { vehicle, vehicleLabel } = useVehicle();
+  const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
 
   // Search state
