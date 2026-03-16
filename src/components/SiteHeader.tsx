@@ -3,21 +3,63 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
-import { useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
 
+/* Hardcoded category list — sorted by product count descending */
+const MENU_CATEGORIES = [
+  { label: "Bull Guards & Grille Guards", handle: "bull-guards-grille-guards" },
+  { label: "Tonneau Covers", handle: "tonneau-covers" },
+  { label: "Trailer Hitches", handle: "trailer-hitches" },
+  { label: "Front Grilles", handle: "front-grilles" },
+  { label: "Headlights", handle: "headlights" },
+  { label: "Truck Bed Mats", handle: "truck-bed-mats" },
+  { label: "Floor Mats", handle: "floor-mats" },
+  { label: "Running Boards & Side Steps", handle: "running-boards-side-steps" },
+  { label: "Roof Racks & Baskets", handle: "roof-racks-baskets" },
+  { label: "Chase Racks & Sport Bars", handle: "chase-racks-sport-bars" },
+  { label: "MOLLE Panels", handle: "molle-panels" },
+  { label: "Under Seat Storage", handle: "under-seat-storage" },
+];
+
+/* Hardcoded vehicle makes — sorted alphabetically */
+const MENU_VEHICLES = [
+  { label: "Acura", handle: "acura-parts" },
+  { label: "Audi", handle: "audi-parts" },
+  { label: "Buick", handle: "buick-parts" },
+  { label: "Chevy", handle: "chevy-parts" },
+  { label: "Chrysler", handle: "chrysler-parts" },
+  { label: "Dodge", handle: "dodge-parts" },
+  { label: "Ford", handle: "ford-parts" },
+  { label: "GMC", handle: "gmc-parts" },
+  { label: "Honda", handle: "honda-parts" },
+  { label: "Hyundai", handle: "hyundai-parts" },
+  { label: "Infiniti", handle: "infiniti-parts" },
+  { label: "Jeep", handle: "jeep-parts" },
+  { label: "Kia", handle: "kia-parts" },
+  { label: "Lexus", handle: "lexus-parts" },
+  { label: "Lincoln", handle: "lincoln-parts" },
+  { label: "Mazda", handle: "mazda-parts" },
+  { label: "Mercedes-Benz", handle: "mercedes-benz-parts" },
+  { label: "Mercury", handle: "mercury-parts" },
+  { label: "Nissan", handle: "nissan-parts" },
+  { label: "Pontiac", handle: "pontiac-parts" },
+  { label: "Saturn", handle: "saturn-parts" },
+  { label: "Subaru", handle: "subaru-parts" },
+  { label: "Toyota", handle: "toyota-parts" },
+  { label: "Volkswagen", handle: "volkswagen-parts" },
+];
+
 const SiteHeader = () => {
-  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
-  const [subMenu, setSubMenu] = useState<null | "category">(null);
+  const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
@@ -321,8 +363,18 @@ const SiteHeader = () => {
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors group"
               >
                 <span className="flex items-center gap-3">
-                  <Grid3X3 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <Wrench className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   <span className="font-body text-sm text-foreground">Shop by Category</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => setSubMenu("vehicle")}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors group"
+              >
+                <span className="flex items-center gap-3">
+                  <Car className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="font-body text-sm text-foreground">Shop by Vehicle</span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
@@ -350,17 +402,36 @@ const SiteHeader = () => {
             <div className="px-5 pt-4 pb-2">
               <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY CATEGORY</span>
             </div>
-            {collectionsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              </div>
-            ) : (shopifyCollections || []).map((c) => (
+            {MENU_CATEGORIES.map((cat) => (
               <Link
-                key={c.node.id}
-                to={`/collections/${c.node.handle}`}
+                key={cat.handle}
+                to={`/collections/${cat.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
-                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.node.title}</span>
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{cat.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Sub-menu: Vehicle */}
+          <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu === "vehicle" ? "translate-x-0" : "translate-x-full"}`}>
+            <button
+              onClick={() => setSubMenu(null)}
+              className="w-full flex items-center gap-2 px-5 py-4 border-b border-border hover:bg-accent/50 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-primary" />
+              <span className="font-display text-xs tracking-widest text-primary">BACK</span>
+            </button>
+            <div className="px-5 pt-4 pb-2">
+              <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY VEHICLE</span>
+            </div>
+            {MENU_VEHICLES.map((v) => (
+              <Link
+                key={v.handle}
+                to={`/collections/${v.handle}`}
+                className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+              >
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{v.label}</span>
               </Link>
             ))}
           </div>
