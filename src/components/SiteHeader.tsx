@@ -82,7 +82,7 @@ const SiteHeader = () => {
     setSubMenu(null);
     setSearchDropdownOpen(false);
     setSearchQuery("");
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   // Prevent body scroll when menu is open
   useEffect(() => {
