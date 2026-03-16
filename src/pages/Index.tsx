@@ -324,6 +324,8 @@ const IndexTemplate = () => {
 
       <FeaturedProductsSection />
 
+      <CustomerReviews />
+
       {/* Trust Badges */}
       <section className="border-t border-border grid grid-cols-2 md:grid-cols-4">
         {[
