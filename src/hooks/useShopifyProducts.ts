@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { storefrontApiRequest, PRODUCTS_QUERY, PRODUCT_BY_HANDLE_QUERY, COLLECTIONS_QUERY, type ShopifyProduct, type ShopifyCollection } from '@/lib/shopify';
+import { storefrontApiRequest, PRODUCTS_QUERY, PRODUCT_BY_HANDLE_QUERY, COLLECTIONS_QUERY, COLLECTION_PRODUCTS_QUERY, type ShopifyProduct, type ShopifyCollection } from '@/lib/shopify';
 
 type SortKey = 'BEST_SELLING' | 'PRICE' | 'TITLE' | 'CREATED_AT';
 
@@ -29,6 +29,44 @@ export function useShopifyProducts(options: UseShopifyProductsOptions = {}) {
         pageInfo: data?.data?.products?.pageInfo as { hasNextPage: boolean; endCursor: string } | undefined,
       };
     },
+    staleTime: 60_000,
+  });
+}
+
+/** Fetch products from a specific collection by handle */
+export function useCollectionProducts(options: {
+  collectionHandle: string | null;
+  first?: number;
+  sortKey?: SortKey;
+  reverse?: boolean;
+}) {
+  const { collectionHandle, first = 48, sortKey = 'BEST_SELLING', reverse = false } = options;
+
+  // Map ProductSortKeys to ProductCollectionSortKeys
+  const collectionSortKey = sortKey === 'BEST_SELLING' ? 'BEST_SELLING'
+    : sortKey === 'PRICE' ? 'PRICE'
+    : sortKey === 'TITLE' ? 'TITLE'
+    : 'BEST_SELLING';
+
+  return useQuery({
+    queryKey: ['shopify-collection-products', collectionHandle, first, collectionSortKey, reverse],
+    queryFn: async () => {
+      const data = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, {
+        handle: collectionHandle,
+        first,
+        after: null,
+        sortKey: collectionSortKey,
+        reverse,
+      });
+      const collection = data?.data?.collectionByHandle;
+      if (!collection) return { products: [] as ShopifyProduct[], pageInfo: undefined, collectionTitle: null };
+      return {
+        products: (collection.products?.edges || []) as ShopifyProduct[],
+        pageInfo: collection.products?.pageInfo as { hasNextPage: boolean; endCursor: string } | undefined,
+        collectionTitle: collection.title as string,
+      };
+    },
+    enabled: !!collectionHandle,
     staleTime: 60_000,
   });
 }
