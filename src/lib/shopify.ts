@@ -66,15 +66,6 @@ export interface ShopifyProduct {
 
 // ── Universal Product Detection ────────────────────────
 
-const KNOWN_MAKES_LC = [
-  "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
-  "jeep", "nissan", "ram", "toyota", "volkswagen",
-];
-
-function parseYearRangeFromTitle(title: string): boolean {
-  return /(\d{4})\s*[-–]\s*(\d{4})/.test(title) || /(\d{4})\+/.test(title) || /^(\d{4})\s/.test(title);
-}
-
 export function isUniversalProduct(product: ShopifyProduct): boolean {
   const tags = product.node.tags || [];
   return tags.some(tag => tag.toLowerCase() === 'universal fit');
