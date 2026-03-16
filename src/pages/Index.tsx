@@ -124,7 +124,7 @@ const FEATURED_HANDLES = [
 ];
 
 const PRODUCT_FRAGMENT = `
-  id title handle productType
+  id title handle productType tags
   featuredImage { url altText }
   priceRange { minVariantPrice { amount currencyCode } }
   variants(first: 1) {
