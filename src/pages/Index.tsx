@@ -65,109 +65,87 @@ function useCategoryData() {
   });
 }
 
-/* ─── Featured Products — minimal query + client-side diversification ─── */
+/* ─── Featured Products — fetch specific handles for category diversity ─── */
 
-const FEATURED_PRODUCTS_QUERY = `
-  query GetFeaturedProducts {
-    products(first: 50) {
-      edges {
-        node {
-          id
-          title
-          handle
-          productType
-          featuredImage {
-            url
-            altText
-          }
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          variants(first: 1) {
-            edges {
-              node {
-                id
-                title
-                price {
-                  amount
-                  currencyCode
-                }
-                compareAtPrice {
-                  amount
-                  currencyCode
-                }
-                availableForSale
-                selectedOptions {
-                  name
-                  value
-                }
-              }
-            }
-          }
-        }
+const FEATURED_HANDLES = [
+  "2020-2023-tesla-model-y-rear-bumper-guard-black",
+  "2022-2025-toyota-tundra-5-5-bed-tonneau-cover-led-light-kit",
+  "2005-2015-nissan-xterra-class-3-trailer-hitch-ball-mount-kit",
+  "2005-2009-ford-mustang-gt-honeycomb-mesh-front-grille-black",
+  "2014-2021-toyota-tundra-projector-headlights-sequential-led-chrome",
+  "2022-2026-toyota-tundra-5-5ft-bed-rubber-mat-lightweight-v2",
+  "rubber-truck-bed-mat-for-dakota-raider-6-5-bed-grey",
+  "2022-toyota-tundra-double-cab-rock-sliders-side-steps-texture-black",
+  "2014-2021-toyota-tundra-crew-cab-low-profile-roof-basket-system",
+  "stehlen-razor-1000-universal-chase-rack-w-led-lights-matte-black",
+  "2023-chevy-colorado-5ft-bed-molle-panels-3pc-set",
+  "2014-2019-silverado-sierra-rear-underseat-storage-organizer-box",
+];
+
+const PRODUCT_FRAGMENT = `
+  id title handle productType
+  featuredImage { url altText }
+  priceRange { minVariantPrice { amount currencyCode } }
+  variants(first: 1) {
+    edges {
+      node {
+        id title
+        price { amount currencyCode }
+        compareAtPrice { amount currencyCode }
+        availableForSale
+        selectedOptions { name value }
       }
     }
   }
 `;
 
-function normalizeFeaturedProducts(data: any): ShopifyProduct[] {
-  const edges = data?.data?.products?.edges || [];
+const FEATURED_PRODUCTS_QUERY = `
+  query GetFeaturedByHandle {
+    ${FEATURED_HANDLES.map((h, i) => `p${i + 1}: productByHandle(handle: "${h}") { ${PRODUCT_FRAGMENT} }`).join("\n    ")}
+  }
+`;
 
-  return edges.map((edge: any) => {
-    const node = edge.node;
-    const firstVariant = node.variants?.edges?.[0]?.node;
-
-    return {
-      node: {
-        id: node.id,
-        title: node.title,
-        description: "",
-        handle: node.handle,
-        productType: node.productType || "",
-        priceRange: node.priceRange,
-        compareAtPriceRange: firstVariant?.compareAtPrice
-          ? { minVariantPrice: firstVariant.compareAtPrice }
-          : undefined,
-        images: {
-          edges: node.featuredImage
-            ? [{ node: { url: node.featuredImage.url, altText: node.featuredImage.altText ?? null } }]
-            : [],
-        },
-        variants: {
-          edges: node.variants?.edges || [],
-        },
-        options: [],
+function normalizeFeaturedNode(node: any): ShopifyProduct {
+  const firstVariant = node.variants?.edges?.[0]?.node;
+  return {
+    node: {
+      id: node.id,
+      title: node.title,
+      description: "",
+      handle: node.handle,
+      productType: node.productType || "",
+      priceRange: node.priceRange,
+      compareAtPriceRange: firstVariant?.compareAtPrice
+        ? { minVariantPrice: firstVariant.compareAtPrice }
+        : undefined,
+      images: {
+        edges: node.featuredImage
+          ? [{ node: { url: node.featuredImage.url, altText: node.featuredImage.altText ?? null } }]
+          : [],
       },
-    };
-  });
+      variants: { edges: node.variants?.edges || [] },
+      options: [],
+    },
+  };
 }
 
 function useFeaturedProducts() {
   return useQuery({
-    queryKey: ["featured-products-minimal"],
+    queryKey: ["featured-products-by-handle"],
     queryFn: async () => {
       try {
         const response = await storefrontApiRequest(FEATURED_PRODUCTS_QUERY);
         console.log("Featured products API response:", response);
+        const data = response?.data;
+        if (!data) return [];
 
-        const products = normalizeFeaturedProducts(response);
-
-        if (!products.length) {
-          console.error("No products returned from Storefront API", response);
-          return [];
+        const products: ShopifyProduct[] = [];
+        for (let i = 1; i <= FEATURED_HANDLES.length; i++) {
+          const node = data[`p${i}`];
+          if (node) products.push(normalizeFeaturedNode(node));
         }
-
-        const typeCounts: Record<string, number> = {};
-        const diverse = products.filter((product) => {
-          const type = product.node.productType?.trim().toLowerCase() || "other";
-          typeCounts[type] = (typeCounts[type] || 0) + 1;
-          return typeCounts[type] <= 2;
-        });
-
-        return (diverse.length >= 8 ? diverse : products).slice(0, 12);
+        console.log("Featured products count:", products.length);
+        return products;
       } catch (error) {
         console.error("Featured products fetch failed:", error);
         return [];
