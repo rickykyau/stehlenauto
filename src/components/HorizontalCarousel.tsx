@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, type ReactNode } from "react";
+import { useRef, useCallback, useEffect, useState, type ReactNode, Children } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HorizontalCarouselProps {
@@ -8,6 +8,7 @@ interface HorizontalCarouselProps {
 }
 
 const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCarouselProps) => {
+  const items = Children.toArray(children);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeft, setShowLeft] = useState(loop);
   const [showRight, setShowRight] = useState(true);
@@ -30,7 +31,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
     el.addEventListener("scroll", updateArrows, { passive: true });
     updateArrows();
     return () => el.removeEventListener("scroll", updateArrows);
-  }, [updateArrows, children.length]);
+  }, [updateArrows, items.length]);
 
   // Near-end detection for lazy loading
   useEffect(() => {
@@ -67,7 +68,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
     el.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
   }, [loop]);
 
-  if (children.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="relative group/carousel">
@@ -105,7 +106,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
         className="flex gap-3 overflow-x-auto p-4 lg:p-6 scrollbar-none"
         style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
       >
-        {children.map((child, i) => (
+        {items.map((child, i) => (
           <div
             key={i}
             data-card
