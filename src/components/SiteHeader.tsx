@@ -363,8 +363,18 @@ const SiteHeader = () => {
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors group"
               >
                 <span className="flex items-center gap-3">
-                  <Grid3X3 className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <Wrench className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   <span className="font-body text-sm text-foreground">Shop by Category</span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => setSubMenu("vehicle")}
+                className="w-full flex items-center justify-between px-5 py-4 hover:bg-accent/50 transition-colors group"
+              >
+                <span className="flex items-center gap-3">
+                  <Car className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="font-body text-sm text-foreground">Shop by Vehicle</span>
                 </span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
