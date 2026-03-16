@@ -37,27 +37,66 @@ const COLLECTION_IMAGE_QUERY = `
     collectionByHandle(handle: $handle) {
       image { url }
       products(first: 250) {
-        edges { node { id featuredImage { url } } }
+        edges { node { id title productType featuredImage { url } } }
       }
     }
   }
 `;
 
+/** Parse year range from a product title. Returns [startYear, endYear] or null. */
+function parseYearRange(title: string): [number, number] | null {
+  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
+  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
+  const plusMatch = title.match(/(\d{4})\+/);
+  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
+  const singleMatch = title.match(/^(\d{4})\s/);
+  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
+  return null;
+}
+
+interface CategoryProductNode {
+  id: string;
+  title: string;
+  productType: string;
+  featuredImage: { url: string } | null;
+}
+
+function countVehicleMatches(
+  products: CategoryProductNode[],
+  vehicle: { year: string; make: string; model: string }
+): number {
+  return products.filter((p) => {
+    const title = p.title.toLowerCase();
+    // Universal products always count
+    if (title.includes("universal")) return true;
+    // Check make
+    if (!title.includes(vehicle.make.toLowerCase())) return false;
+    // Check model
+    if (!title.includes(vehicle.model.toLowerCase())) return false;
+    // Check year
+    const y = parseInt(vehicle.year);
+    const range = parseYearRange(p.title);
+    if (!range) return false;
+    return y >= range[0] && y <= range[1];
+  }).length;
+}
+
 function useCategoryData() {
   return useQuery({
     queryKey: ["category-data-all"],
     queryFn: async () => {
-      const results: Record<string, { count: number; image: string }> = {};
+      const results: Record<string, { count: number; image: string; products: CategoryProductNode[] }> = {};
       await Promise.all(
         ALL_CATEGORIES.map(async (cat) => {
           try {
             const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
             const col = data?.data?.collectionByHandle;
-            const count = col?.products?.edges?.length || cat.fallbackCount;
+            const products = (col?.products?.edges || []).map((e: any) => e.node) as CategoryProductNode[];
+            const count = products.length || cat.fallbackCount;
             const apiImage = col?.image?.url || null;
-            results[cat.handle] = { count, image: apiImage || cat.image || "" };
+            results[cat.handle] = { count, image: apiImage || cat.image || "", products };
           } catch {
-            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "" };
+            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "", products: [] };
           }
         })
       );
