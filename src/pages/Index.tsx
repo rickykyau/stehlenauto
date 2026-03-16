@@ -69,7 +69,7 @@ function useCategoryData() {
 
 const FEATURED_PRODUCTS_QUERY = `
   query GetFeaturedProducts {
-    products(first: 12) {
+    products(first: 50) {
       edges {
         node {
           id
