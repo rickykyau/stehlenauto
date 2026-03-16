@@ -9,6 +9,7 @@ import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
 import HorizontalCarousel from "@/components/HorizontalCarousel";
 import SiteFooter from "@/components/SiteFooter";
+import CustomerReviews from "@/components/CustomerReviews";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
@@ -322,6 +323,8 @@ const IndexTemplate = () => {
       </section>
 
       <FeaturedProductsSection />
+
+      <CustomerReviews />
 
       {/* Trust Badges */}
       <section className="border-t border-border grid grid-cols-2 md:grid-cols-4">
