@@ -251,7 +251,7 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
       ) : (
         <div className="w-full h-full bg-card" />
       )}
-      <div className="absolute inset-0 transition-all duration-500" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 40%)" }} />
+      <div className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-500" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.05) 40%)" }} />
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 40%)" }} />
       <div className="absolute bottom-0 left-0 p-4">
         <span className="font-display text-xs tracking-wider block mb-1">{title.toUpperCase()}</span>
