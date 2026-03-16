@@ -241,6 +241,14 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
   const hasVehicle = vehicleCount !== undefined;
   const dimmed = hasVehicle && vehicleCount === 0;
 
+  {/*
+   * NOTE: Category card "darkness" is caused by the SOURCE IMAGES from Shopify,
+   * not CSS overlays. These are auto parts product photos shot on dark/black
+   * backgrounds. The only CSS darkening is a small bottom gradient for text readability.
+   * No opacity, brightness, or overlay filters are applied to the image itself.
+   * To make cards brighter, the source images in Shopify need to be re-shot
+   * or edited with lighter/white backgrounds.
+   */}
   return (
     <Link
       to={`/collections/all?category=${handle}`}
@@ -251,14 +259,12 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
           src={image}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-          style={{ filter: "brightness(1.0)", } }
-          onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(1.1)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.filter = "brightness(1.0)"; }}
           loading="lazy"
         />
       ) : (
         <div className="w-full h-full bg-card" />
       )}
+      {/* Bottom-only gradient for text readability — NO full-card overlay */}
       <div
         className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, transparent 50%)" }}
