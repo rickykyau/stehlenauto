@@ -3,14 +3,57 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
-import { useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
+
+/* Hardcoded category list — sorted by product count descending */
+const MENU_CATEGORIES = [
+  { label: "Bull Guards & Grille Guards", handle: "bull-guards-grille-guards" },
+  { label: "Tonneau Covers", handle: "tonneau-covers" },
+  { label: "Trailer Hitches", handle: "trailer-hitches" },
+  { label: "Front Grilles", handle: "front-grilles" },
+  { label: "Headlights", handle: "headlights" },
+  { label: "Truck Bed Mats", handle: "truck-bed-mats" },
+  { label: "Floor Mats", handle: "floor-mats" },
+  { label: "Running Boards & Side Steps", handle: "running-boards-side-steps" },
+  { label: "Roof Racks & Baskets", handle: "roof-racks-baskets" },
+  { label: "Chase Racks & Sport Bars", handle: "chase-racks-sport-bars" },
+  { label: "MOLLE Panels", handle: "molle-panels" },
+  { label: "Under Seat Storage", handle: "under-seat-storage" },
+];
+
+/* Hardcoded vehicle makes — sorted alphabetically */
+const MENU_VEHICLES = [
+  { label: "Acura", handle: "acura-parts" },
+  { label: "Audi", handle: "audi-parts" },
+  { label: "Buick", handle: "buick-parts" },
+  { label: "Chevy", handle: "chevy-parts" },
+  { label: "Chrysler", handle: "chrysler-parts" },
+  { label: "Dodge", handle: "dodge-parts" },
+  { label: "Ford", handle: "ford-parts" },
+  { label: "GMC", handle: "gmc-parts" },
+  { label: "Honda", handle: "honda-parts" },
+  { label: "Hyundai", handle: "hyundai-parts" },
+  { label: "Infiniti", handle: "infiniti-parts" },
+  { label: "Jeep", handle: "jeep-parts" },
+  { label: "Kia", handle: "kia-parts" },
+  { label: "Lexus", handle: "lexus-parts" },
+  { label: "Lincoln", handle: "lincoln-parts" },
+  { label: "Mazda", handle: "mazda-parts" },
+  { label: "Mercedes-Benz", handle: "mercedes-benz-parts" },
+  { label: "Mercury", handle: "mercury-parts" },
+  { label: "Nissan", handle: "nissan-parts" },
+  { label: "Pontiac", handle: "pontiac-parts" },
+  { label: "Saturn", handle: "saturn-parts" },
+  { label: "Subaru", handle: "subaru-parts" },
+  { label: "Toyota", handle: "toyota-parts" },
+  { label: "Volkswagen", handle: "volkswagen-parts" },
+];
 
 const SiteHeader = () => {
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
