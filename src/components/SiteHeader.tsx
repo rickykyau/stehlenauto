@@ -402,17 +402,36 @@ const SiteHeader = () => {
             <div className="px-5 pt-4 pb-2">
               <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY CATEGORY</span>
             </div>
-            {collectionsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              </div>
-            ) : (shopifyCollections || []).map((c) => (
+            {MENU_CATEGORIES.map((cat) => (
               <Link
-                key={c.node.id}
-                to={`/collections/${c.node.handle}`}
+                key={cat.handle}
+                to={`/collections/${cat.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
-                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{c.node.title}</span>
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{cat.label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Sub-menu: Vehicle */}
+          <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu === "vehicle" ? "translate-x-0" : "translate-x-full"}`}>
+            <button
+              onClick={() => setSubMenu(null)}
+              className="w-full flex items-center gap-2 px-5 py-4 border-b border-border hover:bg-accent/50 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4 text-primary" />
+              <span className="font-display text-xs tracking-widest text-primary">BACK</span>
+            </button>
+            <div className="px-5 pt-4 pb-2">
+              <span className="font-display text-[10px] tracking-[0.2em] text-muted-foreground">SHOP BY VEHICLE</span>
+            </div>
+            {MENU_VEHICLES.map((v) => (
+              <Link
+                key={v.handle}
+                to={`/collections/${v.handle}`}
+                className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+              >
+                <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{v.label}</span>
               </Link>
             ))}
           </div>
