@@ -155,7 +155,7 @@ function normalizeFeaturedNode(node: any): ShopifyProduct {
       description: "",
       handle: node.handle,
       productType: node.productType || "",
-      priceRange: node.priceRange,
+      tags: node.tags || [],
       compareAtPriceRange: firstVariant?.compareAtPrice
         ? { minVariantPrice: firstVariant.compareAtPrice }
         : undefined,
