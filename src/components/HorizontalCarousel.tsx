@@ -8,6 +8,7 @@ interface HorizontalCarouselProps {
 }
 
 const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCarouselProps) => {
+  const items = Children.toArray(children);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeft, setShowLeft] = useState(loop);
   const [showRight, setShowRight] = useState(true);
