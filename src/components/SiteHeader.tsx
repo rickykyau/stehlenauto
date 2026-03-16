@@ -428,7 +428,7 @@ const SiteHeader = () => {
             {MENU_VEHICLES.map((v) => (
               <Link
                 key={v.handle}
-                to={`/collections/${v.handle}`}
+                to={`/collections/all?make=${v.label}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{v.label}</span>

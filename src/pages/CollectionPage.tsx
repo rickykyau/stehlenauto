@@ -224,6 +224,7 @@ const CollectionTemplate = () => {
   });
   const vehicleSyncedRef = useRef(false);
   const categorySyncedRef = useRef(false);
+  const makeSyncedRef = useRef(false);
 
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
   const isMobile = useIsMobile();
@@ -236,6 +237,18 @@ const CollectionTemplate = () => {
       const categoryParam = searchParams.get("category");
       if (categoryParam) {
         setFilters((prev) => ({ ...prev, category: categoryParam }));
+      }
+    }
+  }, [searchParams]);
+
+  // Sync make from URL search params on mount
+  useEffect(() => {
+    if (!makeSyncedRef.current) {
+      makeSyncedRef.current = true;
+      const makeParam = searchParams.get("make");
+      if (makeParam) {
+        setFilters((prev) => ({ ...prev, make: makeParam }));
+        setVehicleOverridden(true);
       }
     }
   }, [searchParams]);
