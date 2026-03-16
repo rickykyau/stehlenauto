@@ -197,7 +197,7 @@ function FeaturedProductsSection() {
 
 function CategoryCard({ handle, title, count, image }: { handle: string; title: string; count: number; image: string }) {
   return (
-    <Link to={`/collections/${handle}`} className="group relative aspect-[4/3] border border-border overflow-hidden block">
+    <Link to={`/collections/all?category=${handle}`} className="group relative aspect-[4/3] border border-border overflow-hidden block">
       {image ? (
         <img src={image} alt={title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
       ) : (

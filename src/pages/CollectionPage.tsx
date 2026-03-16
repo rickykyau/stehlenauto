@@ -12,7 +12,7 @@ import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
 import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAvailableFilterOptions } from "@/hooks/useAvailableFilterOptions";
+import { useAvailableFilterOptions, CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -70,6 +70,14 @@ function matchesYear(title: string, year: string): boolean {
   return y >= range[0] && y <= range[1];
 }
 
+/** Check if product matches category by productType */
+function matchesCategory(product: ShopifyProduct, categoryHandle: string): boolean {
+  const keyword = CATEGORY_KEYWORDS[categoryHandle];
+  if (!keyword) return false;
+  const productType = (product.node.productType || "").toLowerCase();
+  return productType.includes(keyword.toLowerCase());
+}
+
 /** Build a Shopify query string from the active filters (excluding year/make/model which are client-side) */
 function buildShopifyQuery(
   filters: RefineFilters,
@@ -99,6 +107,7 @@ const CollectionTemplate = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [showVehicleChange, setShowVehicleChange] = useState(false);
   const [vehicleOverridden, setVehicleOverridden] = useState(false);
+  const [includeUniversal, setIncludeUniversal] = useState(true);
   const [filters, setFilters] = useState<RefineFilters>({
     year: null,
     make: null,
@@ -106,10 +115,22 @@ const CollectionTemplate = () => {
     category: null,
   });
   const vehicleSyncedRef = useRef(false);
+  const categorySyncedRef = useRef(false);
 
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
   const isMobile = useIsMobile();
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
+
+  // Sync category from URL search params on mount
+  useEffect(() => {
+    if (!categorySyncedRef.current) {
+      categorySyncedRef.current = true;
+      const categoryParam = searchParams.get("category");
+      if (categoryParam) {
+        setFilters((prev) => ({ ...prev, category: categoryParam }));
+      }
+    }
+  }, [searchParams]);
 
   // Sync filters from saved vehicle on mount (once)
   useEffect(() => {
@@ -130,9 +151,16 @@ const CollectionTemplate = () => {
   const collection = !isAllProducts
     ? (shopifyCollections || []).find((c) => c.node.handle === handle)
     : null;
-  const title = isAllProducts
-    ? "All Products"
-    : collection?.node.title || handle || "All Products";
+
+  // Resolve display title: use category label if category filter is active, else collection title
+  const activeCategoryLabel = filters.category
+    ? CATEGORIES.find((c) => c.handle === filters.category)?.label || null
+    : null;
+  const title = activeCategoryLabel
+    ? activeCategoryLabel
+    : isAllProducts
+      ? "All Products"
+      : collection?.node.title || handle || "All Products";
 
   // Resolve category title for URL-based collections (non-"all" routes)
   const resolvedCategoryTitle = collection ? collection.node.title : null;
@@ -155,9 +183,15 @@ const CollectionTemplate = () => {
   const pageInfo = data?.pageInfo;
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
-  // Client-side year/make/model filtering (includes universal products)
-  const displayProducts = useMemo(() => {
+  // Client-side year/make/model/category filtering (includes universal products)
+  const { vehicleProducts, universalProducts } = useMemo(() => {
     let filtered = rawDisplayProducts;
+
+    // Apply category filter by productType (client-side)
+    if (filters.category) {
+      filtered = filtered.filter((p) => matchesCategory(p, filters.category!));
+    }
+
     if (filters.make && filters.make !== "Universal") {
       filtered = filtered.filter((p) =>
         isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.make!.toLowerCase())
@@ -176,8 +210,20 @@ const CollectionTemplate = () => {
         isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
       );
     }
-    return filtered;
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model]);
+
+    // Separate vehicle-specific and universal products
+    const hasVehicleFilter = filters.year || filters.make || filters.model;
+    if (hasVehicleFilter && filters.make !== "Universal") {
+      const vehicle = filtered.filter((p) => !isUniversalProduct(p));
+      const universal = filtered.filter((p) => isUniversalProduct(p));
+      return { vehicleProducts: vehicle, universalProducts: universal };
+    }
+    return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category]);
+
+  const displayProducts = includeUniversal
+    ? [...vehicleProducts, ...universalProducts]
+    : vehicleProducts;
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
