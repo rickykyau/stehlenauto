@@ -31,7 +31,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
     el.addEventListener("scroll", updateArrows, { passive: true });
     updateArrows();
     return () => el.removeEventListener("scroll", updateArrows);
-  }, [updateArrows, children.length]);
+  }, [updateArrows, items.length]);
 
   // Near-end detection for lazy loading
   useEffect(() => {
