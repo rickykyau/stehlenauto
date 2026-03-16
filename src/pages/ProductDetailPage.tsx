@@ -10,7 +10,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
-import { useShopifyProduct, useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useShopifyProduct } from "@/hooks/useShopifyProducts";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 
