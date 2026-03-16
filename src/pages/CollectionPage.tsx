@@ -272,7 +272,7 @@ const CollectionTemplate = () => {
     ? (shopifyCollections || []).find((c) => c.node.handle === handle)
     : null;
 
-  // Resolve display title: use category label if category filter is active, else collection title
+  // Resolve display title
   const activeCategoryLabel = filters.category
     ? CATEGORIES.find((c) => c.handle === filters.category)?.label || null
     : null;
@@ -282,69 +282,80 @@ const CollectionTemplate = () => {
       ? "All Products"
       : collection?.node.title || handle || "All Products";
 
-  // Resolve category title for URL-based collections (non-"all" routes)
-  const resolvedCategoryTitle = collection ? collection.node.title : null;
-
-  const shopifyQuery = useMemo(
-    () => buildShopifyQuery(filters, resolvedCategoryTitle, filters.category),
-    [filters, resolvedCategoryTitle]
-  );
-
   const { sortKey, reverse } = SORT_MAP[sort];
 
-  const { data, isLoading } = useShopifyProducts({
+  // ── Determine which Shopify collection to fetch from ──
+  // Priority: make filter → make collection; category filter → category collection; else → all products
+  const activeCollectionHandle = useMemo(() => {
+    // If make filter is active, fetch from the make's collection
+    if (filters.make && filters.make !== "Universal" && MAKE_COLLECTION_MAP[filters.make]) {
+      return MAKE_COLLECTION_MAP[filters.make];
+    }
+    // If category filter is active (no make), fetch from the category collection
+    if (filters.category) {
+      return filters.category; // category handles ARE the collection handles
+    }
+    // If we're on a specific collection route (not "all")
+    if (!isAllProducts && handle) {
+      return handle;
+    }
+    return null;
+  }, [filters.make, filters.category, isAllProducts, handle]);
+
+  // Fetch from a specific collection when a handle is resolved
+  const { data: collectionData, isLoading: collectionLoading } = useCollectionProducts({
+    collectionHandle: activeCollectionHandle,
     first: ITEMS_PER_PAGE,
-    query: shopifyQuery,
     sortKey,
     reverse,
   });
 
-  const initialProducts = data?.products || [];
-  const pageInfo = data?.pageInfo;
+  // Fetch all products when no collection filter is active
+  const { data: allProductsData, isLoading: allProductsLoading } = useShopifyProducts({
+    first: ITEMS_PER_PAGE,
+    sortKey,
+    reverse,
+    query: filters.make === "Universal" ? "tag:'universal fit'" : undefined,
+  });
+
+  // Choose the right data source
+  const isUsingCollection = !!activeCollectionHandle;
+  const sourceData = isUsingCollection ? collectionData : allProductsData;
+  const isLoading = isUsingCollection ? collectionLoading : allProductsLoading;
+
+  const initialProducts = sourceData?.products || [];
+  const pageInfo = sourceData?.pageInfo;
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
-  // Client-side year/make/model/category filtering (includes universal products)
+  // Client-side filtering: only year/model + category when fetching from make collection
   const { vehicleProducts, universalProducts } = useMemo(() => {
     let filtered = rawDisplayProducts;
 
-    // Apply category filter by productType (client-side)
-    if (filters.category) {
+    // If we fetched from make collection but also have a category filter, apply category client-side
+    if (filters.make && MAKE_COLLECTION_MAP[filters.make] && filters.category) {
       filtered = filtered.filter((p) => matchesCategory(p, filters.category!));
     }
 
-    if (filters.make && filters.make !== "Universal") {
-      filtered = filtered.filter((p) => {
-        if (isUniversalProduct(p)) return true;
-        const makeTags = (p.node.tags || [])
-          .filter(t => t.toLowerCase().startsWith('make:'))
-          .map(t => t.substring(5).trim().toLowerCase());
-        if (makeTags.length > 0) {
-          return makeTags.includes(filters.make!.toLowerCase());
-        }
-        // Fallback to title matching if no make tags
-        return p.node.title.toLowerCase().includes(filters.make!.toLowerCase());
-      });
-    }
-    if (filters.make === "Universal") {
-      filtered = filtered.filter((p) => isUniversalProduct(p));
-    }
-    if (filters.model) {
-      filtered = filtered.filter((p) =>
-        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
-      );
-    }
+    // Year filtering is always client-side (parse from product titles)
     if (filters.year) {
       filtered = filtered.filter((p) =>
         isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
       );
     }
 
+    // Model filtering is always client-side
+    if (filters.model) {
+      filtered = filtered.filter((p) =>
+        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
+      );
+    }
+
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
-      const vehicle = filtered.filter((p) => !isUniversalProduct(p));
+      const vehicleSpecific = filtered.filter((p) => !isUniversalProduct(p));
       const universal = filtered.filter((p) => isUniversalProduct(p));
-      return { vehicleProducts: vehicle, universalProducts: universal };
+      return { vehicleProducts: vehicleSpecific, universalProducts: universal };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
   }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category]);
