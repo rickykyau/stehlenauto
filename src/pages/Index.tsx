@@ -251,7 +251,9 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
           src={image}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-          style={{ filter: "brightness(1.0)" }}
+          style={{ filter: "brightness(1.0)", } }
+          onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(1.1)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.filter = "brightness(1.0)"; }}
           loading="lazy"
         />
       ) : (
