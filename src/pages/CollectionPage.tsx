@@ -79,23 +79,6 @@ function matchesCategory(product: ShopifyProduct, categoryHandle: string): boole
   return productType.includes(keyword.toLowerCase());
 }
 
-/** Build a Shopify query string from the active filters (excluding year/make/model which are client-side) */
-function buildShopifyQuery(
-  filters: RefineFilters,
-  collectionTitle: string | null,
-  categoryHandle: string | null
-): string | undefined {
-  const parts: string[] = [];
-
-  if (collectionTitle) {
-    parts.push(`product_type:${collectionTitle}`);
-  } else if (categoryHandle && CATEGORY_KEYWORDS[categoryHandle]) {
-    parts.push(`product_type:*${CATEGORY_KEYWORDS[categoryHandle]}*`);
-  }
-
-  // Make/model filtering is done client-side to include universal products
-  return parts.length > 0 ? parts.join(" ") : undefined;
-}
 
 /* ─── Empty Vehicle State Component ─── */
 
