@@ -267,6 +267,7 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
 
 const IndexTemplate = () => {
   const { data: categoryData } = useCategoryData();
+  const { vehicle } = useVehicle();
 
   return (
     <div className="min-h-screen bg-background">
@@ -284,6 +285,9 @@ const IndexTemplate = () => {
         <HorizontalCarousel loop>
           {ALL_CATEGORIES.map((cat) => {
             const info = categoryData?.[cat.handle];
+            const vehicleCount = vehicle && info?.products
+              ? countVehicleMatches(info.products, vehicle)
+              : undefined;
             return (
               <CategoryCard
                 key={cat.handle}
@@ -291,6 +295,8 @@ const IndexTemplate = () => {
                 title={cat.title}
                 count={info?.count ?? cat.fallbackCount}
                 image={info?.image || cat.image || ""}
+                vehicleCount={vehicleCount}
+                vehicleModel={vehicle?.model}
               />
             );
           })}
