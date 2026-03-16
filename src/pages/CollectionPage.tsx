@@ -97,6 +97,113 @@ function buildShopifyQuery(
   return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
+/* ─── Empty Vehicle State Component ─── */
+
+function EmptyVehicleState({
+  filters,
+  activeCategoryLabel,
+  universalProducts,
+  onFilterChange,
+}: {
+  filters: RefineFilters;
+  activeCategoryLabel: string | null;
+  universalProducts: ShopifyProduct[];
+  onFilterChange: (f: RefineFilters) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const vehicleStr = [filters.year, filters.make, filters.model].filter(Boolean).join(" ");
+  const makeModel = [filters.make, filters.model].filter(Boolean).join(" ");
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    toast.success(`We'll notify you when we add ${makeModel} parts!`);
+    setEmail("");
+  };
+
+  return (
+    <div className="py-8">
+      {/* Friendly message */}
+      <div className="text-center mb-8">
+        <p className="font-display text-sm tracking-widest text-foreground mb-2">
+          {activeCategoryLabel
+            ? `NO ${activeCategoryLabel.toUpperCase()} FOUND FOR YOUR ${vehicleStr.toUpperCase()}`
+            : `WE DON'T HAVE ${makeModel.toUpperCase()}-SPECIFIC PARTS YET`}
+        </p>
+        <p className="font-body text-sm text-muted-foreground">
+          {universalProducts.length > 0
+            ? "But we've got you covered with universal accessories!"
+            : "Browse our full catalog to find what you need."}
+        </p>
+      </div>
+
+      {/* Universal products */}
+      {universalProducts.length > 0 && (
+        <div className="mb-8">
+          <div className="border-t border-border pt-4 mb-4">
+            <span className="font-display text-[10px] tracking-widest text-muted-foreground">
+              UNIVERSAL ACCESSORIES THAT WORK WITH YOUR {vehicleStr.toUpperCase()}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {universalProducts.map((product) => (
+              <ProductCard key={product.node.id} product={product} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Category cards */}
+      <div className="mb-8">
+        <div className="border-t border-border pt-4 mb-4">
+          <span className="font-display text-[10px] tracking-widest text-muted-foreground">BROWSE OUR FULL CATALOG</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.handle}
+              onClick={() => onFilterChange({ year: null, make: null, model: null, category: cat.handle })}
+              className="border border-border p-3 text-left transition-colors hover:border-primary/40 group"
+            >
+              <span className="font-display text-[10px] tracking-widest text-foreground group-hover:text-primary transition-colors block">
+                {cat.label.toUpperCase()}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Email capture */}
+      <div className="border-t border-border pt-6">
+        <div className="max-w-md mx-auto text-center">
+          <p className="font-display text-[10px] tracking-widest text-muted-foreground mb-3">
+            WANT {makeModel.toUpperCase()} PARTS? LET US KNOW!
+          </p>
+          <form onSubmit={handleEmailSubmit} className="flex gap-2">
+            <div className="flex-1 relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                required
+                className="w-full h-10 pl-9 pr-3 bg-input border border-border text-foreground font-body text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <button
+              type="submit"
+              className="h-10 px-4 bg-primary text-primary-foreground font-display text-[10px] tracking-widest hover:brightness-110 transition-colors"
+            >
+              NOTIFY ME
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
