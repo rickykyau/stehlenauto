@@ -253,6 +253,14 @@ const SiteHeader = () => {
               <Truck className="w-3.5 h-3.5" />
               {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
             </button>
+            {/* Desktop: Sign In / Account icon */}
+            <Link
+              to={customer ? "/account" : "/account/login"}
+              className="hidden md:flex w-10 h-10 items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press"
+              aria-label={customer ? "My Account" : "Sign In"}
+            >
+              <User className="w-5 h-5" />
+            </Link>
             <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
               <span className={`absolute top-1 right-1 w-4 h-4 font-display text-[9px] flex items-center justify-center ${itemCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{itemCount}</span>
