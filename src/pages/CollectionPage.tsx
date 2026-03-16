@@ -223,33 +223,32 @@ const CollectionTemplate = () => {
     category: null,
   });
   const vehicleSyncedRef = useRef(false);
-  const categorySyncedRef = useRef(false);
-  const makeSyncedRef = useRef(false);
+  const lastCategoryParam = useRef<string | null>(null);
+  const lastMakeParam = useRef<string | null>(null);
 
   const { vehicle, vehicleLabel, clearVehicle } = useVehicle();
   const isMobile = useIsMobile();
   const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
 
-  // Sync category from URL search params on mount
+  // Sync category and make from URL search params — reactive to changes
   useEffect(() => {
-    if (!categorySyncedRef.current) {
-      categorySyncedRef.current = true;
-      const categoryParam = searchParams.get("category");
-      if (categoryParam) {
-        setFilters((prev) => ({ ...prev, category: categoryParam }));
-      }
-    }
-  }, [searchParams]);
+    const categoryParam = searchParams.get("category");
+    const makeParam = searchParams.get("make");
 
-  // Sync make from URL search params on mount
-  useEffect(() => {
-    if (!makeSyncedRef.current) {
-      makeSyncedRef.current = true;
-      const makeParam = searchParams.get("make");
-      if (makeParam) {
-        setFilters((prev) => ({ ...prev, make: makeParam }));
-        setVehicleOverridden(true);
-      }
+    // Only update if params actually changed
+    if (categoryParam !== lastCategoryParam.current || makeParam !== lastMakeParam.current) {
+      lastCategoryParam.current = categoryParam;
+      lastMakeParam.current = makeParam;
+
+      setFilters((prev) => ({
+        ...prev,
+        // When navigating via menu links, replace filters entirely
+        category: categoryParam || (makeParam ? null : prev.category),
+        make: makeParam || (categoryParam ? null : prev.make),
+        model: makeParam ? null : prev.model,
+      }));
+      if (makeParam) setVehicleOverridden(true);
+      setAllProducts([]);
     }
   }, [searchParams]);
 
