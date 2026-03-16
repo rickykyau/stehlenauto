@@ -69,7 +69,7 @@ function useCategoryData() {
 
 const FEATURED_PRODUCTS_QUERY = `
   query GetFeaturedProducts {
-    products(first: 12) {
+    products(first: 50) {
       edges {
         node {
           id
@@ -160,15 +160,14 @@ function useFeaturedProducts() {
           return [];
         }
 
-        const seen = new Set<string>();
+        const typeCounts: Record<string, number> = {};
         const diverse = products.filter((product) => {
           const type = product.node.productType?.trim().toLowerCase() || "other";
-          if (seen.has(type)) return false;
-          seen.add(type);
-          return true;
+          typeCounts[type] = (typeCounts[type] || 0) + 1;
+          return typeCounts[type] <= 2;
         });
 
-        return diverse;
+        return (diverse.length >= 8 ? diverse : products).slice(0, 12);
       } catch (error) {
         console.error("Featured products fetch failed:", error);
         return [];
