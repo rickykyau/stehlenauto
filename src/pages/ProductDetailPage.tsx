@@ -215,10 +215,16 @@ const ProductTemplate = () => {
     [product?.descriptionHtml, product?.description]
   );
 
+  const isUniversal = useMemo(() => {
+    if (!product) return false;
+    return (product.tags || []).some((t: string) => t.toLowerCase() === 'universal fit');
+  }, [product]);
+
   const fitmentStatus = useMemo(() => {
     if (!vehicle || !product) return null;
+    if (isUniversal) return 'universal';
     return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
-  }, [vehicle, product]);
+  }, [vehicle, product, isUniversal]);
 
   if (productLoading) {
     return (
