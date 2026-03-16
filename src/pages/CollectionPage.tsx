@@ -444,6 +444,23 @@ const CollectionTemplate = () => {
 
         {/* Product Grid */}
         <div className="flex-1 p-4 lg:p-6">
+          {/* Universal toggle */}
+          {universalProducts.length > 0 && (
+            <div className="flex items-center gap-2 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeUniversal}
+                  onChange={(e) => setIncludeUniversal(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-primary"
+                />
+                <span className="font-display text-[10px] tracking-widest text-muted-foreground">
+                  INCLUDE UNIVERSAL FIT PRODUCTS ({universalProducts.length})
+                </span>
+              </label>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -458,9 +475,21 @@ const CollectionTemplate = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-                {displayProducts.map((product) => (
+                {vehicleProducts.map((product) => (
                   <ProductCard key={product.node.id} product={product} />
                 ))}
+                {includeUniversal && universalProducts.length > 0 && (
+                  <>
+                    {vehicleProducts.length > 0 && (
+                      <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
+                        <span className="font-display text-[10px] tracking-widest text-muted-foreground">UNIVERSAL FIT</span>
+                      </div>
+                    )}
+                    {universalProducts.map((product) => (
+                      <ProductCard key={product.node.id} product={product} />
+                    ))}
+                  </>
+                )}
               </div>
 
               {currentHasMore && (
