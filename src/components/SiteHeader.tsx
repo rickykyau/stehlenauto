@@ -405,7 +405,7 @@ const SiteHeader = () => {
             {MENU_CATEGORIES.map((cat) => (
               <Link
                 key={cat.handle}
-                to={`/collections/${cat.handle}`}
+                to={`/collections/all?category=${cat.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{cat.label}</span>
