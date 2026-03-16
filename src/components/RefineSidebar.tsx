@@ -120,6 +120,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
     return getAvailableDecadeYears(decade).length > 0;
   };
 
+  const { vehicle, vehicleLabel } = useVehicle();
+
+  // Show "apply vehicle" button when vehicle is saved but filters don't match
+  const showApplyVehicle = vehicle && (
+    filters.year !== vehicle.year ||
+    filters.make !== vehicle.make ||
+    filters.model !== vehicle.model
+  );
+
+  const applyVehicle = () => {
+    if (!vehicle) return;
+    onFilterChange({ ...filters, year: vehicle.year, make: vehicle.make, model: vehicle.model });
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -135,6 +149,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
           CLEAR
         </button>
       </div>
+
+      {/* Apply My Vehicle button */}
+      {showApplyVehicle && (
+        <button
+          onClick={applyVehicle}
+          className="w-full flex items-center gap-2 border border-primary/50 text-primary px-3 py-2 mb-4 hover:bg-primary/5 transition-colors"
+        >
+          <Car className="w-3.5 h-3.5 shrink-0" />
+          <div className="text-left">
+            <span className="font-display text-[10px] tracking-widest block">FILTER BY MY VEHICLE</span>
+            <span className="font-body text-[10px] text-primary/70">{vehicleLabel}</span>
+          </div>
+        </button>
+      )}
 
       <div className="space-y-1">
         {/* ── YEAR ── */}
