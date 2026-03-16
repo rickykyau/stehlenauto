@@ -265,6 +265,108 @@ export const COLLECTIONS_QUERY = `
   }
 `;
 
+// ── Collection Products Query (fetch products from a specific collection) ──
+
+export const COLLECTION_PRODUCTS_QUERY = `
+  query GetCollectionProducts($handle: String!, $first: Int!, $after: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean) {
+    collectionByHandle(handle: $handle) {
+      id
+      title
+      products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        edges {
+          node {
+            id
+            title
+            description
+            handle
+            productType
+            tags
+            priceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            compareAtPriceRange {
+              minVariantPrice {
+                amount
+                currencyCode
+              }
+            }
+            images(first: 5) {
+              edges {
+                node {
+                  url
+                  altText
+                }
+              }
+            }
+            variants(first: 10) {
+              edges {
+                node {
+                  id
+                  title
+                  price {
+                    amount
+                    currencyCode
+                  }
+                  compareAtPrice {
+                    amount
+                    currencyCode
+                  }
+                  availableForSale
+                  selectedOptions {
+                    name
+                    value
+                  }
+                }
+              }
+            }
+            options {
+              name
+              values
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+// ── Make/Category → Collection Handle Maps ─────────────
+
+export const MAKE_COLLECTION_MAP: Record<string, string> = {
+  'Acura': 'acura-parts',
+  'Audi': 'audi-parts',
+  'Buick': 'buick-parts',
+  'Chevy': 'chevy-parts',
+  'Chrysler': 'chrysler-parts',
+  'Dodge': 'dodge-parts',
+  'Ford': 'ford-parts',
+  'GMC': 'gmc-parts',
+  'Honda': 'honda-parts',
+  'Hyundai': 'hyundai-parts',
+  'Infiniti': 'infiniti-parts',
+  'Jeep': 'jeep-parts',
+  'Kia': 'kia-parts',
+  'Lexus': 'lexus-parts',
+  'Lincoln': 'lincoln-parts',
+  'Mazda': 'mazda-parts',
+  'Mercedes-Benz': 'mercedes-benz-parts',
+  'Mercury': 'mercury-parts',
+  'Nissan': 'nissan-parts',
+  'Pontiac': 'pontiac-parts',
+  'Ram': 'dodge-parts',
+  'Saturn': 'saturn-parts',
+  'Subaru': 'subaru-parts',
+  'Toyota': 'toyota-parts',
+  'Volkswagen': 'volkswagen-parts',
+};
+
 export interface ShopifyCollection {
   node: {
     id: string;
