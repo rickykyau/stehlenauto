@@ -247,15 +247,25 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
       className={`group relative aspect-[4/3] border border-border overflow-hidden block transition-opacity duration-300 ${dimmed ? "opacity-50" : ""}`}
     >
       {image ? (
-        <img src={image} alt={title} className="w-full h-full object-cover brightness-110 group-hover:brightness-125 group-hover:scale-105 transition-all duration-500" loading="lazy" />
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+          style={{ filter: "brightness(1.0)", } }
+          onMouseEnter={(e) => { e.currentTarget.style.filter = "brightness(1.1)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.filter = "brightness(1.0)"; }}
+          loading="lazy"
+        />
       ) : (
         <div className="w-full h-full bg-card" />
       )}
-      <div className="absolute inset-0 group-hover:opacity-0 transition-opacity duration-500" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 35%)" }} />
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 30%)" }} />
+      <div
+        className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, transparent 50%)" }}
+      />
       <div className="absolute bottom-0 left-0 p-4">
-        <span className="font-display text-xs tracking-wider block mb-1">{title.toUpperCase()}</span>
-        <span className="font-body text-xs text-muted-foreground">
+        <span className="font-display text-xs tracking-wider block mb-1 font-bold" style={{ color: "#FFFFFF", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{title.toUpperCase()}</span>
+        <span className="font-body text-xs" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
           {hasVehicle
             ? `${vehicleCount} Product${vehicleCount !== 1 ? "s" : ""} for your ${vehicleModel}`
             : `${count} Products`}
