@@ -124,7 +124,7 @@ const FEATURED_HANDLES = [
 ];
 
 const PRODUCT_FRAGMENT = `
-  id title handle productType
+  id title handle productType tags
   featuredImage { url altText }
   priceRange { minVariantPrice { amount currencyCode } }
   variants(first: 1) {
@@ -155,6 +155,7 @@ function normalizeFeaturedNode(node: any): ShopifyProduct {
       description: "",
       handle: node.handle,
       productType: node.productType || "",
+      tags: node.tags || [],
       priceRange: node.priceRange,
       compareAtPriceRange: firstVariant?.compareAtPrice
         ? { minVariantPrice: firstVariant.compareAtPrice }

@@ -193,9 +193,17 @@ const CollectionTemplate = () => {
     }
 
     if (filters.make && filters.make !== "Universal") {
-      filtered = filtered.filter((p) =>
-        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.make!.toLowerCase())
-      );
+      filtered = filtered.filter((p) => {
+        if (isUniversalProduct(p)) return true;
+        const makeTags = (p.node.tags || [])
+          .filter(t => t.toLowerCase().startsWith('make:'))
+          .map(t => t.substring(5).trim().toLowerCase());
+        if (makeTags.length > 0) {
+          return makeTags.includes(filters.make!.toLowerCase());
+        }
+        // Fallback to title matching if no make tags
+        return p.node.title.toLowerCase().includes(filters.make!.toLowerCase());
+      });
     }
     if (filters.make === "Universal") {
       filtered = filtered.filter((p) => isUniversalProduct(p));

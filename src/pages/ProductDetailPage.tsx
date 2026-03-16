@@ -215,10 +215,16 @@ const ProductTemplate = () => {
     [product?.descriptionHtml, product?.description]
   );
 
+  const isUniversal = useMemo(() => {
+    if (!product) return false;
+    return (product.tags || []).some((t: string) => t.toLowerCase() === 'universal fit');
+  }, [product]);
+
   const fitmentStatus = useMemo(() => {
     if (!vehicle || !product) return null;
+    if (isUniversal) return 'universal';
     return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
-  }, [vehicle, product]);
+  }, [vehicle, product, isUniversal]);
 
   if (productLoading) {
     return (
@@ -350,17 +356,21 @@ const ProductTemplate = () => {
           {/* Fitment Badge */}
           {vehicle && fitmentStatus !== null && (
             <div className={`flex items-center gap-2 px-3 py-2 mb-3 border ${
-              fitmentStatus
+              fitmentStatus === 'universal' || fitmentStatus === true
                 ? "border-green-600/40 bg-green-600/10 text-green-400"
                 : "border-red-600/40 bg-red-600/10 text-red-400"
             }`}>
-              {fitmentStatus ? (
+              {fitmentStatus === 'universal' || fitmentStatus === true ? (
                 <Check className="w-4 h-4 shrink-0" />
               ) : (
                 <XIcon className="w-4 h-4 shrink-0" />
               )}
               <span className="font-display text-[10px] tracking-widest">
-                {fitmentStatus ? `FITS YOUR ${vehicleLabel.toUpperCase()}` : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                {fitmentStatus === 'universal'
+                  ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
+                  : fitmentStatus === true
+                    ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
+                    : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
               </span>
             </div>
           )}

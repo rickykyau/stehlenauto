@@ -56,6 +56,7 @@ export interface ShopifyProduct {
       }>;
     };
     productType: string;
+    tags: string[];
     options: Array<{
       name: string;
       values: string[];
@@ -65,22 +66,9 @@ export interface ShopifyProduct {
 
 // ── Universal Product Detection ────────────────────────
 
-const KNOWN_MAKES_LC = [
-  "chevy", "chevrolet", "chrysler", "dodge", "ford", "gmc", "honda",
-  "jeep", "nissan", "ram", "toyota", "volkswagen",
-];
-
-function parseYearRangeFromTitle(title: string): boolean {
-  return /(\d{4})\s*[-–]\s*(\d{4})/.test(title) || /(\d{4})\+/.test(title) || /^(\d{4})\s/.test(title);
-}
-
 export function isUniversalProduct(product: ShopifyProduct): boolean {
-  const title = product.node.title.toLowerCase();
-  if (title.includes("universal")) return true;
-  const hasYear = parseYearRangeFromTitle(product.node.title);
-  const hasMake = KNOWN_MAKES_LC.some((m) => title.includes(m));
-  if (!hasYear && !hasMake) return true;
-  return false;
+  const tags = product.node.tags || [];
+  return tags.some(tag => tag.toLowerCase() === 'universal fit');
 }
 
 // ── API Helper ─────────────────────────────────────────
@@ -131,6 +119,7 @@ export const PRODUCTS_QUERY = `
           description
           handle
           productType
+          tags
           priceRange {
             minVariantPrice {
               amount
@@ -191,6 +180,7 @@ export const PRODUCT_BY_HANDLE_QUERY = `
       descriptionHtml
       handle
       productType
+      tags
       priceRange {
         minVariantPrice {
           amount
