@@ -283,6 +283,18 @@ const SiteHeader = () => {
           {/* Main menu */}
           <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu ? "-translate-x-full" : "translate-x-0"}`}>
             <div className="border-b border-border">
+              {/* Select Your Vehicle — in hamburger menu */}
+              <button
+                onClick={() => { setMenuOpen(false); setFitmentOpen(true); }}
+                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+              >
+                <Truck className="w-5 h-5 text-primary" />
+                <span className="font-body text-sm text-foreground">
+                  {vehicle ? `My Vehicle: ${vehicleLabel}` : "Select Your Vehicle"}
+                </span>
+              </button>
+            </div>
+            <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
               <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="#" />
