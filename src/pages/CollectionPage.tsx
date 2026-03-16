@@ -9,12 +9,12 @@ import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
 import FitmentSelector from "@/components/FitmentSelector";
 import RefineSidebar, { type RefineFilters } from "@/components/RefineSidebar";
-import { useShopifyProducts, useShopifyCollections } from "@/hooks/useShopifyProducts";
+import { useShopifyProducts, useShopifyCollections, useCollectionProducts } from "@/hooks/useShopifyProducts";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailableFilterOptions, CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
-import { isUniversalProduct } from "@/lib/shopify";
+import { isUniversalProduct, MAKE_COLLECTION_MAP, COLLECTION_PRODUCTS_QUERY, storefrontApiRequest } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
