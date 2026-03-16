@@ -68,7 +68,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
     el.scrollBy({ left: direction * cardWidth, behavior: "smooth" });
   }, [loop]);
 
-  if (children.length === 0) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className="relative group/carousel">
