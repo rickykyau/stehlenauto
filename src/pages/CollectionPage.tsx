@@ -367,7 +367,7 @@ const CollectionTemplate = () => {
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
   // Reset on query/sort change
-  const queryKey = `${shopifyQuery}-${sortKey}-${reverse}`;
+  const queryKey = `${activeCollectionHandle}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
   if (queryKey !== lastQueryKey) {
     setAllProducts([]);
@@ -407,26 +407,44 @@ const CollectionTemplate = () => {
     if (loadingMore || !currentCursor) return;
     setLoadingMore(true);
     try {
-      const { storefrontApiRequest, PRODUCTS_QUERY } = await import("@/lib/shopify");
-      const result = await storefrontApiRequest(PRODUCTS_QUERY, {
-        first: ITEMS_PER_PAGE,
-        query: shopifyQuery || null,
-        sortKey,
-        reverse,
-        after: currentCursor,
-      });
-      const newProducts = (result?.data?.products?.edges || []) as ShopifyProduct[];
-      const newPageInfo = result?.data?.products?.pageInfo;
-      const base = allProducts.length > 0 ? allProducts : initialProducts;
-      setAllProducts([...base, ...newProducts]);
-      setNextCursor(newPageInfo?.endCursor || null);
-      setHasMore(newPageInfo?.hasNextPage || false);
+      if (activeCollectionHandle) {
+        // Load more from collection
+        const result = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, {
+          handle: activeCollectionHandle,
+          first: ITEMS_PER_PAGE,
+          after: currentCursor,
+          sortKey: sortKey === 'BEST_SELLING' ? 'BEST_SELLING' : sortKey === 'PRICE' ? 'PRICE' : sortKey === 'TITLE' ? 'TITLE' : 'BEST_SELLING',
+          reverse,
+        });
+        const newProducts = (result?.data?.collectionByHandle?.products?.edges || []) as ShopifyProduct[];
+        const newPageInfo = result?.data?.collectionByHandle?.products?.pageInfo;
+        const base = allProducts.length > 0 ? allProducts : initialProducts;
+        setAllProducts([...base, ...newProducts]);
+        setNextCursor(newPageInfo?.endCursor || null);
+        setHasMore(newPageInfo?.hasNextPage || false);
+      } else {
+        // Load more from all products
+        const { storefrontApiRequest: apiReq, PRODUCTS_QUERY } = await import("@/lib/shopify");
+        const result = await apiReq(PRODUCTS_QUERY, {
+          first: ITEMS_PER_PAGE,
+          query: filters.make === "Universal" ? "tag:'universal fit'" : null,
+          sortKey,
+          reverse,
+          after: currentCursor,
+        });
+        const newProducts = (result?.data?.products?.edges || []) as ShopifyProduct[];
+        const newPageInfo = result?.data?.products?.pageInfo;
+        const base = allProducts.length > 0 ? allProducts : initialProducts;
+        setAllProducts([...base, ...newProducts]);
+        setNextCursor(newPageInfo?.endCursor || null);
+        setHasMore(newPageInfo?.hasNextPage || false);
+      }
     } catch (err) {
       console.error("Failed to load more products:", err);
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, currentCursor, shopifyQuery, sortKey, reverse, allProducts, initialProducts]);
+  }, [loadingMore, currentCursor, activeCollectionHandle, sortKey, reverse, allProducts, initialProducts, filters.make]);
 
   const setSort = (s: SortOption) => {
     const params = new URLSearchParams(searchParams);
