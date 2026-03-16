@@ -56,6 +56,7 @@ export interface ShopifyProduct {
       }>;
     };
     productType: string;
+    tags: string[];
     options: Array<{
       name: string;
       values: string[];
