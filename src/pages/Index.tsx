@@ -236,9 +236,15 @@ function FeaturedProductsSection() {
 
 /* ─── Category Card ─── */
 
-function CategoryCard({ handle, title, count, image }: { handle: string; title: string; count: number; image: string }) {
+function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel }: { handle: string; title: string; count: number; image: string; vehicleCount?: number; vehicleModel?: string }) {
+  const hasVehicle = vehicleCount !== undefined;
+  const dimmed = hasVehicle && vehicleCount === 0;
+
   return (
-    <Link to={`/collections/all?category=${handle}`} className="group relative aspect-[4/3] border border-border overflow-hidden block">
+    <Link
+      to={`/collections/all?category=${handle}`}
+      className={`group relative aspect-[4/3] border border-border overflow-hidden block transition-opacity duration-300 ${dimmed ? "opacity-50" : ""}`}
+    >
       {image ? (
         <img src={image} alt={title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" loading="lazy" />
       ) : (
@@ -247,7 +253,11 @@ function CategoryCard({ handle, title, count, image }: { handle: string; title: 
       <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.3) 100%)" }} />
       <div className="absolute bottom-0 left-0 p-4">
         <span className="font-display text-xs tracking-wider block mb-1">{title.toUpperCase()}</span>
-        <span className="font-body text-xs text-muted-foreground">{count} Products</span>
+        <span className="font-body text-xs text-muted-foreground">
+          {hasVehicle
+            ? `${vehicleCount} Product${vehicleCount !== 1 ? "s" : ""} for your ${vehicleModel}`
+            : `${count} Products`}
+        </span>
       </div>
     </Link>
   );
