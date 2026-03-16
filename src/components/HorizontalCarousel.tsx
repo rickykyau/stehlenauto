@@ -106,7 +106,7 @@ const HorizontalCarousel = ({ children, loop = false, onNearEnd }: HorizontalCar
         className="flex gap-3 overflow-x-auto p-4 lg:p-6 scrollbar-none"
         style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
       >
-        {children.map((child, i) => (
+        {items.map((child, i) => (
           <div
             key={i}
             data-card
