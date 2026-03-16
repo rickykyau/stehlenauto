@@ -605,7 +605,9 @@ const CollectionTemplate = () => {
                   <>
                     {vehicleProducts.length > 0 && (
                       <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
-                        <span className="font-display text-[10px] tracking-widest text-muted-foreground">UNIVERSAL FIT</span>
+                        <span className="font-display text-[10px] tracking-widest text-muted-foreground">
+                          {vehicleProducts.length < 5 ? "MORE PRODUCTS THAT MAY INTEREST YOU" : "UNIVERSAL FIT"}
+                        </span>
                       </div>
                     )}
                     {universalProducts.map((product) => (
