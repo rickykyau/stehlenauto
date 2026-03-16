@@ -540,9 +540,10 @@ const ProductTemplate = () => {
 
       {/* ── Related Products Carousel ── */}
       <RelatedProductsCarousel
-        initialProducts={relatedProducts}
-        excludeHandle={slug || ""}
-        productType={product.productType}
+        currentProductId={product.id}
+        currentProductHandle={slug || ""}
+        currentProductType={product.productType || ""}
+        tags={product.tags || []}
       />
 
       <SiteFooter />
