@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, ChevronRight, Car } from "lucide-react";
 import type { AvailableOptions } from "@/hooks/useAvailableFilterOptions";
 import { CATEGORIES, MAKES, MODELS_BY_MAKE } from "@/hooks/useAvailableFilterOptions";
+import { useVehicle } from "@/contexts/VehicleContext";
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
 
@@ -119,6 +120,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
     return getAvailableDecadeYears(decade).length > 0;
   };
 
+  const { vehicle, vehicleLabel } = useVehicle();
+
+  // Show "apply vehicle" button when vehicle is saved but filters don't match
+  const showApplyVehicle = vehicle && (
+    filters.year !== vehicle.year ||
+    filters.make !== vehicle.make ||
+    filters.model !== vehicle.model
+  );
+
+  const applyVehicle = () => {
+    if (!vehicle) return;
+    onFilterChange({ ...filters, year: vehicle.year, make: vehicle.make, model: vehicle.model });
+  };
+
   return (
     <div className="w-full">
       {/* Header */}
@@ -134,6 +149,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
           CLEAR
         </button>
       </div>
+
+      {/* Apply My Vehicle button */}
+      {showApplyVehicle && (
+        <button
+          onClick={applyVehicle}
+          className="w-full flex items-center gap-2 border border-primary/50 text-primary px-3 py-2 mb-4 hover:bg-primary/5 transition-colors"
+        >
+          <Car className="w-3.5 h-3.5 shrink-0" />
+          <div className="text-left">
+            <span className="font-display text-[10px] tracking-widest block">FILTER BY MY VEHICLE</span>
+            <span className="font-body text-[10px] text-primary/70">{vehicleLabel}</span>
+          </div>
+        </button>
+      )}
 
       <div className="space-y-1">
         {/* ── YEAR ── */}
