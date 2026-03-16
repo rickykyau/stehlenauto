@@ -237,11 +237,26 @@ const SiteHeader = () => {
             <SearchDropdown />
           </div>
         )}
-        {/* Fitment dropdown */}
+        {/* Fitment dropdown — full-screen on mobile, dropdown on desktop */}
         {fitmentOpen && (
-          <div ref={fitmentRef} className="absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
-            <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
-          </div>
+          <>
+            {/* Mobile: full-screen panel */}
+            <div ref={fitmentRef} className="md:hidden fixed inset-0 top-16 z-50 bg-background overflow-y-auto">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-display text-xs tracking-widest text-muted-foreground">SELECT YOUR VEHICLE</span>
+                  <button onClick={() => setFitmentOpen(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+              </div>
+            </div>
+            {/* Tablet/Desktop: dropdown */}
+            <div className="hidden md:block absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
+              <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+            </div>
+          </>
         )}
       </header>
 
