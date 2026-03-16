@@ -267,42 +267,53 @@ const CollectionTemplate = () => {
 
   const { sortKey, reverse } = SORT_MAP[sort];
 
-  // ── Determine which Shopify collection to fetch from ──
-  // Priority: make filter → make collection; category filter → category collection; else → all products
-  const activeCollectionHandle = useMemo(() => {
-    // If make filter is active, fetch from the make's collection
+  // ── Determine data fetching strategy ──
+  // Make filter → fetch from make's collection via collectionByHandle
+  // Category filter (no make) → fetch via products query with product_type filter
+  // Both → fetch from make collection, filter by category client-side
+  // Neither → fetch all products
+
+  const makeCollectionHandle = useMemo(() => {
     if (filters.make && filters.make !== "Universal" && MAKE_COLLECTION_MAP[filters.make]) {
       return MAKE_COLLECTION_MAP[filters.make];
     }
-    // If category filter is active (no make), fetch from the category collection
-    if (filters.category) {
-      return filters.category; // category handles ARE the collection handles
-    }
-    // If we're on a specific collection route (not "all")
+    // Non-"all" collection routes (e.g. /collections/ford-parts)
     if (!isAllProducts && handle) {
       return handle;
     }
     return null;
-  }, [filters.make, filters.category, isAllProducts, handle]);
+  }, [filters.make, isAllProducts, handle]);
 
-  // Fetch from a specific collection when a handle is resolved
+  // Build a product_type query for category filtering (used when no make collection)
+  const categoryProductQuery = useMemo(() => {
+    if (makeCollectionHandle) return undefined; // category filtering done client-side when fetching from make collection
+    if (filters.category && CATEGORY_KEYWORDS[filters.category]) {
+      return `product_type:*${CATEGORY_KEYWORDS[filters.category]}*`;
+    }
+    if (filters.make === "Universal") {
+      return "tag:'universal fit'";
+    }
+    return undefined;
+  }, [filters.category, filters.make, makeCollectionHandle]);
+
+  // Fetch from a specific make collection when a make filter is active
   const { data: collectionData, isLoading: collectionLoading } = useCollectionProducts({
-    collectionHandle: activeCollectionHandle,
+    collectionHandle: makeCollectionHandle,
     first: ITEMS_PER_PAGE,
     sortKey,
     reverse,
   });
 
-  // Fetch all products when no collection filter is active
+  // Fetch via products query when no make collection (all products or category-filtered)
   const { data: allProductsData, isLoading: allProductsLoading } = useShopifyProducts({
     first: ITEMS_PER_PAGE,
     sortKey,
     reverse,
-    query: filters.make === "Universal" ? "tag:'universal fit'" : undefined,
+    query: categoryProductQuery,
   });
 
   // Choose the right data source
-  const isUsingCollection = !!activeCollectionHandle;
+  const isUsingCollection = !!makeCollectionHandle;
   const sourceData = isUsingCollection ? collectionData : allProductsData;
   const isLoading = isUsingCollection ? collectionLoading : allProductsLoading;
 
@@ -350,7 +361,7 @@ const CollectionTemplate = () => {
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
   // Reset on query/sort change
-  const queryKey = `${activeCollectionHandle}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
+  const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
   if (queryKey !== lastQueryKey) {
     setAllProducts([]);
@@ -390,10 +401,10 @@ const CollectionTemplate = () => {
     if (loadingMore || !currentCursor) return;
     setLoadingMore(true);
     try {
-      if (activeCollectionHandle) {
-        // Load more from collection
+      if (makeCollectionHandle) {
+        // Load more from make collection
         const result = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, {
-          handle: activeCollectionHandle,
+          handle: makeCollectionHandle,
           first: ITEMS_PER_PAGE,
           after: currentCursor,
           sortKey: sortKey === 'BEST_SELLING' ? 'BEST_SELLING' : sortKey === 'PRICE' ? 'PRICE' : sortKey === 'TITLE' ? 'TITLE' : 'BEST_SELLING',
@@ -406,11 +417,11 @@ const CollectionTemplate = () => {
         setNextCursor(newPageInfo?.endCursor || null);
         setHasMore(newPageInfo?.hasNextPage || false);
       } else {
-        // Load more from all products
+        // Load more from products query (all products or category-filtered)
         const { storefrontApiRequest: apiReq, PRODUCTS_QUERY } = await import("@/lib/shopify");
         const result = await apiReq(PRODUCTS_QUERY, {
           first: ITEMS_PER_PAGE,
-          query: filters.make === "Universal" ? "tag:'universal fit'" : null,
+          query: categoryProductQuery || null,
           sortKey,
           reverse,
           after: currentCursor,
@@ -427,7 +438,7 @@ const CollectionTemplate = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, currentCursor, activeCollectionHandle, sortKey, reverse, allProducts, initialProducts, filters.make]);
+  }, [loadingMore, currentCursor, makeCollectionHandle, categoryProductQuery, sortKey, reverse, allProducts, initialProducts]);
 
   const setSort = (s: SortOption) => {
     const params = new URLSearchParams(searchParams);
