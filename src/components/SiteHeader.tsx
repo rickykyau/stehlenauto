@@ -9,6 +9,7 @@ import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { useCustomer } from "@/contexts/CustomerContext";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
 
 /* Hardcoded category list — sorted by product count descending */
