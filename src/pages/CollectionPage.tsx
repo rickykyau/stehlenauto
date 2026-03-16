@@ -426,7 +426,7 @@ const CollectionTemplate = () => {
           )}
           {filters.category && (
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 font-display text-[10px] tracking-widest">
-              {(shopifyCollections || []).find((c) => c.node.handle === filters.category)?.node.title.toUpperCase() || filters.category.toUpperCase()}
+              {CATEGORIES.find((c) => c.handle === filters.category)?.label.toUpperCase() || filters.category.replace(/-/g, " ").toUpperCase()}
               <button onClick={() => handleFilterChange({ ...filters, category: null })}><X className="w-3 h-3" /></button>
             </span>
           )}
