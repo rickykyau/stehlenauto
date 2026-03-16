@@ -56,11 +56,10 @@ const MENU_VEHICLES = [
 ];
 
 const SiteHeader = () => {
-  const { data: shopifyCollections, isLoading: collectionsLoading } = useShopifyCollections(50);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
-  const [subMenu, setSubMenu] = useState<null | "category">(null);
+  const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
