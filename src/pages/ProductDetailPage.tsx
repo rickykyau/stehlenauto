@@ -10,7 +10,7 @@ import {
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
-import { useShopifyProduct, useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { useShopifyProduct } from "@/hooks/useShopifyProducts";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 
@@ -207,8 +207,6 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const { data: relatedData } = useShopifyProducts({ first: 9 });
-  const relatedProducts = (relatedData?.products || []).filter((p) => p.node.handle !== slug).slice(0, 8);
 
   const parsed = useMemo(
     () => parseDescription(product?.descriptionHtml, product?.description),
@@ -542,9 +540,10 @@ const ProductTemplate = () => {
 
       {/* ── Related Products Carousel ── */}
       <RelatedProductsCarousel
-        initialProducts={relatedProducts}
-        excludeHandle={slug || ""}
-        productType={product.productType}
+        currentProductId={product.id}
+        currentProductHandle={slug || ""}
+        currentProductType={product.productType || ""}
+        tags={product.tags || []}
       />
 
       <SiteFooter />
