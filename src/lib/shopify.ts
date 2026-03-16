@@ -76,12 +76,8 @@ function parseYearRangeFromTitle(title: string): boolean {
 }
 
 export function isUniversalProduct(product: ShopifyProduct): boolean {
-  const title = product.node.title.toLowerCase();
-  if (title.includes("universal")) return true;
-  const hasYear = parseYearRangeFromTitle(product.node.title);
-  const hasMake = KNOWN_MAKES_LC.some((m) => title.includes(m));
-  if (!hasYear && !hasMake) return true;
-  return false;
+  const tags = product.node.tags || [];
+  return tags.some(tag => tag.toLowerCase() === 'universal fit');
 }
 
 // ── API Helper ─────────────────────────────────────────
