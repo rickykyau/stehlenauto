@@ -128,6 +128,7 @@ export const PRODUCTS_QUERY = `
           description
           handle
           productType
+          tags
           priceRange {
             minVariantPrice {
               amount
