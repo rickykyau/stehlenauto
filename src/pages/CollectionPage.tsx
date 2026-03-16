@@ -361,7 +361,7 @@ const CollectionTemplate = () => {
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
   // Reset on query/sort change
-  const queryKey = `${activeCollectionHandle}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
+  const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
   if (queryKey !== lastQueryKey) {
     setAllProducts([]);
