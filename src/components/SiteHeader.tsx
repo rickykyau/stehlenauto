@@ -185,6 +185,23 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
+            {/* Mobile-only: small truck icon for vehicle selector */}
+            <button
+              onClick={() => setFitmentOpen(!fitmentOpen)}
+              className="md:hidden w-10 h-10 flex items-center justify-center text-primary hover:brightness-110 transition-colors btn-press"
+              aria-label="Select your vehicle"
+            >
+              <Truck className="w-5 h-5" />
+            </button>
+            {/* Tablet: compact vehicle button */}
+            <button
+              onClick={() => setFitmentOpen(!fitmentOpen)}
+              className="hidden md:flex lg:hidden items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-primary font-display text-[9px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
+            >
+              <Truck className="w-3 h-3" />
+              {vehicle ? vehicleLabel.toUpperCase() : "SELECT VEHICLE"}
+            </button>
+            {/* Desktop: full vehicle button */}
             <button
               onClick={() => setFitmentOpen(!fitmentOpen)}
               className="hidden lg:flex items-center gap-2 border border-primary/30 bg-primary/5 px-4 py-2 text-primary font-display text-[11px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
@@ -220,11 +237,26 @@ const SiteHeader = () => {
             <SearchDropdown />
           </div>
         )}
-        {/* Fitment dropdown */}
+        {/* Fitment dropdown — full-screen on mobile, dropdown on desktop */}
         {fitmentOpen && (
-          <div ref={fitmentRef} className="absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
-            <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
-          </div>
+          <>
+            {/* Mobile: full-screen panel */}
+            <div ref={fitmentRef} className="md:hidden fixed inset-0 top-16 z-50 bg-background overflow-y-auto">
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-display text-xs tracking-widest text-muted-foreground">SELECT YOUR VEHICLE</span>
+                  <button onClick={() => setFitmentOpen(false)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+              </div>
+            </div>
+            {/* Tablet/Desktop: dropdown */}
+            <div className="hidden md:block absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
+              <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+            </div>
+          </>
         )}
       </header>
 
@@ -265,6 +297,18 @@ const SiteHeader = () => {
         <div className="flex-1 overflow-hidden relative">
           {/* Main menu */}
           <div className={`absolute inset-0 overflow-y-auto transition-transform duration-250 ease-in-out ${subMenu ? "-translate-x-full" : "translate-x-0"}`}>
+            <div className="border-b border-border">
+              {/* Select Your Vehicle — in hamburger menu */}
+              <button
+                onClick={() => { setMenuOpen(false); setFitmentOpen(true); }}
+                className="w-full flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+              >
+                <Truck className="w-5 h-5 text-primary" />
+                <span className="font-body text-sm text-foreground">
+                  {vehicle ? `My Vehicle: ${vehicleLabel}` : "Select Your Vehicle"}
+                </span>
+              </button>
+            </div>
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
