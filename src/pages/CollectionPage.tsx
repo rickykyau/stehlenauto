@@ -204,6 +204,7 @@ const CollectionTemplate = () => {
         // Fallback to title matching if no make tags
         return p.node.title.toLowerCase().includes(filters.make!.toLowerCase());
       });
+    }
     if (filters.make === "Universal") {
       filtered = filtered.filter((p) => isUniversalProduct(p));
     }
