@@ -9,6 +9,7 @@ import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { useCustomer } from "@/contexts/CustomerContext";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
 
 /* Hardcoded category list — sorted by product count descending */
@@ -65,6 +66,7 @@ const SiteHeader = () => {
   const toggleCart = useCartStore((s) => s.toggleCart);
   const itemCount = useCartStore((s) => s.items.reduce((sum, i) => sum + i.quantity, 0));
   const { vehicle, vehicleLabel } = useVehicle();
+  const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
 
   // Search state
@@ -251,6 +253,14 @@ const SiteHeader = () => {
               <Truck className="w-3.5 h-3.5" />
               {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
             </button>
+            {/* Desktop: Sign In / Account icon */}
+            <Link
+              to={customer ? "/account" : "/account/login"}
+              className="hidden md:flex w-10 h-10 items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press"
+              aria-label={customer ? "My Account" : "Sign In"}
+            >
+              <User className="w-5 h-5" />
+            </Link>
             <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
               <span className={`absolute top-1 right-1 w-4 h-4 font-display text-[9px] flex items-center justify-center ${itemCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{itemCount}</span>
@@ -354,7 +364,7 @@ const SiteHeader = () => {
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
-              <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="#" />
+              <MenuLink icon={<User className="w-5 h-5" />} label={customer ? `${customer.firstName || "My Account"}` : "My Account"} to={customer ? "/account" : "/account/login"} />
             </div>
 
             <div className="border-b border-border">
