@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState, type ReactNode } from "react";
+import { useRef, useCallback, useEffect, useState, type ReactNode, Children } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface HorizontalCarouselProps {
