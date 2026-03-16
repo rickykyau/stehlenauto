@@ -185,6 +185,23 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
+            {/* Mobile-only: small truck icon for vehicle selector */}
+            <button
+              onClick={() => setFitmentOpen(!fitmentOpen)}
+              className="md:hidden w-10 h-10 flex items-center justify-center text-primary hover:brightness-110 transition-colors btn-press"
+              aria-label="Select your vehicle"
+            >
+              <Truck className="w-5 h-5" />
+            </button>
+            {/* Tablet: compact vehicle button */}
+            <button
+              onClick={() => setFitmentOpen(!fitmentOpen)}
+              className="hidden md:flex lg:hidden items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-primary font-display text-[9px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
+            >
+              <Truck className="w-3 h-3" />
+              {vehicle ? vehicleLabel.toUpperCase() : "SELECT VEHICLE"}
+            </button>
+            {/* Desktop: full vehicle button */}
             <button
               onClick={() => setFitmentOpen(!fitmentOpen)}
               className="hidden lg:flex items-center gap-2 border border-primary/30 bg-primary/5 px-4 py-2 text-primary font-display text-[11px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
