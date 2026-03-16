@@ -12,6 +12,8 @@ import SiteFooter from "@/components/SiteFooter";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { useVehicle } from "@/contexts/VehicleContext";
+import { isUniversalProduct } from "@/lib/shopify";
 
 /* ─── All 12 Categories ─── */
 

@@ -467,10 +467,33 @@ const CollectionTemplate = () => {
             </div>
           ) : displayProducts.length === 0 ? (
             <div className="text-center py-20">
-              <p className="font-display text-sm tracking-widest text-muted-foreground mb-4">NO PRODUCTS FOUND</p>
-              <Link to="/collections/all" className="font-display text-xs tracking-widest text-primary hover:brightness-110">
-                ← VIEW ALL PRODUCTS
-              </Link>
+              <p className="font-display text-sm tracking-widest text-muted-foreground mb-4">
+                {activeCategoryLabel && (filters.year || filters.make || filters.model)
+                  ? `NO ${activeCategoryLabel.toUpperCase()} FOUND FOR YOUR ${[filters.year, filters.make, filters.model].filter(Boolean).join(" ").toUpperCase()}.`
+                  : "NO PRODUCTS FOUND"}
+              </p>
+              <div className="flex flex-col items-center gap-3">
+                {activeCategoryLabel && (filters.year || filters.make || filters.model) ? (
+                  <>
+                    <button
+                      onClick={() => handleFilterChange({ ...filters, year: null, make: null, model: null })}
+                      className="font-display text-xs tracking-widest text-primary hover:brightness-110"
+                    >
+                      VIEW ALL {activeCategoryLabel.toUpperCase()} →
+                    </button>
+                    <button
+                      onClick={() => handleFilterChange({ ...filters, category: null })}
+                      className="font-display text-xs tracking-widest text-primary hover:brightness-110"
+                    >
+                      BROWSE OTHER CATEGORIES FOR YOUR {[filters.year, filters.make, filters.model].filter(Boolean).join(" ").toUpperCase()} →
+                    </button>
+                  </>
+                ) : (
+                  <Link to="/collections/all" className="font-display text-xs tracking-widest text-primary hover:brightness-110">
+                    ← VIEW ALL PRODUCTS
+                  </Link>
+                )}
+              </div>
             </div>
           ) : (
             <>
