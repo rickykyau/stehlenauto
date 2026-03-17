@@ -30,9 +30,10 @@ const SiteFooter = () => {
               { label: "Terms & Conditions", to: "/terms" },
               { label: "Returns Policy", to: "/refund-policy" },
               { label: "Privacy Policy", to: "/privacy-policy" },
+              { label: "Shipping Policy", to: "/shipping-policy" },
             ].map((link) => (
               <li key={link.label}>
-                <a href={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</a>
+                <Link to={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</Link>
               </li>
             ))}
           </ul>
