@@ -21,16 +21,27 @@ const ShopifyPolicyPage = ({ field, fallbackTitle }: ShopifyPolicyPageProps) => 
   const [title, setTitle] = useState(fallbackTitle);
   const [body, setBody] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const fetchPolicy = () => {
+    setLoading(true);
+    setError(false);
+    fetchShopifyPolicy(field)
+      .then((policy) => {
+        if (policy) {
+          setTitle(policy.title);
+          setBody(policy.body);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(true);
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    setLoading(true);
-    fetchShopifyPolicy(field).then((policy) => {
-      if (policy) {
-        setTitle(policy.title);
-        setBody(policy.body);
-      }
-      setLoading(false);
-    });
+    fetchPolicy();
   }, [field]);
 
   return (
