@@ -1,6 +1,6 @@
 /* Google Identity Services */
 interface GoogleAccountsId {
-  initialize(config: { client_id: string; callback: (response: { credential: string }) => void }): void;
+  initialize(config: { client_id: string; callback: (response: { credential: string }) => void; use_fedcm_for_prompt?: boolean }): void;
   prompt(momentListener?: (notification: { isNotDisplayed: () => boolean; isSkippedMoment: () => boolean }) => void): void;
 }
 
