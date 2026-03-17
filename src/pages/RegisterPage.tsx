@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import SocialLoginButtons from "@/components/SocialLoginButtons";
 import { createCustomer, loginCustomer } from "@/lib/shopify-customer";
 import { useCustomer } from "@/contexts/CustomerContext";
 
@@ -56,6 +57,9 @@ const RegisterPage = () => {
       <main className="min-h-[60vh] flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           <h1 className="font-display text-2xl tracking-widest text-foreground text-center mb-8">CREATE ACCOUNT</h1>
+
+          <SocialLoginButtons mode="register" onError={setError} />
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive font-body">
