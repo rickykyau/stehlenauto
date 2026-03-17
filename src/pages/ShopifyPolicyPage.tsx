@@ -69,7 +69,24 @@ const ShopifyPolicyPage = ({ field, fallbackTitle }: ShopifyPolicyPageProps) => 
       <article className="max-w-3xl mx-auto px-4 lg:px-8 py-12">
         <h1 className="font-display text-2xl tracking-wider mb-8">{title}</h1>
         {loading ? (
-          <p className="text-muted-foreground text-sm">Loading…</p>
+          <div className="space-y-4">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted" />
+            <div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-full animate-pulse rounded bg-muted" />
+            <div className="h-4 w-4/5 animate-pulse rounded bg-muted" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground text-sm mb-4">Unable to load policy. Please try again.</p>
+            <button
+              onClick={fetchPolicy}
+              className="border border-primary px-6 py-2 font-display text-xs tracking-widest text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+            >
+              RETRY
+            </button>
+          </div>
         ) : body ? (
           <div
             className="font-body text-sm text-secondary-foreground leading-relaxed space-y-6 policy-html"
