@@ -225,12 +225,12 @@ const HelpCenterPage = () => {
           <p className="font-display text-xs tracking-widest text-muted-foreground mb-4">
             STILL NEED HELP?
           </p>
-          <a
-            href="mailto:contact@stehlenautomotive.com"
+          <Link
+            to="/contact"
             className="inline-block border border-primary bg-primary/10 px-8 py-3 font-display text-xs tracking-widest text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
           >
             CONTACT US
-          </a>
+          </Link>
         </div>
       </div>
 
