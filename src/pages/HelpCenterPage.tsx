@@ -25,6 +25,8 @@ const SECTIONS: HelpSection[] = [
       "Standard Shipping: 5-7 business days",
       "Expedited Shipping: 2-3 business days",
     ],
+    linkTo: "/shipping-policy",
+    linkLabel: "View full shipping policy →",
   },
   {
     title: "Returns & Refunds",
@@ -34,6 +36,8 @@ const SECTIONS: HelpSection[] = [
       "Contact contact@stehlenautomotive.com to start a return",
       "Refunds processed within 5-7 business days after receiving the item",
     ],
+    linkTo: "/refund-policy",
+    linkLabel: "View full return policy →",
   },
   {
     title: "Product Warranty",
