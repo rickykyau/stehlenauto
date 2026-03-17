@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Search, ChevronDown, Mail, Phone, MapPin, Clock } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -13,6 +14,8 @@ interface HelpSection {
   icon?: string;
   bullets?: string[];
   faqs?: FaqItem[];
+  linkTo?: string;
+  linkLabel?: string;
 }
 
 const SECTIONS: HelpSection[] = [
@@ -24,6 +27,8 @@ const SECTIONS: HelpSection[] = [
       "Standard Shipping: 5-7 business days",
       "Expedited Shipping: 2-3 business days",
     ],
+    linkTo: "/shipping-policy",
+    linkLabel: "View full shipping policy →",
   },
   {
     title: "Returns & Refunds",
@@ -33,6 +38,8 @@ const SECTIONS: HelpSection[] = [
       "Contact contact@stehlenautomotive.com to start a return",
       "Refunds processed within 5-7 business days after receiving the item",
     ],
+    linkTo: "/refund-policy",
+    linkLabel: "View full return policy →",
   },
   {
     title: "Product Warranty",
@@ -94,6 +101,7 @@ function matchesSearch(section: HelpSection, query: string): boolean {
   const q = query.toLowerCase();
   if (section.title.toLowerCase().includes(q)) return true;
   if (section.bullets?.some((b) => b.toLowerCase().includes(q))) return true;
+  if (section.linkLabel?.toLowerCase().includes(q)) return true;
   if (section.faqs?.some((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q))) return true;
   return false;
 }
@@ -180,6 +188,12 @@ const HelpCenterPage = () => {
                   </ul>
                 )}
 
+                {section.linkTo && (
+                  <Link to={section.linkTo} className="inline-block mt-3 font-display text-[11px] tracking-wide text-primary hover:underline">
+                    {section.linkLabel}
+                  </Link>
+                )}
+
                 {/* FAQ items */}
                 {section.faqs && (
                   <div className="space-y-4">
@@ -211,12 +225,12 @@ const HelpCenterPage = () => {
           <p className="font-display text-xs tracking-widest text-muted-foreground mb-4">
             STILL NEED HELP?
           </p>
-          <a
-            href="mailto:contact@stehlenautomotive.com"
+          <Link
+            to="/contact"
             className="inline-block border border-primary bg-primary/10 px-8 py-3 font-display text-xs tracking-widest text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
           >
             CONTACT US
-          </a>
+          </Link>
         </div>
       </div>
 

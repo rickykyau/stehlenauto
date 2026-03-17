@@ -25,6 +25,7 @@ import ProductDetailPage from "./pages/ProductDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import WarrantyPage from "./pages/WarrantyPage.tsx";
 import ShopifyPolicyPage from "./pages/ShopifyPolicyPage.tsx";
+import ContactPage from "./pages/ContactPage.tsx";
 import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import RegisterPage from "./pages/RegisterPage.tsx";
@@ -52,6 +53,8 @@ const AppInner = () => {
         <Route path="/refund-policy" element={<ShopifyPolicyPage field="refundPolicy" fallbackTitle="Refund Policy" />} />
         <Route path="/policies/refund-policy" element={<ShopifyPolicyPage field="refundPolicy" fallbackTitle="Refund Policy" />} />
         <Route path="/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
+        <Route path="/policies/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/account/login" element={<LoginPage />} />
         <Route path="/account/register" element={<RegisterPage />} />
