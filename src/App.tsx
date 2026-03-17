@@ -25,6 +25,7 @@ import ProductDetailPage from "./pages/ProductDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import WarrantyPage from "./pages/WarrantyPage.tsx";
 import ShopifyPolicyPage from "./pages/ShopifyPolicyPage.tsx";
+import ContactPage from "./pages/ContactPage.tsx";
 import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import RegisterPage from "./pages/RegisterPage.tsx";
