@@ -377,7 +377,17 @@ const SiteHeader = () => {
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
-              <MenuLink icon={<User className="w-5 h-5" />} label={customer ? `Hi, ${customer.firstName || "there"}` : "My Account"} to={customer ? "/account" : "/account/login"} />
+              {customer ? (
+                <MenuLink icon={<User className="w-5 h-5" />} label={`Hi, ${customer.firstName || "there"}`} to="/account" />
+              ) : (
+                <a
+                  href="https://shopify.com/72426389551/account"
+                  className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+                >
+                  <span className="text-muted-foreground group-hover:text-primary transition-colors"><User className="w-5 h-5" /></span>
+                  <span className="font-body text-sm text-foreground">My Account</span>
+                </a>
+              )}
             </div>
 
             <div className="border-b border-border">
