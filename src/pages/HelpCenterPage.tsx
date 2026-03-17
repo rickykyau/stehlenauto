@@ -188,6 +188,12 @@ const HelpCenterPage = () => {
                   </ul>
                 )}
 
+                {section.linkTo && (
+                  <Link to={section.linkTo} className="inline-block mt-3 font-display text-[11px] tracking-wide text-primary hover:underline">
+                    {section.linkLabel}
+                  </Link>
+                )}
+
                 {/* FAQ items */}
                 {section.faqs && (
                   <div className="space-y-4">
