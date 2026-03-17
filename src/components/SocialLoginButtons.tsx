@@ -107,11 +107,21 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
 
   const handleFacebookLogin = () => {
     if (!window.FB) {
-      onError("Facebook sign-in is not available. Please try again later.");
-      return;
+      // Try initializing FB SDK first
+      if (FACEBOOK_APP_ID && (window as any).FB) {
+        (window as any).FB.init({
+          appId: FACEBOOK_APP_ID,
+          cookie: true,
+          xfbml: false,
+          version: "v21.0",
+        });
+      } else {
+        onError("Facebook sign-in is not available. Please try again later.");
+        return;
+      }
     }
     setFbLoading(true);
-    window.FB.login(
+    window.FB!.login(
       (response) => {
         if (response.authResponse) {
           window.FB!.api("/me", { fields: "email,first_name,last_name" }, async (user) => {
