@@ -45,15 +45,14 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
 
   // Initialize Facebook SDK
   useEffect(() => {
-    const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
-    if (!appId) return;
+    if (!FACEBOOK_APP_ID) return;
 
     const initFB = () => {
       window.FB?.init({
-        appId,
+        appId: FACEBOOK_APP_ID,
         cookie: true,
-        xfbml: true,
-        version: "v18.0",
+        xfbml: false,
+        version: "v21.0",
       });
     };
 
