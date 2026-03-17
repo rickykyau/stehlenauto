@@ -24,9 +24,7 @@ import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import WarrantyPage from "./pages/WarrantyPage.tsx";
-import TermsPage from "./pages/TermsPage.tsx";
-import ReturnsPage from "./pages/ReturnsPage.tsx";
-import PrivacyPage from "./pages/PrivacyPage.tsx";
+import ShopifyPolicyPage from "./pages/ShopifyPolicyPage.tsx";
 import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import RegisterPage from "./pages/RegisterPage.tsx";
@@ -47,10 +45,13 @@ const AppInner = () => {
         <Route path="/collections/:handle" element={<CollectionPage />} />
         <Route path="/products/:slug" element={<ProductDetailPage />} />
         <Route path="/pages/warranty" element={<WarrantyPage />} />
-        <Route path="/policies/terms-of-service" element={<TermsPage />} />
-        <Route path="/policies/refund-policy" element={<ReturnsPage />} />
-        <Route path="/policies/privacy-policy" element={<PrivacyPage />} />
-        <Route path="/privacy-policy" element={<PrivacyPage />} />
+        <Route path="/privacy-policy" element={<ShopifyPolicyPage field="privacyPolicy" fallbackTitle="Privacy Policy" />} />
+        <Route path="/policies/privacy-policy" element={<ShopifyPolicyPage field="privacyPolicy" fallbackTitle="Privacy Policy" />} />
+        <Route path="/terms" element={<ShopifyPolicyPage field="termsOfService" fallbackTitle="Terms of Service" />} />
+        <Route path="/policies/terms-of-service" element={<ShopifyPolicyPage field="termsOfService" fallbackTitle="Terms of Service" />} />
+        <Route path="/refund-policy" element={<ShopifyPolicyPage field="refundPolicy" fallbackTitle="Refund Policy" />} />
+        <Route path="/policies/refund-policy" element={<ShopifyPolicyPage field="refundPolicy" fallbackTitle="Refund Policy" />} />
+        <Route path="/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/account/login" element={<LoginPage />} />
         <Route path="/account/register" element={<RegisterPage />} />
