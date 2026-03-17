@@ -32,6 +32,7 @@ import RegisterPage from "./pages/RegisterPage.tsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
 import AccountPage from "./pages/AccountPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
+import GoogleCallbackPage from "./pages/GoogleCallbackPage.tsx";
 
 const queryClient = new QueryClient();
 
