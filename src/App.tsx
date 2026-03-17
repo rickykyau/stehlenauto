@@ -32,6 +32,7 @@ import RegisterPage from "./pages/RegisterPage.tsx";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
 import AccountPage from "./pages/AccountPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
+import GoogleCallbackPage from "./pages/GoogleCallbackPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const AppInner = () => {
         <Route path="/account/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

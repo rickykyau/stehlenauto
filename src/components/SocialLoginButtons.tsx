@@ -15,19 +15,21 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [fbLoading, setFbLoading] = useState(false);
 
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '660392606128-0jpq4ffnlbhichtqt9vtu4hk5q075quu.apps.googleusercontent.com';
+  const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || '818911643850325';
+
   // Initialize Google Identity Services
   useEffect(() => {
     const initGoogle = () => {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (window.google && clientId) {
+      if (window.google && GOOGLE_CLIENT_ID) {
         window.google.accounts.id.initialize({
-          client_id: clientId,
+          client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleResponse,
-        });
+          use_fedcm_for_prompt: true,
+        } as any);
       }
     };
 
-    // SDK may already be loaded or load later
     if (window.google) {
       initGoogle();
     } else {
@@ -43,15 +45,14 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
 
   // Initialize Facebook SDK
   useEffect(() => {
-    const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
-    if (!appId) return;
+    if (!FACEBOOK_APP_ID) return;
 
     const initFB = () => {
       window.FB?.init({
-        appId,
+        appId: FACEBOOK_APP_ID,
         cookie: true,
-        xfbml: true,
-        version: "v18.0",
+        xfbml: false,
+        version: "v21.0",
       });
     };
 
@@ -96,18 +97,31 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
     }
     window.google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        onError("Google sign-in popup was blocked. Please allow popups and try again.");
+        // Fallback: use Google OAuth redirect flow
+        const redirectUri = encodeURIComponent(window.location.origin + '/auth/google/callback');
+        const scope = encodeURIComponent('email profile');
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=select_account`;
       }
     });
   };
 
   const handleFacebookLogin = () => {
     if (!window.FB) {
-      onError("Facebook sign-in is not available. Please try again later.");
-      return;
+      // Try initializing FB SDK first
+      if (FACEBOOK_APP_ID && (window as any).FB) {
+        (window as any).FB.init({
+          appId: FACEBOOK_APP_ID,
+          cookie: true,
+          xfbml: false,
+          version: "v21.0",
+        });
+      } else {
+        onError("Facebook sign-in is not available. Please try again later.");
+        return;
+      }
     }
     setFbLoading(true);
-    window.FB.login(
+    window.FB!.login(
       (response) => {
         if (response.authResponse) {
           window.FB!.api("/me", { fields: "email,first_name,last_name" }, async (user) => {
