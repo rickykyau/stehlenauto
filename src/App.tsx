@@ -50,6 +50,7 @@ const AppInner = () => {
         <Route path="/policies/terms-of-service" element={<TermsPage />} />
         <Route path="/policies/refund-policy" element={<ReturnsPage />} />
         <Route path="/policies/privacy-policy" element={<PrivacyPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/account/login" element={<LoginPage />} />
         <Route path="/account/register" element={<RegisterPage />} />

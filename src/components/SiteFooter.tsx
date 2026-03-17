@@ -29,7 +29,7 @@ const SiteFooter = () => {
               { label: "Product Warranty", to: "/pages/warranty" },
               { label: "Terms & Conditions", to: "/policies/terms-of-service" },
               { label: "Returns Policy", to: "/policies/refund-policy" },
-              { label: "Privacy Policy", to: "/policies/privacy-policy" },
+              { label: "Privacy Policy", to: "/privacy-policy" },
             ].map((link) => (
               <li key={link.label}>
                 <a href={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</a>
