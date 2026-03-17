@@ -101,6 +101,7 @@ function matchesSearch(section: HelpSection, query: string): boolean {
   const q = query.toLowerCase();
   if (section.title.toLowerCase().includes(q)) return true;
   if (section.bullets?.some((b) => b.toLowerCase().includes(q))) return true;
+  if (section.linkLabel?.toLowerCase().includes(q)) return true;
   if (section.faqs?.some((f) => f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q))) return true;
   return false;
 }
