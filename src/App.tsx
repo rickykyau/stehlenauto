@@ -5,12 +5,12 @@
  * /products/:handle    → templates/product.liquid
  * /cart                → templates/cart.liquid (TODO)
  * /pages/:handle       → templates/page.liquid (TODO)
- * /account/*           → templates/customers/*.liquid
+ * /account             → Shopify hosted account
  *
  * Note: Shopify uses /products/ (plural), not /product/
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,12 +27,9 @@ import WarrantyPage from "./pages/WarrantyPage.tsx";
 import ShopifyPolicyPage from "./pages/ShopifyPolicyPage.tsx";
 import ContactPage from "./pages/ContactPage.tsx";
 import HelpCenterPage from "./pages/HelpCenterPage.tsx";
-import LoginPage from "./pages/LoginPage.tsx";
-import RegisterPage from "./pages/RegisterPage.tsx";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage.tsx";
 import AccountPage from "./pages/AccountPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
-import GoogleCallbackPage from "./pages/GoogleCallbackPage.tsx";
+import ShopifyRedirect from "./components/ShopifyRedirect.tsx";
 
 const queryClient = new QueryClient();
 
@@ -57,12 +54,12 @@ const AppInner = () => {
         <Route path="/policies/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
-        <Route path="/account/login" element={<LoginPage />} />
-        <Route path="/account/register" element={<RegisterPage />} />
-        <Route path="/account/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/account/login" element={<ShopifyRedirect />} />
+        <Route path="/account/register" element={<ShopifyRedirect />} />
+        <Route path="/account/forgot-password" element={<ShopifyRedirect />} />
+        <Route path="/auth/google/callback" element={<ShopifyRedirect />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
-        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

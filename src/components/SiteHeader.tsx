@@ -254,20 +254,26 @@ const SiteHeader = () => {
               {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
             </button>
             {/* Desktop: Sign In / Account */}
-            <Link
-              to={customer ? "/account" : "/account/login"}
-              className={`hidden md:flex items-center justify-center transition-colors btn-press ${
-                customer
-                  ? "h-10 px-3 gap-1.5 text-foreground hover:text-primary"
-                  : "w-10 h-10 text-muted-foreground hover:text-foreground"
-              }`}
-              aria-label={customer ? "My Account" : "Sign In"}
-            >
-              <User className="w-5 h-5" />
-              {customer && customer.firstName && (
-                <span className="font-display text-[10px] tracking-widest">{customer.firstName.toUpperCase()}</span>
-              )}
-            </Link>
+            {customer ? (
+              <Link
+                to="/account"
+                className="hidden md:flex items-center justify-center h-10 px-3 gap-1.5 text-foreground hover:text-primary transition-colors btn-press"
+                aria-label="My Account"
+              >
+                <User className="w-5 h-5" />
+                {customer.firstName && (
+                  <span className="font-display text-[10px] tracking-widest">{customer.firstName.toUpperCase()}</span>
+                )}
+              </Link>
+            ) : (
+              <a
+                href="https://shopify.com/72426389551/account"
+                className="hidden md:flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-foreground transition-colors btn-press"
+                aria-label="Sign In"
+              >
+                <User className="w-5 h-5" />
+              </a>
+            )}
             <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
               <span className={`absolute top-1 right-1 w-4 h-4 font-display text-[9px] flex items-center justify-center ${itemCount > 0 ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20 text-muted-foreground"}`}>{itemCount}</span>
@@ -371,7 +377,17 @@ const SiteHeader = () => {
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
-              <MenuLink icon={<User className="w-5 h-5" />} label={customer ? `Hi, ${customer.firstName || "there"}` : "My Account"} to={customer ? "/account" : "/account/login"} />
+              {customer ? (
+                <MenuLink icon={<User className="w-5 h-5" />} label={`Hi, ${customer.firstName || "there"}`} to="/account" />
+              ) : (
+                <a
+                  href="https://shopify.com/72426389551/account"
+                  className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+                >
+                  <span className="text-muted-foreground group-hover:text-primary transition-colors"><User className="w-5 h-5" /></span>
+                  <span className="font-body text-sm text-foreground">My Account</span>
+                </a>
+              )}
             </div>
 
             <div className="border-b border-border">
