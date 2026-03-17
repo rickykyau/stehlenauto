@@ -172,7 +172,7 @@
   }
 }
 
-/* Shopify policy HTML styling */
+/* ── Policy HTML rendered from Shopify ─────── */
 .policy-html h1,
 .policy-html h2,
 .policy-html h3 {
@@ -185,6 +185,7 @@
   margin-top: 1.5rem;
   text-transform: uppercase;
 }
+.policy-html h1 { font-size: 0.85rem; }
 .policy-html h4 {
   font-family: 'Geist Mono', monospace;
   font-size: 0.7rem;
@@ -211,11 +212,31 @@
 .policy-html ul {
   list-style-type: disc;
 }
+.policy-html ul li::marker {
+  color: hsl(var(--primary));
+}
 .policy-html ol {
   list-style-type: decimal;
 }
 .policy-html li {
   margin-bottom: 0.5rem;
+}
+.policy-html table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+.policy-html th,
+.policy-html td {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.8rem;
+}
+.policy-html th {
+  background: hsl(var(--muted));
+  font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 
