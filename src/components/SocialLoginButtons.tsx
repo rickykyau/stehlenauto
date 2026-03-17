@@ -97,7 +97,10 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
     }
     window.google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        onError("Google sign-in popup was blocked. Please allow popups and try again.");
+        // Fallback: use Google OAuth redirect flow
+        const redirectUri = encodeURIComponent(window.location.origin + '/auth/google/callback');
+        const scope = encodeURIComponent('email profile');
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=select_account`;
       }
     });
   };
