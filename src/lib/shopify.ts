@@ -532,3 +532,19 @@ export async function removeLineFromShopifyCart(cartId: string, lineId: string):
   }
   return { success: true };
 }
+
+// ── Legal / Policy Pages ───────────────────────────────
+
+export type ShopifyPolicyField = 'privacyPolicy' | 'termsOfService' | 'refundPolicy' | 'shippingPolicy';
+
+export interface ShopifyPolicy {
+  title: string;
+  body: string;
+  url: string;
+}
+
+export async function fetchShopifyPolicy(field: ShopifyPolicyField): Promise<ShopifyPolicy | null> {
+  const query = `{ shop { ${field} { title body url } } }`;
+  const data = await storefrontApiRequest(query);
+  return data?.data?.shop?.[field] ?? null;
+}

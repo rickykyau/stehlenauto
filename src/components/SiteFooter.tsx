@@ -27,8 +27,8 @@ const SiteFooter = () => {
           <ul className="space-y-2">
             {[
               { label: "Product Warranty", to: "/pages/warranty" },
-              { label: "Terms & Conditions", to: "/policies/terms-of-service" },
-              { label: "Returns Policy", to: "/policies/refund-policy" },
+              { label: "Terms & Conditions", to: "/terms" },
+              { label: "Returns Policy", to: "/refund-policy" },
               { label: "Privacy Policy", to: "/privacy-policy" },
             ].map((link) => (
               <li key={link.label}>

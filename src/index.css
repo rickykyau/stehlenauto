@@ -172,6 +172,53 @@
   }
 }
 
+/* Shopify policy HTML styling */
+.policy-html h1,
+.policy-html h2,
+.policy-html h3 {
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: hsl(var(--foreground));
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+  text-transform: uppercase;
+}
+.policy-html h4 {
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+.policy-html p {
+  margin-bottom: 0.75rem;
+}
+.policy-html a {
+  color: hsl(var(--primary));
+}
+.policy-html a:hover {
+  text-decoration: underline;
+}
+.policy-html ul,
+.policy-html ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.policy-html ul {
+  list-style-type: disc;
+}
+.policy-html ol {
+  list-style-type: decimal;
+}
+.policy-html li {
+  margin-bottom: 0.5rem;
+}
+
+
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
