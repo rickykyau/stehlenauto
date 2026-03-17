@@ -14,6 +14,8 @@ interface HelpSection {
   icon?: string;
   bullets?: string[];
   faqs?: FaqItem[];
+  linkTo?: string;
+  linkLabel?: string;
 }
 
 const SECTIONS: HelpSection[] = [
