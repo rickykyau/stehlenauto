@@ -15,19 +15,21 @@ const SocialLoginButtons = ({ mode, onError }: SocialLoginButtonsProps) => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [fbLoading, setFbLoading] = useState(false);
 
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '660392606128-0jpq4ffnlbhichtqt9vtu4hk5q075quu.apps.googleusercontent.com';
+  const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || '818911643850325';
+
   // Initialize Google Identity Services
   useEffect(() => {
     const initGoogle = () => {
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (window.google && clientId) {
+      if (window.google && GOOGLE_CLIENT_ID) {
         window.google.accounts.id.initialize({
-          client_id: clientId,
+          client_id: GOOGLE_CLIENT_ID,
           callback: handleGoogleResponse,
+          use_fedcm_for_prompt: true,
         });
       }
     };
 
-    // SDK may already be loaded or load later
     if (window.google) {
       initGoogle();
     } else {
