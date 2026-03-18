@@ -55,10 +55,9 @@ const AppInner = () => {
         <Route path="/policies/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
-        <Route path="/account/login" element={<ShopifyRedirect />} />
-        <Route path="/account/register" element={<ShopifyRedirect />} />
-        <Route path="/account/forgot-password" element={<ShopifyRedirect />} />
-        <Route path="/auth/google/callback" element={<ShopifyRedirect />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/account/login" element={<LoginPage />} />
+        <Route path="/account/register" element={<LoginPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
         <Route path="*" element={<NotFound />} />
