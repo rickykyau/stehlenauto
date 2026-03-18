@@ -294,17 +294,31 @@ const SiteHeader = () => {
               {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
             </button>
             {/* Desktop: Sign In / Account */}
-            {customer ? (
-              <Link
-                to="/account"
-                className="hidden md:flex items-center justify-center h-10 px-3 gap-1.5 text-foreground hover:text-primary transition-colors btn-press"
-                aria-label="My Account"
-              >
-                <User className="w-5 h-5" />
-                {customer.firstName && (
-                  <span className="font-display text-[10px] tracking-widest">{customer.firstName.toUpperCase()}</span>
-                )}
-              </Link>
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="hidden md:flex items-center justify-center w-10 h-10 btn-press"
+                    aria-label="Account menu"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-display text-xs flex items-center justify-center tracking-wider">
+                      {getInitials(supaUser!)}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                    <User className="w-4 h-4" /> My Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                    <Package className="w-4 h-4" /> Order History
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link
                 to="/login"
