@@ -28,6 +28,10 @@ import ShopifyPolicyPage from "./pages/ShopifyPolicyPage.tsx";
 import ContactPage from "./pages/ContactPage.tsx";
 import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 import AccountPage from "./pages/AccountPage.tsx";
+import AccountSettingsPage from "./pages/AccountSettingsPage.tsx";
+import MyOrdersPage from "./pages/MyOrdersPage.tsx";
+import MyAddressesPage from "./pages/MyAddressesPage.tsx";
+import MyVehiclesPage from "./pages/MyVehiclesPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
 import ShopifyRedirect from "./components/ShopifyRedirect.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
@@ -61,6 +65,10 @@ const AppInner = () => {
         <Route path="/account/register" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/account" element={<AccountPage />} />
+        <Route path="/account/settings" element={<AccountSettingsPage />} />
+        <Route path="/account/orders" element={<MyOrdersPage />} />
+        <Route path="/account/addresses" element={<MyAddressesPage />} />
+        <Route path="/account/vehicles" element={<MyVehiclesPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

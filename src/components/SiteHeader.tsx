@@ -310,7 +310,7 @@ const SiteHeader = () => {
                   <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
                     <User className="w-4 h-4" /> My Account
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                  <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer gap-2">
                     <Package className="w-4 h-4" /> Order History
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -434,7 +434,7 @@ const SiteHeader = () => {
               {isLoggedIn ? (
                 <>
                   <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="/account" />
-                  <MenuLink icon={<Package className="w-5 h-5" />} label="Order History" to="/account" />
+                  <MenuLink icon={<Package className="w-5 h-5" />} label="Order History" to="/account/orders" />
                   <button
                     onClick={() => { setMenuOpen(false); handleSignOut(); }}
                     className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group w-full"
