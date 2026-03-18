@@ -431,8 +431,18 @@ const SiteHeader = () => {
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
-              {customer ? (
-                <MenuLink icon={<User className="w-5 h-5" />} label={`Hi, ${customer.firstName || "there"}`} to="/account" />
+              {isLoggedIn ? (
+                <>
+                  <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="/account" />
+                  <MenuLink icon={<Package className="w-5 h-5" />} label="Order History" to="/account" />
+                  <button
+                    onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                    className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group w-full"
+                  >
+                    <span className="text-muted-foreground group-hover:text-destructive transition-colors"><LogOut className="w-5 h-5" /></span>
+                    <span className="font-body text-sm text-foreground">Sign Out</span>
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/login"
