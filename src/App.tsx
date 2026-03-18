@@ -31,6 +31,7 @@ import AccountPage from "./pages/AccountPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
 import ShopifyRedirect from "./components/ShopifyRedirect.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
+import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 
 const queryClient = new QueryClient();
 
