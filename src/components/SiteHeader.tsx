@@ -266,13 +266,13 @@ const SiteHeader = () => {
                 )}
               </Link>
             ) : (
-              <a
-                href="https://shopify.com/72426389551/account"
+              <Link
+                to="/login"
                 className="hidden md:flex items-center justify-center w-10 h-10 text-muted-foreground hover:text-foreground transition-colors btn-press"
                 aria-label="Sign In"
               >
                 <User className="w-5 h-5" />
-              </a>
+              </Link>
             )}
             <button onClick={toggleCart} className="relative w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors btn-press">
               <ShoppingCart className="w-5 h-5" />
