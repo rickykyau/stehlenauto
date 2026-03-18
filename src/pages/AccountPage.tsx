@@ -37,9 +37,10 @@ const AccountPage = () => {
   const getDisplayName = () => {
     if (profile?.first_name) return profile.first_name;
     const meta = user?.user_metadata;
+    if (meta?.given_name) return meta.given_name;
     const fullName = meta?.full_name || meta?.name;
     if (fullName) return fullName.split(" ")[0];
-    return user?.email || "there";
+    return user?.email?.split("@")[0] || "there";
   };
 
   if (loading) {
