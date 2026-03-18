@@ -132,15 +132,11 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
             className="w-full h-12 px-4 bg-input text-foreground font-display text-sm tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
             <option value="">MODEL</option>
-            {make && MODELS[make]?.map((m) => {
-              const count = modelCounts.get(m);
-              const hasCount = count !== undefined && year && make;
-              return (
-                <option key={m} value={m} className={hasCount && count === 0 ? "opacity-50" : ""}>
-                  {m}{hasCount ? ` (${count} part${count !== 1 ? "s" : ""})` : ""}
-                </option>
-              );
-            })}
+            {make && MODELS[make]?.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
           </select>
           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
