@@ -212,7 +212,4 @@ const MyAddressesPage = () => {
   );
 };
 
-// Need MapPin import at top for empty state
-import { MapPin as MapPinIcon } from "lucide-react";
-
 export default MyAddressesPage;
