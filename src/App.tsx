@@ -30,6 +30,7 @@ import HelpCenterPage from "./pages/HelpCenterPage.tsx";
 import AccountPage from "./pages/AccountPage.tsx";
 import OrderDetailPage from "./pages/OrderDetailPage.tsx";
 import ShopifyRedirect from "./components/ShopifyRedirect.tsx";
+import LoginPage from "./pages/LoginPage.tsx";
 
 const queryClient = new QueryClient();
 
