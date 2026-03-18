@@ -65,11 +65,24 @@ const MENU_VEHICLES = [
   { label: "Volkswagen", handle: "volkswagen-parts" },
 ];
 
+const getInitials = (user: SupabaseUser): string => {
+  const meta = user.user_metadata;
+  const fullName = meta?.full_name || meta?.name || "";
+  if (fullName) {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return fullName.slice(0, 2).toUpperCase();
+  }
+  const email = user.email || "";
+  return email.slice(0, 2).toUpperCase();
+};
+
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
+  const [supaUser, setSupaUser] = useState<SupabaseUser | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
@@ -77,6 +90,24 @@ const SiteHeader = () => {
   const { vehicle, vehicleLabel } = useVehicle();
   const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
+
+  // Supabase auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSupaUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupaUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  const isLoggedIn = !!supaUser;
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
