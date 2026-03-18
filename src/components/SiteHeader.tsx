@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
@@ -11,6 +11,15 @@ import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
+import { supabase } from "@/integrations/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 /* Hardcoded category list — sorted by product count descending */
 const MENU_CATEGORIES = [
@@ -56,11 +65,24 @@ const MENU_VEHICLES = [
   { label: "Volkswagen", handle: "volkswagen-parts" },
 ];
 
+const getInitials = (user: SupabaseUser): string => {
+  const meta = user.user_metadata;
+  const fullName = meta?.full_name || meta?.name || "";
+  if (fullName) {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return fullName.slice(0, 2).toUpperCase();
+  }
+  const email = user.email || "";
+  return email.slice(0, 2).toUpperCase();
+};
+
 const SiteHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
+  const [supaUser, setSupaUser] = useState<SupabaseUser | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
@@ -68,6 +90,24 @@ const SiteHeader = () => {
   const { vehicle, vehicleLabel } = useVehicle();
   const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
+
+  // Supabase auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSupaUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSupaUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  const isLoggedIn = !!supaUser;
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -254,17 +294,31 @@ const SiteHeader = () => {
               {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
             </button>
             {/* Desktop: Sign In / Account */}
-            {customer ? (
-              <Link
-                to="/account"
-                className="hidden md:flex items-center justify-center h-10 px-3 gap-1.5 text-foreground hover:text-primary transition-colors btn-press"
-                aria-label="My Account"
-              >
-                <User className="w-5 h-5" />
-                {customer.firstName && (
-                  <span className="font-display text-[10px] tracking-widest">{customer.firstName.toUpperCase()}</span>
-                )}
-              </Link>
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="hidden md:flex items-center justify-center w-10 h-10 btn-press"
+                    aria-label="Account menu"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-display text-xs flex items-center justify-center tracking-wider">
+                      {getInitials(supaUser!)}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                    <User className="w-4 h-4" /> My Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                    <Package className="w-4 h-4" /> Order History
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Link
                 to="/login"
@@ -377,8 +431,18 @@ const SiteHeader = () => {
             <div className="border-b border-border">
               <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
-              {customer ? (
-                <MenuLink icon={<User className="w-5 h-5" />} label={`Hi, ${customer.firstName || "there"}`} to="/account" />
+              {isLoggedIn ? (
+                <>
+                  <MenuLink icon={<User className="w-5 h-5" />} label="My Account" to="/account" />
+                  <MenuLink icon={<Package className="w-5 h-5" />} label="Order History" to="/account" />
+                  <button
+                    onClick={() => { setMenuOpen(false); handleSignOut(); }}
+                    className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group w-full"
+                  >
+                    <span className="text-muted-foreground group-hover:text-destructive transition-colors"><LogOut className="w-5 h-5" /></span>
+                    <span className="font-body text-sm text-foreground">Sign Out</span>
+                  </button>
+                </>
               ) : (
                 <Link
                   to="/login"
