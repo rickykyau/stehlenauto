@@ -310,7 +310,7 @@ const SiteHeader = () => {
                   <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
                     <User className="w-4 h-4" /> My Account
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/account")} className="cursor-pointer gap-2">
+                  <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer gap-2">
                     <Package className="w-4 h-4" /> Order History
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
