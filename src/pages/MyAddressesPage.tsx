@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ChevronLeft, Plus, Pencil, Trash2, Star, Loader2 } from "lucide-react";
+import { ChevronLeft, Plus, Pencil, Trash2, Star, Loader2, MapPin } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { supabase } from "@/integrations/supabase/client";
