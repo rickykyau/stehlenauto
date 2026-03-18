@@ -59,6 +59,7 @@ const AppInner = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/account/login" element={<LoginPage />} />
         <Route path="/account/register" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
         <Route path="*" element={<NotFound />} />
