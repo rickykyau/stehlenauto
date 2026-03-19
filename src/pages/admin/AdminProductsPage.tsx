@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+import { fuzzyMatch } from "@/lib/fuzzy-search";
 
 interface ProductCache {
   id: string;
