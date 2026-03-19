@@ -59,6 +59,27 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["admin_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -86,6 +107,125 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      promo_code_usage: {
+        Row: {
+          discount_applied: number
+          id: string
+          order_id: string | null
+          promo_code_id: string
+          used_at: string
+          user_id: string | null
+        }
+        Insert: {
+          discount_applied?: number
+          id?: string
+          order_id?: string | null
+          promo_code_id: string
+          used_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          discount_applied?: number
+          id?: string
+          order_id?: string | null
+          promo_code_id?: string
+          used_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_usage_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          applies_to: Database["public"]["Enums"]["applies_to_type"]
+          code: string
+          collection_ids: string[] | null
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          description: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: number
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          minimum_order_amount: number | null
+          product_ids: string[] | null
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          applies_to?: Database["public"]["Enums"]["applies_to_type"]
+          code: string
+          collection_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: number
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          minimum_order_amount?: number | null
+          product_ids?: string[] | null
+          starts_at?: string
+          updated_at?: string
+        }
+        Update: {
+          applies_to?: Database["public"]["Enums"]["applies_to_type"]
+          code?: string
+          collection_ids?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          description?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: number
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          minimum_order_amount?: number | null
+          product_ids?: string[] | null
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
         }
         Relationships: []
       }
@@ -154,10 +294,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      admin_role: "owner" | "staff"
+      applies_to_type: "all" | "specific_products" | "specific_collections"
+      discount_type: "percentage" | "fixed_amount"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -284,6 +426,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      admin_role: ["owner", "staff"],
+      applies_to_type: ["all", "specific_products", "specific_collections"],
+      discount_type: ["percentage", "fixed_amount"],
+    },
   },
 } as const
