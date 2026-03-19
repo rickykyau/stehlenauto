@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductCache {
@@ -15,7 +15,12 @@ interface ProductCache {
   images: any[];
   fitment_vehicles: any[];
   last_synced_at: string;
+  cb_item_name: string | null;
+  metafields: any[];
 }
+
+type SortField = "cb_item_name" | "title";
+type SortDir = "asc" | "desc";
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductCache[]>([]);
@@ -27,6 +32,8 @@ export default function AdminProductsPage() {
   const [filterType, setFilterType] = useState("all");
   const [filterLowStock, setFilterLowStock] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("title");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -82,19 +89,48 @@ export default function AdminProductsPage() {
     return min === max ? `$${min.toFixed(2)}` : `$${min.toFixed(2)} – $${max.toFixed(2)}`;
   };
 
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
   const productTypes = [...new Set(products.map((p) => p.product_type).filter(Boolean))] as string[];
 
-  const filtered = products.filter((p) => {
-    const q = search.toLowerCase();
-    const matchesSearch = !q ||
-      p.title.toLowerCase().includes(q) ||
-      (p.product_type || "").toLowerCase().includes(q) ||
-      p.variants.some((v: any) => (v.sku || "").toLowerCase().includes(q));
-    const matchesStatus = filterStatus === "all" || p.status === filterStatus;
-    const matchesType = filterType === "all" || p.product_type === filterType;
-    const matchesLow = !filterLowStock || getTotalInventory(p.variants) < 10;
-    return matchesSearch && matchesStatus && matchesType && matchesLow;
-  });
+  const filtered = products
+    .filter((p) => {
+      const q = search.toLowerCase();
+      const matchesSearch = !q ||
+        p.title.toLowerCase().includes(q) ||
+        (p.product_type || "").toLowerCase().includes(q) ||
+        (p.cb_item_name || "").toLowerCase().includes(q) ||
+        p.variants.some((v: any) => (v.sku || "").toLowerCase().includes(q));
+      const matchesStatus = filterStatus === "all" || p.status === filterStatus;
+      const matchesType = filterType === "all" || p.product_type === filterType;
+      const matchesLow = !filterLowStock || getTotalInventory(p.variants) < 10;
+      return matchesSearch && matchesStatus && matchesType && matchesLow;
+    })
+    .sort((a, b) => {
+      const valA = (a[sortField] || "").toLowerCase();
+      const valB = (b[sortField] || "").toLowerCase();
+      const cmp = valA.localeCompare(valB);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
+    <th
+      className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground cursor-pointer select-none hover:text-foreground transition-colors"
+      onClick={() => toggleSort(field)}
+    >
+      <span className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`w-3 h-3 ${sortField === field ? "text-primary" : ""}`} />
+      </span>
+    </th>
+  );
 
   return (
     <div className="space-y-6">
@@ -119,7 +155,7 @@ export default function AdminProductsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, SKU, type…"
+            placeholder="Search by title, CB Item Name, SKU, type…"
             className="w-full pl-10 pr-4 py-2 bg-card border border-border text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -152,8 +188,9 @@ export default function AdminProductsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
+              <SortHeader field="cb_item_name" label="CB ITEM NAME" />
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground w-12"></th>
-              <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">TITLE</th>
+              <SortHeader field="title" label="TITLE" />
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">TYPE</th>
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">VARIANTS</th>
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">PRICE</th>
@@ -164,9 +201,9 @@ export default function AdminProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground text-xs">
+              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-xs">
                 {products.length === 0 ? 'No products synced yet. Click "Sync Products" to fetch from Shopify.' : "No matching products."}
               </td></tr>
             ) : (
@@ -180,6 +217,9 @@ export default function AdminProductsPage() {
                       className="border-b border-border hover:bg-accent/30 cursor-pointer"
                       onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
                     >
+                      <td className="px-4 py-3 font-body text-foreground text-xs max-w-[160px] truncate">
+                        {p.cb_item_name || <span className="text-muted-foreground">—</span>}
+                      </td>
                       <td className="px-4 py-3">
                         {p.images?.[0] ? (
                           <img src={(p.images[0] as any).src} alt="" className="w-10 h-10 object-cover border border-border" />
@@ -212,8 +252,9 @@ export default function AdminProductsPage() {
                     </tr>
                     {expandedId === p.id && (
                       <tr key={`${p.id}-detail`} className="border-b border-border bg-accent/10">
-                        <td colSpan={8} className="px-6 py-4">
-                          <div className="grid md:grid-cols-2 gap-6">
+                        <td colSpan={9} className="px-6 py-4">
+                          <div className="grid md:grid-cols-3 gap-6">
+                            {/* Variants */}
                             <div>
                               <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">VARIANTS</h4>
                               <div className="space-y-1">
@@ -227,9 +268,11 @@ export default function AdminProductsPage() {
                                 ))}
                               </div>
                             </div>
+                            {/* Info */}
                             <div>
                               <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">INFO</h4>
                               <div className="text-sm font-body space-y-1">
+                                <p><span className="text-muted-foreground">CB Item Name:</span> <span className="text-foreground">{p.cb_item_name || "—"}</span></p>
                                 <p><span className="text-muted-foreground">Vendor:</span> <span className="text-foreground">{p.vendor || "—"}</span></p>
                                 <p><span className="text-muted-foreground">Shopify ID:</span> <span className="text-foreground">{p.shopify_product_id}</span></p>
                                 <p><span className="text-muted-foreground">Last synced:</span> <span className="text-foreground">{new Date(p.last_synced_at).toLocaleString()}</span></p>
@@ -248,6 +291,24 @@ export default function AdminProductsPage() {
                                     )}
                                   </div>
                                 </div>
+                              )}
+                            </div>
+                            {/* Metafields */}
+                            <div>
+                              <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">METAFIELDS</h4>
+                              {(p.metafields && p.metafields.length > 0) ? (
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                                  {p.metafields.map((mf: any, i: number) => (
+                                    <div key={i} className="text-sm font-body">
+                                      <span className="text-muted-foreground">{mf.namespace}.{mf.key}:</span>{" "}
+                                      <span className="text-foreground break-all">
+                                        {typeof mf.value === "string" && mf.value.length > 100 ? mf.value.slice(0, 100) + "…" : mf.value}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">No metafields</p>
                               )}
                             </div>
                           </div>

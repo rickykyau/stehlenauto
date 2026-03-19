@@ -62,6 +62,34 @@ serve(async (req) => {
 
     const now = new Date().toISOString();
 
+    // Fetch metafields for each product (batched with concurrency limit)
+    const CONCURRENCY = 5;
+    const productMetafields: Map<string, any[]> = new Map();
+
+    for (let i = 0; i < allProducts.length; i += CONCURRENCY) {
+      const batch = allProducts.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async (product: any) => {
+          try {
+            const mfUrl = `https://${shopDomain}/admin/api/${apiVersion}/products/${product.id}/metafields.json`;
+            const mfRes = await fetch(mfUrl, {
+              headers: { "X-Shopify-Access-Token": shopifyToken, "Content-Type": "application/json" },
+            });
+            if (mfRes.ok) {
+              const mfData = await mfRes.json();
+              return { id: product.id, metafields: mfData.metafields || [] };
+            }
+            return { id: product.id, metafields: [] };
+          } catch {
+            return { id: product.id, metafields: [] };
+          }
+        })
+      );
+      for (const r of results) {
+        productMetafields.set(String(r.id), r.metafields);
+      }
+    }
+
     // Transform all products into rows
     const rows = allProducts.map((product: any) => {
       const tags = product.tags ? product.tags.split(", ") : [];
@@ -71,6 +99,26 @@ serve(async (req) => {
           const parts = t.split(" ");
           return { year: parts[0], make: parts[1], model: parts.slice(2).join(" ") };
         });
+
+      const metafields = productMetafields.get(String(product.id)) || [];
+      
+      // Extract CB Item Name - check multiple possible keys
+      let cbItemName: string | null = null;
+      for (const mf of metafields) {
+        const key = (mf.key || "").toLowerCase().replace(/[\s-]/g, "_");
+        if (key === "cb_item_name" || mf.key === "CB Item Name") {
+          cbItemName = mf.value;
+          break;
+        }
+      }
+
+      // Store metafields as clean objects
+      const metafieldsClean = metafields.map((mf: any) => ({
+        namespace: mf.namespace,
+        key: mf.key,
+        value: mf.value,
+        type: mf.type,
+      }));
 
       return {
         shopify_product_id: String(product.id),
@@ -87,12 +135,14 @@ serve(async (req) => {
           id: String(img.id), src: img.src, alt: img.alt,
         })),
         fitment_vehicles: fitmentVehicles,
+        cb_item_name: cbItemName,
+        metafields: metafieldsClean,
         updated_at: product.updated_at || now,
         last_synced_at: now,
       };
     });
 
-    // Batch upsert in chunks of 200 for speed
+    // Batch upsert in chunks of 200
     let synced = 0;
     const CHUNK = 200;
     for (let i = 0; i < rows.length; i += CHUNK) {
@@ -102,7 +152,7 @@ serve(async (req) => {
       synced += count ?? 0;
     }
 
-    // Low stock alerts: query from DB after upsert
+    // Low stock alerts
     const { data: lowStock } = await supabase
       .from("products_cache")
       .select("id, title, variants")
@@ -131,7 +181,6 @@ serve(async (req) => {
       }
     }
 
-    // Update last sync timestamp
     await supabase.from("site_settings").upsert(
       { key: "last_products_sync", value: { timestamp: now } },
       { onConflict: "key" }
