@@ -317,6 +317,14 @@ const SiteHeader = () => {
                   <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer gap-2">
                     <Package className="w-4 h-4" /> Order History
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer gap-2 text-primary focus:text-primary">
+                        <Shield className="w-4 h-4" /> Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
                     <LogOut className="w-4 h-4" /> Sign Out
