@@ -100,6 +100,7 @@ const LoginPage = () => {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
+    trackEvent("login", { method: "google" });
     if (result?.error) {
       setError("Google sign-in failed. Please try again.");
       setGoogleLoading(false);
