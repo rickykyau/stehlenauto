@@ -92,6 +92,7 @@ const SiteHeader = () => {
   const { vehicle, vehicleLabel } = useVehicle();
   const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
+  const { isAdmin } = useAdmin();
 
   // Supabase auth listener
   useEffect(() => {
