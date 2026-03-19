@@ -6,8 +6,7 @@
  * /cart                → templates/cart.liquid (TODO)
  * /pages/:handle       → templates/page.liquid (TODO)
  * /account             → Shopify hosted account
- *
- * Note: Shopify uses /products/ (plural), not /product/
+ * /admin               → Admin panel
  */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
@@ -18,6 +17,7 @@ import { VehicleProvider } from "@/contexts/VehicleContext";
 import { CustomerProvider } from "@/contexts/CustomerContext";
 import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useCartSync } from "@/hooks/useCartSync";
 import { usePageTracking } from "@/hooks/usePageTracking";
 import { initGA4 } from "@/lib/analytics";
@@ -39,6 +39,11 @@ import OrderDetailPage from "./pages/OrderDetailPage.tsx";
 import ShopifyRedirect from "./components/ShopifyRedirect.tsx";
 import LoginPage from "./pages/LoginPage.tsx";
 import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
+import AdminLayout from "./components/admin/AdminLayout.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import AdminPromoCodesPage from "./pages/admin/AdminPromoCodesPage.tsx";
+import AdminSettingsPage from "./pages/admin/AdminSettingsPage.tsx";
+import AdminPlaceholder from "./pages/admin/AdminPlaceholder.tsx";
 
 const queryClient = new QueryClient();
 
@@ -49,9 +54,10 @@ const RouterContent = () => {
       <ScrollToTop />
       <CartDrawer />
       <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/collections/:handle" element={<CollectionPage />} />
-        <Route path="/products/:slug" element={<ProductDetailPage />} />
+        {/* Storefront */}
+        <Route path="/" element={<><AnnouncementBanner /><Index /></>} />
+        <Route path="/collections/:handle" element={<><AnnouncementBanner /><CollectionPage /></>} />
+        <Route path="/products/:slug" element={<><AnnouncementBanner /><ProductDetailPage /></>} />
         <Route path="/pages/warranty" element={<WarrantyPage />} />
         <Route path="/privacy-policy" element={<ShopifyPolicyPage field="privacyPolicy" fallbackTitle="Privacy Policy" />} />
         <Route path="/policies/privacy-policy" element={<ShopifyPolicyPage field="privacyPolicy" fallbackTitle="Privacy Policy" />} />
@@ -73,6 +79,18 @@ const RouterContent = () => {
         <Route path="/account/addresses" element={<MyAddressesPage />} />
         <Route path="/account/vehicles" element={<MyVehiclesPage />} />
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminPlaceholder />} />
+          <Route path="orders" element={<AdminPlaceholder />} />
+          <Route path="promo-codes" element={<AdminPromoCodesPage />} />
+          <Route path="analytics" element={<AdminPlaceholder />} />
+          <Route path="content" element={<AdminPlaceholder />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
+        </Route>
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>

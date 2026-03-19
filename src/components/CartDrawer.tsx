@@ -1,7 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import PromoCodeInput from "./PromoCodeInput";
+
+interface AppliedPromo {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  minimum_order_amount: number | null;
+}
 
 const CartDrawer = () => {
   const {
@@ -10,8 +19,17 @@ const CartDrawer = () => {
     syncCart, getCheckoutUrl,
   } = useCartStore();
 
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
+
+  const discount = appliedPromo
+    ? appliedPromo.discount_type === "percentage"
+      ? subtotal * (appliedPromo.discount_value / 100)
+      : Math.min(appliedPromo.discount_value, subtotal)
+    : 0;
+  const total = subtotal - discount;
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -22,10 +40,17 @@ const CartDrawer = () => {
   // Sync cart when drawer opens
   useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
 
+  // Clear promo when cart empties
+  useEffect(() => { if (items.length === 0) setAppliedPromo(null); }, [items.length]);
+
   const handleCheckout = () => {
     const checkoutUrl = getCheckoutUrl();
     if (checkoutUrl) {
-      window.open(checkoutUrl, '_blank');
+      // Append discount code to checkout URL if promo applied
+      const url = appliedPromo
+        ? `${checkoutUrl}${checkoutUrl.includes("?") ? "&" : "?"}discount=${appliedPromo.code}`
+        : checkoutUrl;
+      window.open(url, '_blank');
       closeCart();
     }
   };
@@ -141,10 +166,32 @@ const CartDrawer = () => {
 
             {/* Footer */}
             <div className="border-t border-border shrink-0">
+              {/* Promo Code */}
+              <div className="px-5 pt-4">
+                <PromoCodeInput
+                  subtotal={subtotal}
+                  appliedPromo={appliedPromo}
+                  onApply={setAppliedPromo}
+                  onRemove={() => setAppliedPromo(null)}
+                />
+              </div>
+
               {/* Subtotal */}
-              <div className="px-5 py-4 flex items-center justify-between">
-                <span className="font-display text-xs tracking-widest text-muted-foreground">SUBTOTAL</span>
-                <span className="font-display text-lg text-foreground font-bold">${subtotal.toFixed(2)}</span>
+              <div className="px-5 py-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-display text-[10px] tracking-widest text-muted-foreground">SUBTOTAL</span>
+                  <span className="font-body text-sm text-foreground">${subtotal.toFixed(2)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-display text-[10px] tracking-widest text-primary">DISCOUNT</span>
+                    <span className="font-body text-sm text-primary">-${discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-border">
+                  <span className="font-display text-xs tracking-widest text-foreground">TOTAL</span>
+                  <span className="font-display text-lg text-foreground font-bold">${total.toFixed(2)}</span>
+                </div>
               </div>
 
               <p className="px-5 pb-3 font-body text-[11px] text-muted-foreground">

@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package, Shield } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
@@ -14,6 +14,7 @@ import { useCustomer } from "@/contexts/CustomerContext";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useAdmin } from "@/hooks/useAdmin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,6 +92,7 @@ const SiteHeader = () => {
   const { vehicle, vehicleLabel } = useVehicle();
   const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
+  const { isAdmin } = useAdmin();
 
   // Supabase auth listener
   useEffect(() => {
@@ -316,6 +318,14 @@ const SiteHeader = () => {
                   <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer gap-2">
                     <Package className="w-4 h-4" /> Order History
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate("/admin")} className="cursor-pointer gap-2 text-primary focus:text-primary">
+                        <Shield className="w-4 h-4" /> Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer gap-2 text-destructive focus:text-destructive">
                     <LogOut className="w-4 h-4" /> Sign Out
