@@ -44,6 +44,8 @@ const queryClient = new QueryClient();
 
 const AppInner = () => {
   useCartSync();
+  usePageTracking();
+  useEffect(() => { initGA4(); }, []);
   return (
     <BrowserRouter>
       <ScrollToTop />
