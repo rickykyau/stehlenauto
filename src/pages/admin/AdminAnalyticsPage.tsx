@@ -325,15 +325,84 @@ export default function AdminAnalyticsPage() {
               </table>
             </div>
 
-            {/* Placeholder cards */}
+            {/* Promo Codes Analytics */}
             <div className="space-y-4">
-              <div className="border border-border bg-card p-6 text-center">
-                <p className="font-display text-[10px] tracking-widest text-muted-foreground mb-1">REVENUE</p>
-                <p className="font-body text-sm text-muted-foreground">Coming soon — Shopify integration</p>
+              <div className="border border-border bg-card p-4">
+                <h4 className="font-display text-[10px] tracking-widest text-muted-foreground mb-4">PROMO CODE REDEMPTIONS</h4>
+                {(() => {
+                  const dailyPromo: Record<string, number> = {};
+                  promoUsage.forEach((u: any) => {
+                    const day = u.used_at.slice(0, 10);
+                    dailyPromo[day] = (dailyPromo[day] || 0) + 1;
+                  });
+                  const chartData = Object.entries(dailyPromo).sort().map(([date, count]) => ({ date: date.slice(5), count }));
+                  return chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={160}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,8%,20%)" />
+                        <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(220,8%,55%)" }} />
+                        <YAxis tick={{ fontSize: 10, fill: "hsl(220,8%,55%)" }} />
+                        <Tooltip {...tooltipStyle} />
+                        <Line type="monotone" dataKey="count" stroke={CHART_COLORS[0]} strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : <p className="text-center text-muted-foreground text-xs py-8">No redemptions</p>;
+                })()}
               </div>
-              <div className="border border-border bg-card p-6 text-center">
-                <p className="font-display text-[10px] tracking-widest text-muted-foreground mb-1">ORDERS</p>
-                <p className="font-body text-sm text-muted-foreground">Coming soon — Shopify integration</p>
+              <div className="border border-border bg-card">
+                <div className="px-4 py-3 border-b border-border">
+                  <h4 className="font-display text-[10px] tracking-widest text-muted-foreground">TOP PROMO CODES</h4>
+                </div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">CODE</th>
+                      <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground text-right">USES</th>
+                      <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground text-right">DISCOUNT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const codeMap: Record<string, { uses: number; discount: number }> = {};
+                      promoUsage.forEach((u: any) => {
+                        if (!codeMap[u.promo_code_id]) codeMap[u.promo_code_id] = { uses: 0, discount: 0 };
+                        codeMap[u.promo_code_id].uses++;
+                        codeMap[u.promo_code_id].discount += Number(u.discount_applied);
+                      });
+                      return Object.entries(codeMap)
+                        .sort((a, b) => b[1].uses - a[1].uses)
+                        .slice(0, 10)
+                        .map(([id, stats]) => {
+                          const code = promoCodes.find((c: any) => c.id === id)?.code || "?";
+                          return (
+                            <tr key={id} className="border-b border-border last:border-0 hover:bg-accent/30">
+                              <td className="px-4 py-2 font-display text-xs tracking-wider text-foreground">{code}</td>
+                              <td className="px-4 py-2 font-body text-muted-foreground text-right">{stats.uses}</td>
+                              <td className="px-4 py-2 font-body text-foreground text-right">${stats.discount.toFixed(2)}</td>
+                            </tr>
+                          );
+                        });
+                    })()}
+                    {promoUsage.length === 0 && (
+                      <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground text-xs">No data</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {/* Conversion metric */}
+              <div className="border border-border bg-card p-4">
+                <h4 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">PROMO CODE CONVERSION</h4>
+                {(() => {
+                  const usersWithPromo = new Set(promoUsage.map((u: any) => u.user_id).filter(Boolean)).size;
+                  const totalUniqueUsers = new Set(activity.filter((a) => a.user_id).map((a) => a.user_id)).size;
+                  const rate = totalUniqueUsers > 0 ? ((usersWithPromo / totalUniqueUsers) * 100).toFixed(1) : "0";
+                  return (
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-2xl text-foreground">{rate}%</span>
+                      <span className="font-body text-xs text-muted-foreground">of users used a promo code ({usersWithPromo} / {totalUniqueUsers})</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
