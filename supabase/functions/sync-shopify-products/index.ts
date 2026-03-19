@@ -32,8 +32,7 @@ serve(async (req) => {
     let pageInfo: string | null = null;
     let hasNext = true;
 
-    console.log(`Fetching products from ${shopDomain}...`);
-
+    // Fetch all products from Shopify
     while (hasNext) {
       const params = new URLSearchParams({ limit: "250" });
       if (pageInfo) params.set("page_info", pageInfo);
@@ -50,7 +49,6 @@ serve(async (req) => {
 
       const data = await res.json();
       allProducts = allProducts.concat(data.products || []);
-      console.log(`Fetched ${allProducts.length} products so far...`);
 
       const linkHeader = res.headers.get("Link") || "";
       const nextMatch = linkHeader.match(/<[^>]*page_info=([^&>]*)>[^;]*;\s*rel="next"/);
@@ -59,14 +57,12 @@ serve(async (req) => {
       } else {
         hasNext = false;
       }
-
       if (allProducts.length >= 5000) break;
     }
 
     const now = new Date().toISOString();
-    const lowStockAlerts: any[] = [];
 
-    // Build rows for batch upsert
+    // Transform all products into rows
     const rows = allProducts.map((product: any) => {
       const tags = product.tags ? product.tags.split(", ") : [];
       const fitmentVehicles = tags
@@ -76,21 +72,6 @@ serve(async (req) => {
           return { year: parts[0], make: parts[1], model: parts.slice(2).join(" ") };
         });
 
-      const variants = (product.variants || []).map((v: any) => ({
-        id: String(v.id),
-        title: v.title,
-        price: v.price,
-        sku: v.sku,
-        inventory_quantity: v.inventory_quantity ?? 0,
-        available: v.inventory_quantity > 0,
-      }));
-
-      const images = (product.images || []).map((img: any) => ({
-        id: String(img.id),
-        src: img.src,
-        alt: img.alt,
-      }));
-
       return {
         shopify_product_id: String(product.id),
         title: product.title,
@@ -98,53 +79,55 @@ serve(async (req) => {
         product_type: product.product_type,
         status: product.status || "active",
         tags,
-        variants,
-        images,
+        variants: (product.variants || []).map((v: any) => ({
+          id: String(v.id), title: v.title, price: v.price, sku: v.sku,
+          inventory_quantity: v.inventory_quantity ?? 0, available: v.inventory_quantity > 0,
+        })),
+        images: (product.images || []).map((img: any) => ({
+          id: String(img.id), src: img.src, alt: img.alt,
+        })),
         fitment_vehicles: fitmentVehicles,
         updated_at: product.updated_at || now,
         last_synced_at: now,
       };
     });
 
-    // Batch upsert in chunks of 50
+    // Batch upsert in chunks of 200 for speed
     let synced = 0;
-    for (let i = 0; i < rows.length; i += 50) {
-      const chunk = rows.slice(i, i + 50);
-      const { data: upserted, error } = await supabase
+    const CHUNK = 200;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const { count } = await supabase
         .from("products_cache")
-        .upsert(chunk, { onConflict: "shopify_product_id" })
-        .select("id, variants");
-
-      if (!error && upserted) {
-        synced += upserted.length;
-        // Check low stock
-        for (const item of upserted) {
-          const product = allProducts.find((p: any) => rows.find((r: any) => r.shopify_product_id === String(p.id))?.shopify_product_id === chunk.find((c: any) => {
-            // Match by finding the upserted row
-            return true;
-          })?.shopify_product_id);
-          for (const v of (item.variants as any[] || [])) {
-            if (v.inventory_quantity < 10) {
-              lowStockAlerts.push({
-                product_id: item.id,
-                variant_id: v.id,
-                variant_title: v.title,
-                current_quantity: v.inventory_quantity,
-                threshold: 10,
-                alert_status: "active",
-              });
-            }
-          }
-        }
-      }
-      console.log(`Upserted ${Math.min(i + 50, rows.length)}/${rows.length} products...`);
+        .upsert(rows.slice(i, i + CHUNK), { onConflict: "shopify_product_id", count: "exact" });
+      synced += count ?? 0;
     }
 
-    // Clear old active alerts and insert new ones
+    // Low stock alerts: query from DB after upsert
+    const { data: lowStock } = await supabase
+      .from("products_cache")
+      .select("id, title, variants")
+      .order("title");
+    
+    const alerts: any[] = [];
+    for (const p of (lowStock || [])) {
+      for (const v of (p.variants as any[] || [])) {
+        if (v.inventory_quantity < 10) {
+          alerts.push({
+            product_id: p.id,
+            variant_id: v.id,
+            variant_title: `${p.title} - ${v.title}`,
+            current_quantity: v.inventory_quantity,
+            threshold: 10,
+            alert_status: "active",
+          });
+        }
+      }
+    }
+
     await supabase.from("inventory_alerts").delete().eq("alert_status", "active");
-    if (lowStockAlerts.length > 0) {
-      for (let i = 0; i < lowStockAlerts.length; i += 100) {
-        await supabase.from("inventory_alerts").insert(lowStockAlerts.slice(i, i + 100));
+    if (alerts.length > 0) {
+      for (let i = 0; i < alerts.length; i += 200) {
+        await supabase.from("inventory_alerts").insert(alerts.slice(i, i + 200));
       }
     }
 
@@ -154,10 +137,8 @@ serve(async (req) => {
       { onConflict: "key" }
     );
 
-    console.log(`Sync complete: ${synced} products, ${lowStockAlerts.length} alerts`);
-
     return new Response(
-      JSON.stringify({ success: true, synced, total: allProducts.length, alerts: lowStockAlerts.length }),
+      JSON.stringify({ success: true, synced, total: allProducts.length, alerts: alerts.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
