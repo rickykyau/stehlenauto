@@ -118,6 +118,7 @@ const AppInner = () => {
   return (
     <BrowserRouter>
       <RouterContent />
+      <ChatWidget />
     </BrowserRouter>
   );
 };

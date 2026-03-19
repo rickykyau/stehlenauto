@@ -452,7 +452,7 @@ const SiteHeader = () => {
               </button>
             </div>
             <div className="border-b border-border">
-              <MenuLink icon={<MessageCircle className="w-5 h-5" />} label="Live Chat" to="#" />
+              
               <MenuLink icon={<HelpCircle className="w-5 h-5" />} label="Help Center" to="/help" />
               {isLoggedIn ? (
                 <>
