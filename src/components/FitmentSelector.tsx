@@ -62,7 +62,7 @@ interface FitmentSelectorProps {
 }
 
 const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
-  const { vehicle: savedVehicle, setVehicle } = useVehicle();
+  const { vehicle: savedVehicle, setVehicle, clearVehicle } = useVehicle();
   const navigate = useNavigate();
   const [year, setYear] = useState(savedVehicle?.year || "");
   const [make, setMake] = useState(savedVehicle?.make || "");
