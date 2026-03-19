@@ -94,6 +94,7 @@ const RouterContent = () => {
           <Route path="orders" element={<AdminOrdersPage />} />
           <Route path="products" element={<AdminProductsPage />} />
           <Route path="promo-codes" element={<AdminPromoCodesPage />} />
+          <Route path="promo-codes/:id" element={<AdminPromoCodeDetailPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="content" element={<AdminContentPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
