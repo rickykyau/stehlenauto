@@ -62,31 +62,33 @@ serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Fetch metafields for each product (batched with concurrency limit)
-    const CONCURRENCY = 5;
+    // Fetch metafields for each product sequentially with 500ms delay for rate limiting
     const productMetafields: Map<string, any[]> = new Map();
+    const totalProducts = allProducts.length;
 
-    for (let i = 0; i < allProducts.length; i += CONCURRENCY) {
-      const batch = allProducts.slice(i, i + CONCURRENCY);
-      const results = await Promise.all(
-        batch.map(async (product: any) => {
-          try {
-            const mfUrl = `https://${shopDomain}/admin/api/${apiVersion}/products/${product.id}/metafields.json`;
-            const mfRes = await fetch(mfUrl, {
-              headers: { "X-Shopify-Access-Token": shopifyToken, "Content-Type": "application/json" },
-            });
-            if (mfRes.ok) {
-              const mfData = await mfRes.json();
-              return { id: product.id, metafields: mfData.metafields || [] };
-            }
-            return { id: product.id, metafields: [] };
-          } catch {
-            return { id: product.id, metafields: [] };
-          }
-        })
-      );
-      for (const r of results) {
-        productMetafields.set(String(r.id), r.metafields);
+    for (let i = 0; i < totalProducts; i++) {
+      const product = allProducts[i];
+      try {
+        const mfUrl = `https://${shopDomain}/admin/api/${apiVersion}/products/${product.id}/metafields.json`;
+        const mfRes = await fetch(mfUrl, {
+          headers: { "X-Shopify-Access-Token": shopifyToken, "Content-Type": "application/json" },
+        });
+        if (mfRes.ok) {
+          const mfData = await mfRes.json();
+          productMetafields.set(String(product.id), mfData.metafields || []);
+        } else {
+          productMetafields.set(String(product.id), []);
+        }
+      } catch {
+        productMetafields.set(String(product.id), []);
+      }
+      // Rate limit: 500ms delay between requests
+      if (i < totalProducts - 1) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      // Log progress every 50 products
+      if ((i + 1) % 50 === 0 || i === totalProducts - 1) {
+        console.log(`Syncing metafields... ${i + 1}/${totalProducts} products`);
       }
     }
 
