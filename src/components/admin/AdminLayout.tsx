@@ -13,6 +13,8 @@ import {
   ClipboardList,
   AlertTriangle,
   RefreshCw,
+  MessageCircle,
+  Ticket,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +29,8 @@ const NAV_ITEMS = [
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Content", path: "/admin/content", icon: FileText },
   { label: "Audit Log", path: "/admin/audit-log", icon: ClipboardList },
+  { label: "Chat Logs", path: "/admin/chat-logs", icon: MessageCircle },
+  { label: "Support Tickets", path: "/admin/support-tickets", icon: Ticket },
   { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
