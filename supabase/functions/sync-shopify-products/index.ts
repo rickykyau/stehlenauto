@@ -25,7 +25,8 @@ serve(async (req) => {
       if (!isAdmin) throw new Error("Forbidden");
     }
 
-    const shopDomain = Deno.env.get("SHOPIFY_STORE_URL") || "yrmsvk-4k.myshopify.com";
+    const rawDomain = Deno.env.get("SHOPIFY_STORE_URL") || "yrmsvk-4k.myshopify.com";
+    const shopDomain = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const apiVersion = "2024-01";
     let allProducts: any[] = [];
     let pageInfo: string | null = null;
