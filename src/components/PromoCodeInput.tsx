@@ -66,11 +66,11 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
       : `$${appliedPromo.discount_value.toFixed(2)} off`;
 
     return (
-      <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 px-3 py-2">
+      <div className="flex items-center justify-between bg-primary/10 border border-primary/30 px-3 py-2">
         <div className="flex items-center gap-2">
-          <Check className="w-3.5 h-3.5 text-green-400" />
-          <span className="font-display text-[10px] tracking-wider text-green-400">{appliedPromo.code}</span>
-          <span className="font-body text-xs text-green-400/70">({discountLabel})</span>
+          <Check className="w-3.5 h-3.5 text-primary" />
+          <span className="font-display text-[10px] tracking-wider text-primary">{appliedPromo.code}</span>
+          <span className="font-body text-xs text-primary/70">({discountLabel})</span>
         </div>
         <button onClick={onRemove} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-3.5 h-3.5" />

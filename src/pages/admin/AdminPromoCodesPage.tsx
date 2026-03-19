@@ -115,14 +115,14 @@ export default function AdminPromoCodesPage() {
     const payload = {
       code: form.code.toUpperCase().trim(),
       description: form.description || null,
-      discount_type: form.discount_type,
+      discount_type: form.discount_type as "percentage" | "fixed_amount",
       discount_value: form.discount_value,
       minimum_order_amount: form.minimum_order_amount ? parseFloat(form.minimum_order_amount) : null,
       max_uses: form.max_uses ? parseInt(form.max_uses) : null,
       starts_at: new Date(form.starts_at).toISOString(),
       expires_at: new Date(form.expires_at).toISOString(),
       is_active: form.is_active,
-      applies_to: form.applies_to,
+      applies_to: form.applies_to as "all" | "specific_products" | "specific_collections",
       updated_at: new Date().toISOString(),
     };
 
@@ -130,10 +130,10 @@ export default function AdminPromoCodesPage() {
     if (editingId) {
       ({ error } = await supabase.from("promo_codes").update(payload).eq("id", editingId));
     } else {
-      ({ error } = await supabase.from("promo_codes").insert({
+      ({ error } = await supabase.from("promo_codes").insert([{
         ...payload,
         created_by: session?.user?.id ?? null,
-      }));
+      }]));
     }
 
     setSaving(false);
