@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Loader2, ShoppingCart, ExternalLink, ChevronRight } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, ShoppingCart, ExternalLink, ChevronRight, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useNavigate } from "react-router-dom";
