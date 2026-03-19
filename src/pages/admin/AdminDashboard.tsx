@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   const [avgOrderValue, setAvgOrderValue] = useState<number | null>(null);
   const [ordersToday, setOrdersToday] = useState<number | null>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
         supabase.from("promo_codes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("user_activity_log").select("user_id", { count: "exact", head: true }).gte("created_at", fifteenAgo),
         supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("user_activity_log").select("*").order("created_at", { ascending: false }).limit(20),
+        supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(10),
         supabase.from("orders").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("orders").select("total_price").gte("created_at", monthStart),
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
       setActivePromos(promosRes.count ?? 0);
       setActiveNow(activeRes.count ?? 0);
       setRecentUsers(recentUsersRes.data ?? []);
-      setRecentActivity(activityRes.data ?? []);
+      setRecentOrders((activityRes.data as any[]) ?? []);
       setTotalOrders(ordersCountRes.count ?? 0);
       setOrdersToday(ordersTodayRes.count ?? 0);
       setInventoryAlerts((alertsRes.data as any[]) ?? []);
@@ -160,34 +160,48 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Transactions */}
         <div className="border border-border bg-card">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">RECENT ACTIVITY</h3>
+            <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">RECENT TRANSACTIONS</h3>
           </div>
-          <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-card">
+              <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">EVENT</th>
-                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">TIME</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">ORDER #</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">CUSTOMER</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">DATE</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">ITEMS</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">TOTAL</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">PAYMENT</th>
+                  <th className="px-4 py-2 font-display text-[9px] tracking-widest text-muted-foreground">PROMO</th>
                 </tr>
               </thead>
               <tbody>
-                {recentActivity.map((a) => (
-                  <tr key={a.id} className="border-b border-border last:border-0 hover:bg-accent/30">
+                {recentOrders.map((o: any) => (
+                  <tr key={o.id} className="border-b border-border last:border-0 hover:bg-accent/30">
+                    <td className="px-4 py-2.5 font-body text-foreground font-medium">#{o.order_number}</td>
+                    <td className="px-4 py-2.5 font-body text-foreground">{o.customer_name || "—"}</td>
+                    <td className="px-4 py-2.5 font-body text-muted-foreground text-xs">{new Date(o.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-2.5 font-body text-muted-foreground">{Array.isArray(o.line_items) ? o.line_items.length : 0}</td>
+                    <td className="px-4 py-2.5 font-body text-foreground">${Number(o.total_price).toFixed(2)}</td>
                     <td className="px-4 py-2.5">
-                      <span className="inline-block px-2 py-0.5 bg-primary/10 text-primary font-display text-[9px] tracking-wider">
-                        {a.event_type}
+                      <span className={`inline-block px-2 py-0.5 text-[10px] font-display tracking-wider ${
+                        o.financial_status === "paid" ? "bg-emerald-500/15 text-emerald-400" :
+                        o.financial_status === "refunded" ? "bg-destructive/20 text-destructive" :
+                        "bg-amber-500/15 text-amber-400"
+                      }`}>
+                        {(o.financial_status || "pending").replace(/_/g, " ").toUpperCase()}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-body text-muted-foreground text-xs">
-                      {new Date(a.created_at).toLocaleString()}
-                    </td>
+                    <td className="px-4 py-2.5 font-body text-xs text-muted-foreground">{o.promo_code_used || "—"}</td>
                   </tr>
                 ))}
-                {recentActivity.length === 0 && !loading && (
-                  <tr><td colSpan={2} className="px-4 py-6 text-center text-muted-foreground text-xs">No activity yet</td></tr>
+                {recentOrders.length === 0 && !loading && (
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-muted-foreground text-xs">
+                    No transactions yet. Orders will appear here once Shopify sync is configured.
+                  </td></tr>
                 )}
               </tbody>
             </table>
