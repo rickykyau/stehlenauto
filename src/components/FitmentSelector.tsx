@@ -157,6 +157,20 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
             : "FIND PARTS"}
         </div>
       </button>
+
+      {(year || make || model || savedVehicle) && (
+        <button
+          onClick={() => {
+            setYear("");
+            setMake("");
+            setModel("");
+            clearVehicle();
+          }}
+          className="mt-2 w-full text-center font-body text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          Clear Selection
+        </button>
+      )}
     </div>
   );
 };
