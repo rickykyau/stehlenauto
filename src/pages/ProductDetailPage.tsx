@@ -208,6 +208,16 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      trackEvent("product_viewed", {
+        product_name: product.title,
+        product_id: product.id,
+        product_handle: slug,
+      });
+    }
+  }, [product?.id]);
 
   const parsed = useMemo(
     () => parseDescription(product?.descriptionHtml, product?.description),
