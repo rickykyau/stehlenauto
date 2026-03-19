@@ -86,11 +86,11 @@ const RouterContent = () => {
         {/* Admin */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminPlaceholder />} />
+          <Route path="users" element={<AdminUsersPage />} />
           <Route path="orders" element={<AdminPlaceholder />} />
           <Route path="promo-codes" element={<AdminPromoCodesPage />} />
-          <Route path="analytics" element={<AdminPlaceholder />} />
-          <Route path="content" element={<AdminPlaceholder />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="content" element={<AdminContentPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 
