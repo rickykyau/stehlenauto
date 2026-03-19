@@ -50,6 +50,7 @@ import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage.tsx";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage.tsx";
 import AdminProductsPage from "./pages/admin/AdminProductsPage.tsx";
 import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage.tsx";
+import AdminPromoCodeDetailPage from "./pages/admin/AdminPromoCodeDetailPage.tsx";
 
 const queryClient = new QueryClient();
 
