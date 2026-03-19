@@ -6,6 +6,63 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PRODUCTS_QUERY = `
+query Products($cursor: String) {
+  products(first: 50, after: $cursor) {
+    edges {
+      node {
+        id
+        title
+        vendor
+        productType
+        status
+        tags
+        updatedAt
+        variants(first: 100) {
+          edges {
+            node {
+              id
+              title
+              price
+              sku
+              inventoryQuantity
+            }
+          }
+        }
+        images(first: 10) {
+          edges {
+            node {
+              id
+              url
+              altText
+            }
+          }
+        }
+        metafields(first: 50) {
+          edges {
+            node {
+              namespace
+              key
+              value
+              type
+            }
+          }
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+`;
+
+function extractGid(gid: string): string {
+  // "gid://shopify/Product/123" -> "123"
+  return gid.split("/").pop() || gid;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -25,76 +82,61 @@ serve(async (req) => {
       if (!isAdmin) throw new Error("Forbidden");
     }
 
-    const rawDomain = Deno.env.get("SHOPIFY_STORE_URL") || "yrmsvk-4k.myshopify.com";
+    const rawDomain = Deno.env.get("SHOPIFY_STORE_URL") || "";
     const shopDomain = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const apiVersion = "2024-01";
+    const graphqlUrl = `https://${shopDomain}/admin/api/2024-01/graphql.json`;
+
     let allProducts: any[] = [];
-    let pageInfo: string | null = null;
+    let cursor: string | null = null;
     let hasNext = true;
+    let page = 0;
 
-    // Fetch all products from Shopify
+    // Fetch all products via GraphQL (includes metafields in same request)
     while (hasNext) {
-      const params = new URLSearchParams({ limit: "250" });
-      if (pageInfo) params.set("page_info", pageInfo);
+      page++;
+      console.log(`Fetching products page ${page}... (${allProducts.length} so far)`);
 
-      const url = `https://${shopDomain}/admin/api/${apiVersion}/products.json?${params}`;
-      const res = await fetch(url, {
-        headers: { "X-Shopify-Access-Token": shopifyToken, "Content-Type": "application/json" },
+      const res = await fetch(graphqlUrl, {
+        method: "POST",
+        headers: {
+          "X-Shopify-Access-Token": shopifyToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: PRODUCTS_QUERY,
+          variables: { cursor },
+        }),
       });
 
       if (!res.ok) {
         const body = await res.text();
-        throw new Error(`Shopify API error ${res.status}: ${body}`);
+        throw new Error(`Shopify GraphQL error ${res.status}: ${body}`);
       }
 
-      const data = await res.json();
-      allProducts = allProducts.concat(data.products || []);
-
-      const linkHeader = res.headers.get("Link") || "";
-      const nextMatch = linkHeader.match(/<[^>]*page_info=([^&>]*)>[^;]*;\s*rel="next"/);
-      if (nextMatch) {
-        pageInfo = nextMatch[1];
-      } else {
-        hasNext = false;
+      const json = await res.json();
+      if (json.errors) {
+        throw new Error(`GraphQL errors: ${json.errors.map((e: any) => e.message).join(", ")}`);
       }
+
+      const edges = json.data?.products?.edges || [];
+      allProducts = allProducts.concat(edges.map((e: any) => e.node));
+
+      const pageInfo = json.data?.products?.pageInfo;
+      hasNext = pageInfo?.hasNextPage || false;
+      cursor = pageInfo?.endCursor || null;
+
       if (allProducts.length >= 5000) break;
+
+      // Small delay to respect rate limits
+      if (hasNext) await new Promise((r) => setTimeout(r, 250));
     }
 
+    console.log(`Fetched ${allProducts.length} products total, transforming...`);
     const now = new Date().toISOString();
 
-    // Fetch metafields for each product sequentially with 500ms delay for rate limiting
-    const productMetafields: Map<string, any[]> = new Map();
-    const totalProducts = allProducts.length;
-
-    for (let i = 0; i < totalProducts; i++) {
-      const product = allProducts[i];
-      try {
-        const mfUrl = `https://${shopDomain}/admin/api/${apiVersion}/products/${product.id}/metafields.json`;
-        const mfRes = await fetch(mfUrl, {
-          headers: { "X-Shopify-Access-Token": shopifyToken, "Content-Type": "application/json" },
-        });
-        if (mfRes.ok) {
-          const mfData = await mfRes.json();
-          productMetafields.set(String(product.id), mfData.metafields || []);
-        } else {
-          productMetafields.set(String(product.id), []);
-        }
-      } catch {
-        productMetafields.set(String(product.id), []);
-      }
-      // Rate limit: 500ms delay between requests
-      if (i < totalProducts - 1) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      // Log progress every 50 products
-      if ((i + 1) % 50 === 0 || i === totalProducts - 1) {
-        console.log(`Syncing metafields... ${i + 1}/${totalProducts} products`);
-      }
-    }
-
-    // Transform all products into rows
+    // Transform products
     const rows = allProducts.map((product: any) => {
-      const tags = product.tags ? product.tags.split(", ") : [];
+      const tags = product.tags || [];
       const fitmentVehicles = tags
         .filter((t: string) => /^\d{4}/.test(t))
         .map((t: string) => {
@@ -102,8 +144,8 @@ serve(async (req) => {
           return { year: parts[0], make: parts[1], model: parts.slice(2).join(" ") };
         });
 
-      const metafields = productMetafields.get(String(product.id)) || [];
-      
+      const metafields = (product.metafields?.edges || []).map((e: any) => e.node);
+
       // Extract CB Item Name from cb_integration.item_name or custom.part_number
       let cbItemName: string | null = null;
       for (const mf of metafields) {
@@ -116,7 +158,6 @@ serve(async (req) => {
         }
       }
 
-      // Store metafields as clean objects
       const metafieldsClean = metafields.map((mf: any) => ({
         namespace: mf.namespace,
         key: mf.key,
@@ -124,29 +165,45 @@ serve(async (req) => {
         type: mf.type,
       }));
 
+      const variants = (product.variants?.edges || []).map((e: any) => {
+        const v = e.node;
+        return {
+          id: extractGid(v.id),
+          title: v.title,
+          price: v.price,
+          sku: v.sku,
+          inventory_quantity: v.inventoryQuantity ?? 0,
+          available: (v.inventoryQuantity ?? 0) > 0,
+        };
+      });
+
+      const images = (product.images?.edges || []).map((e: any) => {
+        const img = e.node;
+        return {
+          id: extractGid(img.id),
+          src: img.url,
+          alt: img.altText,
+        };
+      });
+
       return {
-        shopify_product_id: String(product.id),
+        shopify_product_id: extractGid(product.id),
         title: product.title,
         vendor: product.vendor,
-        product_type: product.product_type,
-        status: product.status || "active",
+        product_type: product.productType,
+        status: product.status?.toLowerCase() || "active",
         tags,
-        variants: (product.variants || []).map((v: any) => ({
-          id: String(v.id), title: v.title, price: v.price, sku: v.sku,
-          inventory_quantity: v.inventory_quantity ?? 0, available: v.inventory_quantity > 0,
-        })),
-        images: (product.images || []).map((img: any) => ({
-          id: String(img.id), src: img.src, alt: img.alt,
-        })),
+        variants,
+        images,
         fitment_vehicles: fitmentVehicles,
         cb_item_name: cbItemName,
         metafields: metafieldsClean,
-        updated_at: product.updated_at || now,
+        updated_at: product.updatedAt || now,
         last_synced_at: now,
       };
     });
 
-    // Batch upsert in chunks of 200
+    // Batch upsert
     let synced = 0;
     const CHUNK = 200;
     for (let i = 0; i < rows.length; i += CHUNK) {
@@ -161,7 +218,7 @@ serve(async (req) => {
       .from("products_cache")
       .select("id, title, variants")
       .order("title");
-    
+
     const alerts: any[] = [];
     for (const p of (lowStock || [])) {
       for (const v of (p.variants as any[] || [])) {
@@ -189,6 +246,8 @@ serve(async (req) => {
       { key: "last_products_sync", value: { timestamp: now } },
       { onConflict: "key" }
     );
+
+    console.log(`Sync complete: ${synced} products, ${alerts.length} alerts`);
 
     return new Response(
       JSON.stringify({ success: true, synced, total: allProducts.length, alerts: alerts.length }),
