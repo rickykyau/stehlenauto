@@ -40,7 +40,7 @@ export default function AdminDashboard() {
         supabase.from("promo_codes").select("id", { count: "exact", head: true }).eq("is_active", true),
         supabase.from("user_activity_log").select("user_id", { count: "exact", head: true }).gte("created_at", fifteenAgo),
         supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(10),
-        supabase.from("user_activity_log").select("*").order("created_at", { ascending: false }).limit(20),
+        supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(10),
         supabase.from("orders").select("id", { count: "exact", head: true }),
         supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
         supabase.from("orders").select("total_price").gte("created_at", monthStart),
