@@ -25,12 +25,14 @@ serve(async (req) => {
       if (!isAdmin) throw new Error("Forbidden");
     }
 
-    const shopDomain = Deno.env.get("SHOPIFY_STORE_URL") || "yrmsvk-4k.myshopify.com";
+    const rawDomain = Deno.env.get("SHOPIFY_STORE_URL") || "yrmsvk-4k.myshopify.com";
+    const shopDomain = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const apiVersion = "2024-01";
     let allProducts: any[] = [];
     let pageInfo: string | null = null;
     let hasNext = true;
 
+    // Fetch all products from Shopify
     while (hasNext) {
       const params = new URLSearchParams({ limit: "250" });
       if (pageInfo) params.set("page_info", pageInfo);
@@ -55,16 +57,13 @@ serve(async (req) => {
       } else {
         hasNext = false;
       }
-
       if (allProducts.length >= 5000) break;
     }
 
     const now = new Date().toISOString();
-    let synced = 0;
-    const lowStockAlerts: any[] = [];
 
-    for (const product of allProducts) {
-      // Parse fitment from tags
+    // Transform all products into rows
+    const rows = allProducts.map((product: any) => {
       const tags = product.tags ? product.tags.split(", ") : [];
       const fitmentVehicles = tags
         .filter((t: string) => /^\d{4}/.test(t))
@@ -73,65 +72,62 @@ serve(async (req) => {
           return { year: parts[0], make: parts[1], model: parts.slice(2).join(" ") };
         });
 
-      const variants = (product.variants || []).map((v: any) => ({
-        id: String(v.id),
-        title: v.title,
-        price: v.price,
-        sku: v.sku,
-        inventory_quantity: v.inventory_quantity ?? 0,
-        available: v.inventory_quantity > 0,
-      }));
-
-      const images = (product.images || []).map((img: any) => ({
-        id: String(img.id),
-        src: img.src,
-        alt: img.alt,
-      }));
-
-      const row = {
+      return {
         shopify_product_id: String(product.id),
         title: product.title,
         vendor: product.vendor,
         product_type: product.product_type,
         status: product.status || "active",
         tags,
-        variants,
-        images,
+        variants: (product.variants || []).map((v: any) => ({
+          id: String(v.id), title: v.title, price: v.price, sku: v.sku,
+          inventory_quantity: v.inventory_quantity ?? 0, available: v.inventory_quantity > 0,
+        })),
+        images: (product.images || []).map((img: any) => ({
+          id: String(img.id), src: img.src, alt: img.alt,
+        })),
         fitment_vehicles: fitmentVehicles,
         updated_at: product.updated_at || now,
         last_synced_at: now,
       };
+    });
 
-      const { data: upserted, error } = await supabase
+    // Batch upsert in chunks of 200 for speed
+    let synced = 0;
+    const CHUNK = 200;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const { count } = await supabase
         .from("products_cache")
-        .upsert(row, { onConflict: "shopify_product_id" })
-        .select("id")
-        .single();
+        .upsert(rows.slice(i, i + CHUNK), { onConflict: "shopify_product_id", count: "exact" });
+      synced += count ?? 0;
+    }
 
-      if (!error && upserted) {
-        synced++;
-        // Check for low stock variants
-        for (const v of variants) {
-          if (v.inventory_quantity < 10) {
-            lowStockAlerts.push({
-              product_id: upserted.id,
-              variant_id: v.id,
-              variant_title: `${product.title} - ${v.title}`,
-              current_quantity: v.inventory_quantity,
-              threshold: 10,
-              alert_status: "active",
-            });
-          }
+    // Low stock alerts: query from DB after upsert
+    const { data: lowStock } = await supabase
+      .from("products_cache")
+      .select("id, title, variants")
+      .order("title");
+    
+    const alerts: any[] = [];
+    for (const p of (lowStock || [])) {
+      for (const v of (p.variants as any[] || [])) {
+        if (v.inventory_quantity < 10) {
+          alerts.push({
+            product_id: p.id,
+            variant_id: v.id,
+            variant_title: `${p.title} - ${v.title}`,
+            current_quantity: v.inventory_quantity,
+            threshold: 10,
+            alert_status: "active",
+          });
         }
       }
     }
 
-    // Clear old active alerts and insert new ones
     await supabase.from("inventory_alerts").delete().eq("alert_status", "active");
-    if (lowStockAlerts.length > 0) {
-      // Batch insert in chunks
-      for (let i = 0; i < lowStockAlerts.length; i += 100) {
-        await supabase.from("inventory_alerts").insert(lowStockAlerts.slice(i, i + 100));
+    if (alerts.length > 0) {
+      for (let i = 0; i < alerts.length; i += 200) {
+        await supabase.from("inventory_alerts").insert(alerts.slice(i, i + 200));
       }
     }
 
@@ -142,7 +138,7 @@ serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ success: true, synced, total: allProducts.length, alerts: lowStockAlerts.length }),
+      JSON.stringify({ success: true, synced, total: allProducts.length, alerts: alerts.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
