@@ -178,7 +178,7 @@ const SiteHeader = () => {
       const filtered = products.filter((p) => {
         const node = p.node;
         const tags = (node.tags || []).join(" ");
-        return fuzzyMatch(query, node.title, node.productType, node.vendor, tags);
+        return fuzzyMatch(query, node.title, node.productType, tags);
       });
       setSearchResults(filtered.slice(0, 8));
     } catch {
