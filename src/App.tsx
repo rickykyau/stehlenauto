@@ -101,6 +101,8 @@ const RouterContent = () => {
           <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="content" element={<AdminContentPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
+          <Route path="chat-logs" element={<AdminChatLogsPage />} />
+          <Route path="support-tickets" element={<AdminSupportTicketsPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 
