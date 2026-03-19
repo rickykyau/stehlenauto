@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { trackEvent } from "@/lib/analytics";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 
@@ -42,6 +43,8 @@ const LoginPage = () => {
       setError(error.message === "Invalid login credentials"
         ? "Invalid email or password."
         : error.message);
+    } else {
+      trackEvent("login", { method: "email" });
     }
     setLoading(false);
   };
@@ -66,6 +69,7 @@ const LoginPage = () => {
     if (error) {
       setError(error.message);
     } else {
+      trackEvent("sign_up", { method: "email" });
       setSignupSuccess(true);
     }
     setLoading(false);
@@ -96,6 +100,7 @@ const LoginPage = () => {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
+    trackEvent("login", { method: "google" });
     if (result?.error) {
       setError("Google sign-in failed. Please try again.");
       setGoogleLoading(false);

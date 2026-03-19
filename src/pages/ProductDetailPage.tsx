@@ -2,6 +2,7 @@
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
@@ -207,6 +208,16 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      trackEvent("product_viewed", {
+        product_name: product.title,
+        product_id: product.id,
+        product_handle: slug,
+      });
+    }
+  }, [product?.id]);
 
   const parsed = useMemo(
     () => parseDescription(product?.descriptionHtml, product?.description),
@@ -257,6 +268,12 @@ const ProductTemplate = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    trackEvent("add_to_cart", {
+      product_name: product.title,
+      product_id: product.id,
+      price: selectedVariant.price.amount,
+      variant: selectedVariant.title,
+    });
     await addItem({
       product: { node: product },
       variantId: selectedVariant.id,

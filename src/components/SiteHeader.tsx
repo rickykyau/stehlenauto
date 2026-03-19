@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
@@ -103,6 +104,7 @@ const SiteHeader = () => {
   }, []);
 
   const handleSignOut = async () => {
+    trackEvent("logout");
     await supabase.auth.signOut();
     navigate("/");
   };
@@ -182,6 +184,7 @@ const SiteHeader = () => {
 
   const handleSearchSubmit = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && searchQuery.trim()) {
+      trackEvent("search", { search_term: searchQuery.trim() });
       setSearchDropdownOpen(false);
       navigate(`/collections/all?q=${encodeURIComponent(searchQuery.trim())}`);
     }

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Truck, ChevronDown } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 
@@ -87,6 +88,8 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       const v = { year, make, model };
       setVehicle(v);
       onVehicleSelect?.(v);
+      trackEvent("find_parts", { year, make, model });
+      trackEvent("vehicle_selected", { year, make, model });
       navigate("/collections/all");
     }
   };

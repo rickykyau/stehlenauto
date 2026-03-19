@@ -19,6 +19,9 @@ import { CustomerProvider } from "@/contexts/CustomerContext";
 import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
 import { useCartSync } from "@/hooks/useCartSync";
+import { usePageTracking } from "@/hooks/usePageTracking";
+import { initGA4 } from "@/lib/analytics";
+import { useEffect } from "react";
 import Index from "./pages/Index.tsx";
 import CollectionPage from "./pages/CollectionPage.tsx";
 import ProductDetailPage from "./pages/ProductDetailPage.tsx";
@@ -41,6 +44,8 @@ const queryClient = new QueryClient();
 
 const AppInner = () => {
   useCartSync();
+  usePageTracking();
+  useEffect(() => { initGA4(); }, []);
   return (
     <BrowserRouter>
       <ScrollToTop />
