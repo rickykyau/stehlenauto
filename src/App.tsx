@@ -42,12 +42,10 @@ import ResetPasswordPage from "./pages/ResetPasswordPage.tsx";
 
 const queryClient = new QueryClient();
 
-const AppInner = () => {
-  useCartSync();
+const RouterContent = () => {
   usePageTracking();
-  useEffect(() => { initGA4(); }, []);
   return (
-    <BrowserRouter>
+    <>
       <ScrollToTop />
       <CartDrawer />
       <Routes>
@@ -77,6 +75,16 @@ const AppInner = () => {
         <Route path="/account/orders/:id" element={<OrderDetailPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </>
+  );
+};
+
+const AppInner = () => {
+  useCartSync();
+  useEffect(() => { initGA4(); }, []);
+  return (
+    <BrowserRouter>
+      <RouterContent />
     </BrowserRouter>
   );
 };
