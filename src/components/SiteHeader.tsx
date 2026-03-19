@@ -163,15 +163,24 @@ const SiteHeader = () => {
     setSearchLoading(true);
     setSearchDropdownOpen(true);
     try {
+      // Send individual keywords joined by OR for broader Shopify results
+      const keywords = query.trim().split(/\s+/).filter(Boolean);
+      const shopifyQuery = keywords.join(" OR ");
       const result = await storefrontApiRequest(PRODUCTS_QUERY, {
-        first: 8,
-        query,
+        first: 24,
+        query: shopifyQuery,
         sortKey: "RELEVANCE",
         reverse: false,
         after: null,
       });
       const products = (result?.data?.products?.edges || []) as ShopifyProduct[];
-      setSearchResults(products);
+      // Client-side fuzzy filter: ALL keywords must appear across title/tags/type/vendor
+      const filtered = products.filter((p) => {
+        const node = p.node;
+        const tags = (node.tags || []).join(" ");
+        return fuzzyMatch(query, node.title, node.productType, node.vendor, tags);
+      });
+      setSearchResults(filtered.slice(0, 8));
     } catch {
       setSearchResults([]);
     } finally {
