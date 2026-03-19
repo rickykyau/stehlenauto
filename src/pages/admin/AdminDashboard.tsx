@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   const [avgOrderValue, setAvgOrderValue] = useState<number | null>(null);
   const [ordersToday, setOrdersToday] = useState<number | null>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
