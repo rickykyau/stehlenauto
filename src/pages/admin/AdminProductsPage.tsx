@@ -460,7 +460,7 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
       </tr>
       {expanded && (
         <tr className="border-b border-border bg-accent/10">
-          <td colSpan={9} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4">
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">VARIANTS</h4>
