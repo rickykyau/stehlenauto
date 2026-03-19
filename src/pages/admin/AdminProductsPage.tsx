@@ -17,6 +17,7 @@ interface ProductCache {
   fitment_vehicles: any[];
   last_synced_at: string;
   cb_item_name: string | null;
+  part_number: string | null;
   metafields: any[];
 }
 
