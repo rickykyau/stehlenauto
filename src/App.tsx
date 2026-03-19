@@ -44,6 +44,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminPromoCodesPage from "./pages/admin/AdminPromoCodesPage.tsx";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage.tsx";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder.tsx";
+import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
+import AdminContentPage from "./pages/admin/AdminContentPage.tsx";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage.tsx";
 
 const queryClient = new QueryClient();
 
