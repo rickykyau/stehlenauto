@@ -69,6 +69,7 @@ const LoginPage = () => {
     if (error) {
       setError(error.message);
     } else {
+      trackEvent("sign_up", { method: "email" });
       setSignupSuccess(true);
     }
     setLoading(false);
