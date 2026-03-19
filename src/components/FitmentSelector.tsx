@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Truck, ChevronDown } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 
