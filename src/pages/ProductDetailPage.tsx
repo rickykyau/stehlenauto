@@ -2,6 +2,7 @@
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
