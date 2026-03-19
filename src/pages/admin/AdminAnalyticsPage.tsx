@@ -30,19 +30,22 @@ interface ActivityRow {
 export default function AdminAnalyticsPage() {
   const [rangeDays, setRangeDays] = useState(30);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const [promoUsage, setPromoUsage] = useState<any[]>([]);
+  const [promoCodes, setPromoCodes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       const since = new Date(Date.now() - rangeDays * 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabase
-        .from("user_activity_log")
-        .select("*")
-        .gte("created_at", since)
-        .order("created_at", { ascending: true })
-        .limit(1000);
-      setActivity(data ?? []);
+      const [{ data: actData }, { data: usageData }, { data: codesData }] = await Promise.all([
+        supabase.from("user_activity_log").select("*").gte("created_at", since).order("created_at", { ascending: true }).limit(1000),
+        supabase.from("promo_code_usage").select("*").gte("used_at", since).order("used_at", { ascending: true }),
+        supabase.from("promo_codes").select("*"),
+      ]);
+      setActivity(actData ?? []);
+      setPromoUsage((usageData as any[]) ?? []);
+      setPromoCodes((codesData as any[]) ?? []);
       setLoading(false);
     };
     load();
