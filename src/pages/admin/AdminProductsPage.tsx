@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { fuzzyMatch } from "@/lib/fuzzy-search";
 
@@ -20,6 +20,16 @@ interface ProductCache {
   metafields: any[];
 }
 
+interface SyncStatus {
+  sync_type: string;
+  status: string;
+  progress: number;
+  total: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_message: string | null;
+}
+
 type SortField = "cb_item_name" | "title";
 type SortDir = "asc" | "desc";
 
@@ -28,7 +38,6 @@ const PAGE_SIZE = 50;
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductCache[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -38,10 +47,10 @@ export default function AdminProductsPage() {
   const [sortField, setSortField] = useState<SortField>("title");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [currentPage, setCurrentPage] = useState(1);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
 
   const fetchProducts = async () => {
     setLoading(true);
-    // Fetch all products (no limit — paginate client-side after filtering)
     let all: any[] = [];
     let from = 0;
     const step = 1000;
@@ -71,26 +80,68 @@ export default function AdminProductsPage() {
     }
   };
 
-  useEffect(() => { fetchProducts(); fetchLastSync(); }, []);
+  const fetchSyncStatus = useCallback(async () => {
+    const { data } = await supabase
+      .from("sync_status")
+      .select("*")
+      .eq("sync_type", "products")
+      .maybeSingle();
+    if (data) setSyncStatus(data as any);
+    return data as SyncStatus | null;
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchProducts();
+    fetchLastSync();
+    fetchSyncStatus();
+  }, []);
+
+  // Poll sync status while in_progress
+  useEffect(() => {
+    if (syncStatus?.status !== "in_progress") return;
+    const interval = setInterval(async () => {
+      const status = await fetchSyncStatus();
+      if (status && status.status !== "in_progress") {
+        // Sync finished while we were watching
+        if (status.status === "completed") {
+          toast.success("Product sync completed!");
+          await fetchProducts();
+          await fetchLastSync();
+        } else if (status.status === "failed") {
+          toast.error("Sync failed: " + (status.error_message || "Unknown error"));
+        }
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [syncStatus?.status, fetchSyncStatus]);
 
   const handleSync = async () => {
-    setSyncing(true);
+    // Optimistically set status
+    setSyncStatus((prev) => prev ? { ...prev, status: "in_progress", progress: 0, total: 0, error_message: null } : null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await supabase.functions.invoke("sync-shopify-products", {
+      // Fire and forget — the edge function updates sync_status in the DB
+      supabase.functions.invoke("sync-shopify-products", {
         headers: { Authorization: `Bearer ${session?.access_token}` },
+      }).then(async (res) => {
+        // If the response comes back while still on this page
+        if (res.error) {
+          toast.error("Sync failed: " + res.error.message);
+        }
+        await fetchSyncStatus();
+        await fetchProducts();
+        await fetchLastSync();
       });
-      if (res.error) throw new Error(res.error.message);
-      const result = res.data as any;
-      toast.success(`Synced ${result.synced} products, ${result.alerts} low stock alerts`);
-      await fetchProducts();
-      await fetchLastSync();
+      // Start polling immediately
+      await fetchSyncStatus();
     } catch (err: any) {
       toast.error("Sync failed: " + err.message);
-    } finally {
-      setSyncing(false);
+      await fetchSyncStatus();
     }
   };
+
+  const isSyncing = syncStatus?.status === "in_progress";
 
   const getTotalInventory = (variants: any[]) =>
     variants.reduce((sum: number, v: any) => sum + (v.inventory_quantity || 0), 0);
@@ -133,7 +184,6 @@ export default function AdminProductsPage() {
       return sortDir === "asc" ? cmp : -cmp;
     }), [products, search, filterStatus, filterType, filterLowStock, sortField, sortDir]);
 
-  // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [search, filterStatus, filterType, filterLowStock]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -142,7 +192,6 @@ export default function AdminProductsPage() {
   const showingFrom = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const showingTo = Math.min(safePage * PAGE_SIZE, filtered.length);
 
-  // Generate page numbers to show
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
     const maxVisible = 7;
@@ -154,9 +203,9 @@ export default function AdminProductsPage() {
       let end = Math.min(totalPages - 1, safePage + 2);
       if (safePage <= 3) end = Math.min(5, totalPages - 1);
       if (safePage >= totalPages - 2) start = Math.max(totalPages - 4, 2);
-      if (start > 2) pages.push(-1); // ellipsis
+      if (start > 2) pages.push(-1);
       for (let i = start; i <= end; i++) pages.push(i);
-      if (end < totalPages - 1) pages.push(-2); // ellipsis
+      if (end < totalPages - 1) pages.push(-2);
       pages.push(totalPages);
     }
     return pages;
@@ -174,19 +223,64 @@ export default function AdminProductsPage() {
     </th>
   );
 
+  const syncProgressPercent = syncStatus?.total ? Math.round((syncStatus.progress / syncStatus.total) * 100) : 0;
+
   return (
     <div className="space-y-6">
+      {/* Sync Status Banner */}
+      {isSyncing && (
+        <div className="border border-primary/30 bg-primary/5 p-4 flex items-center gap-4">
+          <RefreshCw className="w-4 h-4 text-primary animate-spin shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-body text-foreground">
+              Syncing products… {syncStatus.progress > 0 && `${syncStatus.progress.toLocaleString()}`}
+              {syncStatus.total > 0 && `/${syncStatus.total.toLocaleString()}`}
+            </p>
+            {syncStatus.total > 0 && (
+              <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${syncProgressPercent}%` }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {syncStatus?.status === "failed" && (
+        <div className="border border-destructive/30 bg-destructive/5 p-4 flex items-center gap-4">
+          <XCircle className="w-4 h-4 text-destructive shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-body text-foreground">
+              Sync failed: {syncStatus.error_message || "Unknown error"}
+            </p>
+            {syncStatus.completed_at && (
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {new Date(syncStatus.completed_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={handleSync}
+            className="shrink-0 px-3 py-1.5 bg-primary text-primary-foreground font-display text-xs tracking-widest hover:bg-primary/90 transition-colors"
+          >
+            RETRY
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <p className="text-muted-foreground text-sm font-body">
           {products.length} products {lastSync && `· Last synced ${new Date(lastSync).toLocaleString()}`}
         </p>
         <button
           onClick={handleSync}
-          disabled={syncing}
+          disabled={isSyncing}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-display text-xs tracking-widest hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "SYNCING…" : "SYNC PRODUCTS"}
+          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+          {isSyncing ? "SYNCING…" : "SYNC PRODUCTS"}
         </button>
       </div>
 
