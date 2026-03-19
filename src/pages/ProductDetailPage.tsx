@@ -268,6 +268,12 @@ const ProductTemplate = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    trackEvent("add_to_cart", {
+      product_name: product.title,
+      product_id: product.id,
+      price: selectedVariant.price.amount,
+      variant: selectedVariant.title,
+    });
     await addItem({
       product: { node: product },
       variantId: selectedVariant.id,
