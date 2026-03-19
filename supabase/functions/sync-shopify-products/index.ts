@@ -59,19 +59,25 @@ query Products($cursor: String) {
 `;
 
 function extractGid(gid: string): string {
-  // "gid://shopify/Product/123" -> "123"
   return gid.split("/").pop() || gid;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const shopifyToken = Deno.env.get("SHOPIFY_ACCESS_TOKEN")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const shopifyToken = Deno.env.get("SHOPIFY_ACCESS_TOKEN")!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
+  const updateSyncStatus = async (fields: Record<string, any>) => {
+    await supabase
+      .from("sync_status")
+      .update({ ...fields, updated_at: new Date().toISOString() })
+      .eq("sync_type", "products");
+  };
+
+  try {
     // Verify admin
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
@@ -82,6 +88,16 @@ serve(async (req) => {
       if (!isAdmin) throw new Error("Forbidden");
     }
 
+    // Mark sync as in_progress
+    await updateSyncStatus({
+      status: "in_progress",
+      progress: 0,
+      total: 0,
+      started_at: new Date().toISOString(),
+      completed_at: null,
+      error_message: null,
+    });
+
     const rawDomain = Deno.env.get("SHOPIFY_STORE_URL") || "";
     const shopDomain = rawDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const graphqlUrl = `https://${shopDomain}/admin/api/2024-01/graphql.json`;
@@ -91,7 +107,6 @@ serve(async (req) => {
     let hasNext = true;
     let page = 0;
 
-    // Fetch all products via GraphQL (includes metafields in same request)
     while (hasNext) {
       page++;
       console.log(`Fetching products page ${page}... (${allProducts.length} so far)`);
@@ -125,16 +140,19 @@ serve(async (req) => {
       hasNext = pageInfo?.hasNextPage || false;
       cursor = pageInfo?.endCursor || null;
 
-      if (allProducts.length >= 5000) break;
+      // Update progress after each page
+      await updateSyncStatus({ progress: allProducts.length, total: hasNext ? allProducts.length + 50 : allProducts.length });
 
-      // Small delay to respect rate limits
+      if (allProducts.length >= 5000) break;
       if (hasNext) await new Promise((r) => setTimeout(r, 250));
     }
 
     console.log(`Fetched ${allProducts.length} products total, transforming...`);
     const now = new Date().toISOString();
 
-    // Transform products
+    // Update status: now upserting
+    await updateSyncStatus({ total: allProducts.length });
+
     const rows = allProducts.map((product: any) => {
       const tags = product.tags || [];
       const fitmentVehicles = tags
@@ -146,7 +164,6 @@ serve(async (req) => {
 
       const metafields = (product.metafields?.edges || []).map((e: any) => e.node);
 
-      // Extract CB Item Name from cb_integration.item_name or custom.part_number
       let cbItemName: string | null = null;
       for (const mf of metafields) {
         if (
@@ -203,7 +220,7 @@ serve(async (req) => {
       };
     });
 
-    // Batch upsert
+    // Batch upsert with progress
     let synced = 0;
     const CHUNK = 200;
     for (let i = 0; i < rows.length; i += CHUNK) {
@@ -247,6 +264,14 @@ serve(async (req) => {
       { onConflict: "key" }
     );
 
+    // Mark sync as completed
+    await updateSyncStatus({
+      status: "completed",
+      progress: allProducts.length,
+      total: allProducts.length,
+      completed_at: new Date().toISOString(),
+    });
+
     console.log(`Sync complete: ${synced} products, ${alerts.length} alerts`);
 
     return new Response(
@@ -255,6 +280,11 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error("sync-shopify-products error:", err);
+    await updateSyncStatus({
+      status: "failed",
+      error_message: err.message,
+      completed_at: new Date().toISOString(),
+    });
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

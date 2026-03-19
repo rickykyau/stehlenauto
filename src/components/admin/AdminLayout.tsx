@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   ClipboardList,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ export default function AdminLayout() {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [alertCount, setAlertCount] = useState(0);
+  const [productsSyncing, setProductsSyncing] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,6 +51,24 @@ export default function AdminLayout() {
       .select("id", { count: "exact", head: true })
       .eq("alert_status", "active")
       .then(({ count }) => setAlertCount(count ?? 0));
+  }, [isAdmin]);
+
+  // Poll sync status for sidebar indicator
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const checkSync = async () => {
+      const { data } = await supabase
+        .from("sync_status")
+        .select("status")
+        .eq("sync_type", "products")
+        .maybeSingle();
+      setProductsSyncing(data?.status === "in_progress");
+    };
+
+    checkSync();
+    const interval = setInterval(checkSync, 3000);
+    return () => clearInterval(interval);
   }, [isAdmin]);
 
   useEffect(() => {
@@ -82,6 +102,7 @@ export default function AdminLayout() {
           {NAV_ITEMS.map((item) => {
             const active = location.pathname === item.path;
             const showBadge = (item as any).badgeKey === "products" && alertCount > 0;
+            const showSyncIndicator = (item as any).badgeKey === "products" && productsSyncing;
             return (
               <Link
                 key={item.path}
@@ -94,7 +115,10 @@ export default function AdminLayout() {
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 <span className="flex-1">{item.label}</span>
-                {showBadge && (
+                {showSyncIndicator && (
+                  <RefreshCw className="w-3.5 h-3.5 text-primary animate-spin shrink-0" />
+                )}
+                {showBadge && !showSyncIndicator && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-display">
                     <AlertTriangle className="w-3 h-3" />
                     {alertCount}
