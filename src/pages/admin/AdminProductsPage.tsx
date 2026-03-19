@@ -425,6 +425,9 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
         <td className="px-4 py-3 font-body text-foreground text-xs max-w-[160px] truncate">
           {p.cb_item_name || <span className="text-muted-foreground">—</span>}
         </td>
+        <td className="px-4 py-3 font-body text-muted-foreground text-xs max-w-[140px] truncate">
+          {p.part_number || <span className="text-muted-foreground">—</span>}
+        </td>
         <td className="px-4 py-3">
           {p.images?.[0] ? (
             <img src={(p.images[0] as any).src} alt="" className="w-10 h-10 object-cover border border-border" />
