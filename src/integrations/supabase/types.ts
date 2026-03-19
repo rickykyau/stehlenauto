@@ -80,6 +80,36 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_content: {
+        Row: {
+          content: Json
+          display_order: number
+          id: string
+          is_active: boolean
+          section: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          section: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          section?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

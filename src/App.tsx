@@ -44,6 +44,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminPromoCodesPage from "./pages/admin/AdminPromoCodesPage.tsx";
 import AdminSettingsPage from "./pages/admin/AdminSettingsPage.tsx";
 import AdminPlaceholder from "./pages/admin/AdminPlaceholder.tsx";
+import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
+import AdminContentPage from "./pages/admin/AdminContentPage.tsx";
+import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -83,11 +86,11 @@ const RouterContent = () => {
         {/* Admin */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<AdminPlaceholder />} />
+          <Route path="users" element={<AdminUsersPage />} />
           <Route path="orders" element={<AdminPlaceholder />} />
           <Route path="promo-codes" element={<AdminPromoCodesPage />} />
-          <Route path="analytics" element={<AdminPlaceholder />} />
-          <Route path="content" element={<AdminPlaceholder />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="content" element={<AdminContentPage />} />
           <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
 
