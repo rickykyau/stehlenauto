@@ -214,6 +214,7 @@ serve(async (req) => {
         images,
         fitment_vehicles: fitmentVehicles,
         cb_item_name: cbItemName,
+        part_number: partNumber,
         metafields: metafieldsClean,
         updated_at: product.updatedAt || now,
         last_synced_at: now,
