@@ -33,23 +33,42 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
       .eq("code", code.trim().toUpperCase())
       .maybeSingle();
 
-    setLoading(false);
-
     if (fetchError || !data) {
+      setLoading(false);
       setError("Invalid promo code");
       return;
     }
 
     const now = new Date();
-    if (!data.is_active) { setError("This code is no longer active"); return; }
-    if (new Date(data.expires_at) <= now) { setError("This code has expired"); return; }
-    if (new Date(data.starts_at) > now) { setError("This code is not yet valid"); return; }
-    if (data.max_uses && data.current_uses >= data.max_uses) { setError("This code has reached its usage limit"); return; }
+    if (!data.is_active) { setLoading(false); setError("This code is no longer active"); return; }
+    if (new Date(data.expires_at) <= now) { setLoading(false); setError("This code has expired"); return; }
+    if (new Date(data.starts_at) > now) { setLoading(false); setError("This code is not yet valid"); return; }
+    if (data.max_uses && data.current_uses >= data.max_uses) { setLoading(false); setError("This code has reached its usage limit"); return; }
     if (data.minimum_order_amount && subtotal < data.minimum_order_amount) {
+      setLoading(false);
       setError(`Minimum order of $${data.minimum_order_amount.toFixed(2)} required`);
       return;
     }
 
+    // Check per-user usage limit
+    const maxPerUser = (data as any).max_uses_per_user;
+    if (maxPerUser !== null && maxPerUser !== undefined) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { count } = await supabase
+          .from("promo_code_usage")
+          .select("id", { count: "exact", head: true })
+          .eq("promo_code_id", data.id)
+          .eq("user_id", session.user.id);
+        if (count !== null && count >= maxPerUser) {
+          setLoading(false);
+          setError("You've already used this code the maximum number of times");
+          return;
+        }
+      }
+    }
+
+    setLoading(false);
     onApply({
       id: data.id,
       code: data.code,
