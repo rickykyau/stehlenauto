@@ -12,6 +12,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { storefrontApiRequest, PRODUCTS_QUERY, type ShopifyProduct } from "@/lib/shopify";
+import { fuzzyMatch } from "@/lib/fuzzy-search";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
