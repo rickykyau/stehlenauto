@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -9,19 +9,23 @@ import {
   FileText,
   Settings,
   ChevronLeft,
+  ShoppingCart,
+  ClipboardList,
+  AlertTriangle,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { useState } from "react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
   { label: "Users", path: "/admin/users", icon: Users },
-  { label: "Orders", path: "/admin/orders", icon: Package },
+  { label: "Orders", path: "/admin/orders", icon: ShoppingCart },
+  { label: "Products", path: "/admin/products", icon: Package, badgeKey: "products" },
   { label: "Promo Codes", path: "/admin/promo-codes", icon: Tag },
   { label: "Analytics", path: "/admin/analytics", icon: BarChart3 },
   { label: "Content", path: "/admin/content", icon: FileText },
+  { label: "Audit Log", path: "/admin/audit-log", icon: ClipboardList },
   { label: "Settings", path: "/admin/settings", icon: Settings },
 ];
 
@@ -30,12 +34,22 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const [alertCount, setAlertCount] = useState(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    supabase
+      .from("inventory_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("alert_status", "active")
+      .then(({ count }) => setAlertCount(count ?? 0));
+  }, [isAdmin]);
 
   useEffect(() => {
     if (!loading && !isAdmin) {
@@ -67,6 +81,7 @@ export default function AdminLayout() {
         <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto sidebar-scroll">
           {NAV_ITEMS.map((item) => {
             const active = location.pathname === item.path;
+            const showBadge = (item as any).badgeKey === "products" && alertCount > 0;
             return (
               <Link
                 key={item.path}
@@ -78,7 +93,13 @@ export default function AdminLayout() {
                 }`}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-display">
+                    <AlertTriangle className="w-3 h-3" />
+                    {alertCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -97,7 +118,6 @@ export default function AdminLayout() {
 
       {/* Main */}
       <div className="flex-1 ml-60">
-        {/* Top bar */}
         <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6 sticky top-0 z-30">
           <h2 className="font-display text-xs tracking-widest text-foreground">
             {NAV_ITEMS.find((i) => i.path === location.pathname)?.label?.toUpperCase() || "ADMIN"}
