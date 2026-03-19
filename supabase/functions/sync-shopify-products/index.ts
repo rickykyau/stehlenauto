@@ -104,11 +104,13 @@ serve(async (req) => {
 
       const metafields = productMetafields.get(String(product.id)) || [];
       
-      // Extract CB Item Name - check multiple possible keys
+      // Extract CB Item Name from cb_integration.item_name or custom.part_number
       let cbItemName: string | null = null;
       for (const mf of metafields) {
-        const key = (mf.key || "").toLowerCase().replace(/[\s-]/g, "_");
-        if (key === "cb_item_name" || mf.key === "CB Item Name") {
+        if (
+          (mf.namespace === "cb_integration" && mf.key === "item_name") ||
+          (mf.namespace === "custom" && mf.key === "part_number")
+        ) {
           cbItemName = mf.value;
           break;
         }
