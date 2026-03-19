@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
+import { fuzzyMatch } from "@/lib/fuzzy-search";
 
 interface ProductCache {
   id: string;
@@ -102,12 +103,10 @@ export default function AdminProductsPage() {
 
   const filtered = products
     .filter((p) => {
-      const q = search.toLowerCase();
-      const matchesSearch = !q ||
-        p.title.toLowerCase().includes(q) ||
-        (p.product_type || "").toLowerCase().includes(q) ||
-        (p.cb_item_name || "").toLowerCase().includes(q) ||
-        p.variants.some((v: any) => (v.sku || "").toLowerCase().includes(q));
+      const q = search.trim();
+      const skus = p.variants.map((v: any) => v.sku || "").join(" ");
+      const tags = (p.tags || []).join(" ");
+      const matchesSearch = !q || fuzzyMatch(q, p.title, p.cb_item_name, p.product_type, skus, tags);
       const matchesStatus = filterStatus === "all" || p.status === filterStatus;
       const matchesType = filterType === "all" || p.product_type === filterType;
       const matchesLow = !filterLowStock || getTotalInventory(p.variants) < 10;
