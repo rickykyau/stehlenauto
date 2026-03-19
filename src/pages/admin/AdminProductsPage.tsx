@@ -479,6 +479,7 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
                 <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">INFO</h4>
                 <div className="text-sm font-body space-y-1">
                   <p><span className="text-muted-foreground">CB Item Name:</span> <span className="text-foreground">{p.cb_item_name || "—"}</span></p>
+                  <p><span className="text-muted-foreground">Part Number:</span> <span className="text-foreground">{p.part_number || "—"}</span></p>
                   <p><span className="text-muted-foreground">Vendor:</span> <span className="text-foreground">{p.vendor || "—"}</span></p>
                   <p><span className="text-muted-foreground">Shopify ID:</span> <span className="text-foreground">{p.shopify_product_id}</span></p>
                   <p><span className="text-muted-foreground">Last synced:</span> <span className="text-foreground">{new Date(p.last_synced_at).toLocaleString()}</span></p>
