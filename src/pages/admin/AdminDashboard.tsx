@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Users, UserPlus, Package, DollarSign, Tag, Activity } from "lucide-react";
+import { Users, UserPlus, Package, DollarSign, Tag, Activity, ShoppingCart, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface KPI {
@@ -14,25 +14,38 @@ export default function AdminDashboard() {
   const [newUsersToday, setNewUsersToday] = useState<number | null>(null);
   const [activePromos, setActivePromos] = useState<number | null>(null);
   const [activeNow, setActiveNow] = useState<number | null>(null);
+  const [totalOrders, setTotalOrders] = useState<number | null>(null);
+  const [revenueMonth, setRevenueMonth] = useState<number | null>(null);
+  const [avgOrderValue, setAvgOrderValue] = useState<number | null>(null);
+  const [ordersToday, setOrdersToday] = useState<number | null>(null);
   const [recentUsers, setRecentUsers] = useState<any[]>([]);
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
       const fifteenAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 
-      const [profilesRes, newRes, promosRes, activeRes, recentUsersRes, activityRes] =
-        await Promise.all([
-          supabase.from("profiles").select("id", { count: "exact", head: true }),
-          supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
-          supabase.from("promo_codes").select("id", { count: "exact", head: true }).eq("is_active", true),
-          supabase.from("user_activity_log").select("user_id", { count: "exact", head: true }).gte("created_at", fifteenAgo),
-          supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(10),
-          supabase.from("user_activity_log").select("*").order("created_at", { ascending: false }).limit(20),
-        ]);
+      const [
+        profilesRes, newRes, promosRes, activeRes,
+        recentUsersRes, activityRes,
+        ordersCountRes, ordersTodayRes, revenueRes, alertsRes,
+      ] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
+        supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
+        supabase.from("promo_codes").select("id", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("user_activity_log").select("user_id", { count: "exact", head: true }).gte("created_at", fifteenAgo),
+        supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(10),
+        supabase.from("user_activity_log").select("*").order("created_at", { ascending: false }).limit(20),
+        supabase.from("orders").select("id", { count: "exact", head: true }),
+        supabase.from("orders").select("id", { count: "exact", head: true }).gte("created_at", today.toISOString()),
+        supabase.from("orders").select("total_price").gte("created_at", monthStart),
+        supabase.from("inventory_alerts").select("*").eq("alert_status", "active").order("current_quantity", { ascending: true }).limit(10),
+      ]);
 
       setTotalUsers(profilesRes.count ?? 0);
       setNewUsersToday(newRes.count ?? 0);
@@ -40,24 +53,41 @@ export default function AdminDashboard() {
       setActiveNow(activeRes.count ?? 0);
       setRecentUsers(recentUsersRes.data ?? []);
       setRecentActivity(activityRes.data ?? []);
+      setTotalOrders(ordersCountRes.count ?? 0);
+      setOrdersToday(ordersTodayRes.count ?? 0);
+      setInventoryAlerts((alertsRes.data as any[]) ?? []);
+
+      // Calculate revenue and AOV
+      const revenueData = (revenueRes.data ?? []) as any[];
+      const rev = revenueData.reduce((sum: number, o: any) => sum + Number(o.total_price || 0), 0);
+      setRevenueMonth(rev);
+      setAvgOrderValue(revenueData.length > 0 ? rev / revenueData.length : 0);
+
       setLoading(false);
     };
     load();
   }, []);
 
   const kpis: KPI[] = [
-    { label: "Total Users", value: totalUsers ?? "–", icon: Users, loading: loading },
-    { label: "New Users Today", value: newUsersToday ?? "–", icon: UserPlus, loading: loading },
-    { label: "Total Orders", value: "–", icon: Package, loading: false },
-    { label: "Revenue This Month", value: "–", icon: DollarSign, loading: false },
-    { label: "Active Promo Codes", value: activePromos ?? "–", icon: Tag, loading: loading },
-    { label: "Active Users (15m)", value: activeNow ?? "–", icon: Activity, loading: loading },
+    { label: "Total Users", value: totalUsers ?? "–", icon: Users, loading },
+    { label: "New Users Today", value: newUsersToday ?? "–", icon: UserPlus, loading },
+    { label: "Total Orders", value: totalOrders ?? "–", icon: Package, loading },
+    { label: "Revenue This Month", value: revenueMonth !== null ? `$${revenueMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "–", icon: DollarSign, loading },
+    { label: "Avg Order Value", value: avgOrderValue !== null ? `$${avgOrderValue.toFixed(2)}` : "–", icon: ShoppingCart, loading },
+    { label: "Orders Today", value: ordersToday ?? "–", icon: Package, loading },
+    { label: "Active Promos", value: activePromos ?? "–", icon: Tag, loading },
+    { label: "Active Users (15m)", value: activeNow ?? "–", icon: Activity, loading },
   ];
+
+  const handleAcknowledge = async (alertId: string) => {
+    await supabase.from("inventory_alerts").update({ alert_status: "acknowledged" }).eq("id", alertId);
+    setInventoryAlerts((prev) => prev.filter((a) => a.id !== alertId));
+  };
 
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
         {kpis.map((kpi) => (
           <div key={kpi.label} className="border border-border bg-card p-4 space-y-2">
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -70,6 +100,32 @@ export default function AdminDashboard() {
           </div>
         ))}
       </div>
+
+      {/* Inventory Alerts */}
+      {inventoryAlerts.length > 0 && (
+        <div className="border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <h3 className="font-display text-[10px] tracking-widest text-amber-400">LOW STOCK ALERTS ({inventoryAlerts.length})</h3>
+          </div>
+          <div className="space-y-2">
+            {inventoryAlerts.map((a: any) => (
+              <div key={a.id} className="flex items-center justify-between text-sm font-body">
+                <div>
+                  <span className="text-foreground">{a.variant_title}</span>
+                  <span className="text-amber-400 ml-2">({a.current_quantity} left)</span>
+                </div>
+                <button
+                  onClick={() => handleAcknowledge(a.id)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Signups */}
