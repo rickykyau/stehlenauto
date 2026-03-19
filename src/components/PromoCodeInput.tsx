@@ -1,0 +1,107 @@
+import { useState } from "react";
+import { Tag, Check, X, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface PromoResult {
+  id: string;
+  code: string;
+  discount_type: string;
+  discount_value: number;
+  minimum_order_amount: number | null;
+}
+
+interface PromoCodeInputProps {
+  subtotal: number;
+  appliedPromo: PromoResult | null;
+  onApply: (promo: PromoResult) => void;
+  onRemove: () => void;
+}
+
+export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemove }: PromoCodeInputProps) {
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleApply = async () => {
+    if (!code.trim()) return;
+    setError("");
+    setLoading(true);
+
+    const { data, error: fetchError } = await supabase
+      .from("promo_codes")
+      .select("*")
+      .eq("code", code.trim().toUpperCase())
+      .maybeSingle();
+
+    setLoading(false);
+
+    if (fetchError || !data) {
+      setError("Invalid promo code");
+      return;
+    }
+
+    const now = new Date();
+    if (!data.is_active) { setError("This code is no longer active"); return; }
+    if (new Date(data.expires_at) <= now) { setError("This code has expired"); return; }
+    if (new Date(data.starts_at) > now) { setError("This code is not yet valid"); return; }
+    if (data.max_uses && data.current_uses >= data.max_uses) { setError("This code has reached its usage limit"); return; }
+    if (data.minimum_order_amount && subtotal < data.minimum_order_amount) {
+      setError(`Minimum order of $${data.minimum_order_amount.toFixed(2)} required`);
+      return;
+    }
+
+    onApply({
+      id: data.id,
+      code: data.code,
+      discount_type: data.discount_type,
+      discount_value: data.discount_value,
+      minimum_order_amount: data.minimum_order_amount,
+    });
+    setCode("");
+  };
+
+  if (appliedPromo) {
+    const discountLabel = appliedPromo.discount_type === "percentage"
+      ? `${appliedPromo.discount_value}% off`
+      : `$${appliedPromo.discount_value.toFixed(2)} off`;
+
+    return (
+      <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Check className="w-3.5 h-3.5 text-green-400" />
+          <span className="font-display text-[10px] tracking-wider text-green-400">{appliedPromo.code}</span>
+          <span className="font-body text-xs text-green-400/70">({discountLabel})</span>
+        </div>
+        <button onClick={onRemove} className="text-muted-foreground hover:text-foreground transition-colors">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-0">
+        <div className="flex items-center px-2.5 border border-r-0 border-border bg-muted">
+          <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => { setCode(e.target.value); setError(""); }}
+          onKeyDown={(e) => e.key === "Enter" && handleApply()}
+          placeholder="Promo code"
+          className="flex-1 h-9 border border-border bg-background px-3 text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none uppercase"
+        />
+        <button
+          onClick={handleApply}
+          disabled={loading || !code.trim()}
+          className="h-9 px-4 bg-primary text-primary-foreground font-display text-[10px] tracking-widest hover:brightness-110 transition-all disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "APPLY"}
+        </button>
+      </div>
+      {error && <p className="font-body text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
