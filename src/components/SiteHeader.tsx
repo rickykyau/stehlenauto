@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package, Shield } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
