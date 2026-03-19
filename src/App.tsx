@@ -47,6 +47,9 @@ import AdminPlaceholder from "./pages/admin/AdminPlaceholder.tsx";
 import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
 import AdminContentPage from "./pages/admin/AdminContentPage.tsx";
 import AdminAnalyticsPage from "./pages/admin/AdminAnalyticsPage.tsx";
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage.tsx";
+import AdminProductsPage from "./pages/admin/AdminProductsPage.tsx";
+import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage.tsx";
 
 const queryClient = new QueryClient();
 
