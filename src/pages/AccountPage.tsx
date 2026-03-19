@@ -31,6 +31,7 @@ const AccountPage = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
+    trackEvent("logout");
     await supabase.auth.signOut();
     navigate("/");
   };
