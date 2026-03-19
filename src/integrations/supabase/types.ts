@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_user_id: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+        }
+        Insert: {
+          action: string
+          admin_user_id: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -107,6 +137,152 @@ export type Database = {
           section?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      inventory_alerts: {
+        Row: {
+          alert_status: string
+          created_at: string
+          current_quantity: number
+          id: string
+          product_id: string
+          threshold: number
+          variant_id: string
+          variant_title: string | null
+        }
+        Insert: {
+          alert_status?: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          product_id: string
+          threshold?: number
+          variant_id: string
+          variant_title?: string | null
+        }
+        Update: {
+          alert_status?: string
+          created_at?: string
+          current_quantity?: number
+          id?: string
+          product_id?: string
+          threshold?: number
+          variant_id?: string
+          variant_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_alerts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_cache"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          discount_amount: number
+          email: string | null
+          financial_status: string
+          fulfillment_status: string
+          id: string
+          line_items: Json
+          order_number: string
+          promo_code_used: string | null
+          shipping_address: Json | null
+          shopify_order_id: string
+          subtotal_price: number
+          total_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          discount_amount?: number
+          email?: string | null
+          financial_status?: string
+          fulfillment_status?: string
+          id?: string
+          line_items?: Json
+          order_number: string
+          promo_code_used?: string | null
+          shipping_address?: Json | null
+          shopify_order_id: string
+          subtotal_price?: number
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          discount_amount?: number
+          email?: string | null
+          financial_status?: string
+          fulfillment_status?: string
+          id?: string
+          line_items?: Json
+          order_number?: string
+          promo_code_used?: string | null
+          shipping_address?: Json | null
+          shopify_order_id?: string
+          subtotal_price?: number
+          total_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      products_cache: {
+        Row: {
+          created_at: string
+          fitment_vehicles: Json
+          id: string
+          images: Json
+          last_synced_at: string
+          product_type: string | null
+          shopify_product_id: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          variants: Json
+          vendor: string | null
+        }
+        Insert: {
+          created_at?: string
+          fitment_vehicles?: Json
+          id?: string
+          images?: Json
+          last_synced_at?: string
+          product_type?: string | null
+          shopify_product_id: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          variants?: Json
+          vendor?: string | null
+        }
+        Update: {
+          created_at?: string
+          fitment_vehicles?: Json
+          id?: string
+          images?: Json
+          last_synced_at?: string
+          product_type?: string | null
+          shopify_product_id?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          variants?: Json
+          vendor?: string | null
         }
         Relationships: []
       }
