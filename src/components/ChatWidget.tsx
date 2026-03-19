@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Loader2, ShoppingCart, ExternalLink, ChevronRight } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, ShoppingCart, ExternalLink, ChevronRight, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useNavigate } from "react-router-dom";
@@ -201,13 +201,33 @@ export default function ChatWidget() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Close chat"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setMessages([]);
+                  setConversationId(null);
+                  // Re-trigger greeting
+                  let greeting = "Welcome to Stehlen Auto! How can I help you find the right parts?";
+                  if (userName && vehicle) {
+                    greeting = `Hi ${userName}! I see you have a ${vehicle.year} ${vehicle.make} ${vehicle.model}. How can I help you find parts today?`;
+                  } else if (userName) {
+                    greeting = `Hi ${userName}! How can I help you today?`;
+                  }
+                  setMessages([{ id: "greeting", role: "assistant", content: greeting, timestamp: new Date() }]);
+                }}
+                className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="New conversation"
+              >
+                <Home className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close chat"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
