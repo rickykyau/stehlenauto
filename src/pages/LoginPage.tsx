@@ -43,6 +43,8 @@ const LoginPage = () => {
       setError(error.message === "Invalid login credentials"
         ? "Invalid email or password."
         : error.message);
+    } else {
+      trackEvent("login", { method: "email" });
     }
     setLoading(false);
   };
