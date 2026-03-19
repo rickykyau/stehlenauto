@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown } from "lucide-react";
+import { RefreshCw, Search, ChevronDown, ChevronUp, AlertTriangle, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { fuzzyMatch } from "@/lib/fuzzy-search";
 
@@ -23,6 +23,8 @@ interface ProductCache {
 type SortField = "cb_item_name" | "title";
 type SortDir = "asc" | "desc";
 
+const PAGE_SIZE = 50;
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<ProductCache[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,15 +37,26 @@ export default function AdminProductsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>("title");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const fetchProducts = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("products_cache")
-      .select("*")
-      .order("title", { ascending: true })
-      .limit(1000);
-    setProducts((data as any[]) ?? []);
+    // Fetch all products (no limit — paginate client-side after filtering)
+    let all: any[] = [];
+    let from = 0;
+    const step = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from("products_cache")
+        .select("*")
+        .order("title", { ascending: true })
+        .range(from, from + step - 1);
+      const rows = (data as any[]) ?? [];
+      all = all.concat(rows);
+      if (rows.length < step) break;
+      from += step;
+    }
+    setProducts(all);
     setLoading(false);
   };
 
@@ -97,11 +110,12 @@ export default function AdminProductsPage() {
       setSortField(field);
       setSortDir("asc");
     }
+    setCurrentPage(1);
   };
 
   const productTypes = [...new Set(products.map((p) => p.product_type).filter(Boolean))] as string[];
 
-  const filtered = products
+  const filtered = useMemo(() => products
     .filter((p) => {
       const q = search.trim();
       const skus = p.variants.map((v: any) => v.sku || "").join(" ");
@@ -117,7 +131,36 @@ export default function AdminProductsPage() {
       const valB = (b[sortField] || "").toLowerCase();
       const cmp = valA.localeCompare(valB);
       return sortDir === "asc" ? cmp : -cmp;
-    });
+    }), [products, search, filterStatus, filterType, filterLowStock, sortField, sortDir]);
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, filterStatus, filterType, filterLowStock]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedProducts = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const showingFrom = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const showingTo = Math.min(safePage * PAGE_SIZE, filtered.length);
+
+  // Generate page numbers to show
+  const pageNumbers = useMemo(() => {
+    const pages: number[] = [];
+    const maxVisible = 7;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      let start = Math.max(2, safePage - 2);
+      let end = Math.min(totalPages - 1, safePage + 2);
+      if (safePage <= 3) end = Math.min(5, totalPages - 1);
+      if (safePage >= totalPages - 2) start = Math.max(totalPages - 4, 2);
+      if (start > 2) pages.push(-1); // ellipsis
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (end < totalPages - 1) pages.push(-2); // ellipsis
+      pages.push(totalPages);
+    }
+    return pages;
+  }, [totalPages, safePage]);
 
   const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
     <th
@@ -201,126 +244,183 @@ export default function AdminProductsPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
-            ) : filtered.length === 0 ? (
+            ) : paginatedProducts.length === 0 ? (
               <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-xs">
                 {products.length === 0 ? 'No products synced yet. Click "Sync Products" to fetch from Shopify.' : "No matching products."}
               </td></tr>
             ) : (
-              filtered.map((p) => {
+              paginatedProducts.map((p) => {
                 const totalInv = getTotalInventory(p.variants);
                 const isLow = totalInv < 10;
                 return (
-                  <>
-                    <tr
-                      key={p.id}
-                      className="border-b border-border hover:bg-accent/30 cursor-pointer"
-                      onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                    >
-                      <td className="px-4 py-3 font-body text-foreground text-xs max-w-[160px] truncate">
-                        {p.cb_item_name || <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {p.images?.[0] ? (
-                          <img src={(p.images[0] as any).src} alt="" className="w-10 h-10 object-cover border border-border" />
-                        ) : (
-                          <div className="w-10 h-10 bg-muted border border-border" />
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-body text-foreground font-medium max-w-[250px] truncate">{p.title}</td>
-                      <td className="px-4 py-3 font-body text-muted-foreground text-xs">{p.product_type || "—"}</td>
-                      <td className="px-4 py-3 font-body text-muted-foreground">{p.variants.length}</td>
-                      <td className="px-4 py-3 font-body text-foreground">{getPriceRange(p.variants)}</td>
-                      <td className="px-4 py-3 font-body">
-                        <span className={`flex items-center gap-1 ${isLow ? "text-amber-400" : "text-foreground"}`}>
-                          {isLow && <AlertTriangle className="w-3.5 h-3.5" />}
-                          {totalInv}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 text-[10px] font-display tracking-wider ${
-                          p.status === "active" ? "bg-emerald-500/15 text-emerald-400" :
-                          p.status === "draft" ? "bg-amber-500/15 text-amber-400" :
-                          "bg-muted text-muted-foreground"
-                        }`}>
-                          {p.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {expandedId === p.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                      </td>
-                    </tr>
-                    {expandedId === p.id && (
-                      <tr key={`${p.id}-detail`} className="border-b border-border bg-accent/10">
-                        <td colSpan={9} className="px-6 py-4">
-                          <div className="grid md:grid-cols-3 gap-6">
-                            {/* Variants */}
-                            <div>
-                              <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">VARIANTS</h4>
-                              <div className="space-y-1">
-                                {p.variants.map((v: any, i: number) => (
-                                  <div key={i} className="flex justify-between text-sm font-body">
-                                    <span className="text-foreground">{v.title} {v.sku && <span className="text-muted-foreground">({v.sku})</span>}</span>
-                                    <span className={`${v.inventory_quantity < 10 ? "text-amber-400" : "text-muted-foreground"}`}>
-                                      ${parseFloat(v.price).toFixed(2)} · {v.inventory_quantity} in stock
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            {/* Info */}
-                            <div>
-                              <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">INFO</h4>
-                              <div className="text-sm font-body space-y-1">
-                                <p><span className="text-muted-foreground">CB Item Name:</span> <span className="text-foreground">{p.cb_item_name || "—"}</span></p>
-                                <p><span className="text-muted-foreground">Vendor:</span> <span className="text-foreground">{p.vendor || "—"}</span></p>
-                                <p><span className="text-muted-foreground">Shopify ID:</span> <span className="text-foreground">{p.shopify_product_id}</span></p>
-                                <p><span className="text-muted-foreground">Last synced:</span> <span className="text-foreground">{new Date(p.last_synced_at).toLocaleString()}</span></p>
-                              </div>
-                              {p.fitment_vehicles.length > 0 && (
-                                <div className="mt-3">
-                                  <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-2">FITMENT</h4>
-                                  <div className="flex flex-wrap gap-1">
-                                    {p.fitment_vehicles.slice(0, 10).map((v: any, i: number) => (
-                                      <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-display tracking-wider">
-                                        {v.year} {v.make} {v.model}
-                                      </span>
-                                    ))}
-                                    {p.fitment_vehicles.length > 10 && (
-                                      <span className="text-xs text-muted-foreground">+{p.fitment_vehicles.length - 10} more</span>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                            {/* Metafields */}
-                            <div>
-                              <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">METAFIELDS</h4>
-                              {(p.metafields && p.metafields.length > 0) ? (
-                                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                                  {p.metafields.map((mf: any, i: number) => (
-                                    <div key={i} className="text-sm font-body">
-                                      <span className="text-muted-foreground">{mf.namespace}.{mf.key}:</span>{" "}
-                                      <span className="text-foreground break-all">
-                                        {typeof mf.value === "string" && mf.value.length > 100 ? mf.value.slice(0, 100) + "…" : mf.value}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-xs text-muted-foreground">No metafields</p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
+                  <ProductRow
+                    key={p.id}
+                    product={p}
+                    totalInv={totalInv}
+                    isLow={isLow}
+                    priceRange={getPriceRange(p.variants)}
+                    expanded={expandedId === p.id}
+                    onToggle={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                  />
                 );
               })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs font-body text-muted-foreground">
+            Showing {showingFrom}–{showingTo} of {filtered.length.toLocaleString()} products
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+              disabled={safePage <= 1}
+              className="p-2 border border-border hover:bg-accent/50 disabled:opacity-30 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            {pageNumbers.map((pn, i) =>
+              pn < 0 ? (
+                <span key={`e${i}`} className="px-1 text-muted-foreground text-xs">…</span>
+              ) : (
+                <button
+                  key={pn}
+                  onClick={() => setCurrentPage(pn)}
+                  className={`min-w-[32px] h-8 text-xs font-display tracking-wider border transition-colors ${
+                    pn === safePage
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:bg-accent/50"
+                  }`}
+                >
+                  {pn}
+                </button>
+              )
+            )}
+            <button
+              onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+              disabled={safePage >= totalPages}
+              className="p-2 border border-border hover:bg-accent/50 disabled:opacity-30 transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+/* ── Extracted row component ── */
+function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggle }: {
+  product: ProductCache;
+  totalInv: number;
+  isLow: boolean;
+  priceRange: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <>
+      <tr className="border-b border-border hover:bg-accent/30 cursor-pointer" onClick={onToggle}>
+        <td className="px-4 py-3 font-body text-foreground text-xs max-w-[160px] truncate">
+          {p.cb_item_name || <span className="text-muted-foreground">—</span>}
+        </td>
+        <td className="px-4 py-3">
+          {p.images?.[0] ? (
+            <img src={(p.images[0] as any).src} alt="" className="w-10 h-10 object-cover border border-border" />
+          ) : (
+            <div className="w-10 h-10 bg-muted border border-border" />
+          )}
+        </td>
+        <td className="px-4 py-3 font-body text-foreground font-medium max-w-[250px] truncate">{p.title}</td>
+        <td className="px-4 py-3 font-body text-muted-foreground text-xs">{p.product_type || "—"}</td>
+        <td className="px-4 py-3 font-body text-muted-foreground">{p.variants.length}</td>
+        <td className="px-4 py-3 font-body text-foreground">{priceRange}</td>
+        <td className="px-4 py-3 font-body">
+          <span className={`flex items-center gap-1 ${isLow ? "text-amber-400" : "text-foreground"}`}>
+            {isLow && <AlertTriangle className="w-3.5 h-3.5" />}
+            {totalInv}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          <span className={`inline-block px-2 py-0.5 text-[10px] font-display tracking-wider ${
+            p.status === "active" ? "bg-emerald-500/15 text-emerald-400" :
+            p.status === "draft" ? "bg-amber-500/15 text-amber-400" :
+            "bg-muted text-muted-foreground"
+          }`}>
+            {p.status.toUpperCase()}
+          </span>
+        </td>
+        <td className="px-4 py-3">
+          {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="border-b border-border bg-accent/10">
+          <td colSpan={9} className="px-6 py-4">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div>
+                <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">VARIANTS</h4>
+                <div className="space-y-1">
+                  {p.variants.map((v: any, i: number) => (
+                    <div key={i} className="flex justify-between text-sm font-body">
+                      <span className="text-foreground">{v.title} {v.sku && <span className="text-muted-foreground">({v.sku})</span>}</span>
+                      <span className={`${v.inventory_quantity < 10 ? "text-amber-400" : "text-muted-foreground"}`}>
+                        ${parseFloat(v.price).toFixed(2)} · {v.inventory_quantity} in stock
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">INFO</h4>
+                <div className="text-sm font-body space-y-1">
+                  <p><span className="text-muted-foreground">CB Item Name:</span> <span className="text-foreground">{p.cb_item_name || "—"}</span></p>
+                  <p><span className="text-muted-foreground">Vendor:</span> <span className="text-foreground">{p.vendor || "—"}</span></p>
+                  <p><span className="text-muted-foreground">Shopify ID:</span> <span className="text-foreground">{p.shopify_product_id}</span></p>
+                  <p><span className="text-muted-foreground">Last synced:</span> <span className="text-foreground">{new Date(p.last_synced_at).toLocaleString()}</span></p>
+                </div>
+                {p.fitment_vehicles.length > 0 && (
+                  <div className="mt-3">
+                    <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-2">FITMENT</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {p.fitment_vehicles.slice(0, 10).map((v: any, i: number) => (
+                        <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-display tracking-wider">
+                          {v.year} {v.make} {v.model}
+                        </span>
+                      ))}
+                      {p.fitment_vehicles.length > 10 && (
+                        <span className="text-xs text-muted-foreground">+{p.fitment_vehicles.length - 10} more</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div>
+                <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">METAFIELDS</h4>
+                {(p.metafields && p.metafields.length > 0) ? (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {p.metafields.map((mf: any, i: number) => (
+                      <div key={i} className="text-sm font-body">
+                        <span className="text-muted-foreground">{mf.namespace}.{mf.key}:</span>{" "}
+                        <span className="text-foreground break-all">
+                          {typeof mf.value === "string" && mf.value.length > 100 ? mf.value.slice(0, 100) + "…" : mf.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">No metafields</p>
+                )}
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
