@@ -62,7 +62,7 @@ interface FitmentSelectorProps {
 }
 
 const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
-  const { vehicle: savedVehicle, setVehicle } = useVehicle();
+  const { vehicle: savedVehicle, setVehicle, clearVehicle } = useVehicle();
   const navigate = useNavigate();
   const [year, setYear] = useState(savedVehicle?.year || "");
   const [make, setMake] = useState(savedVehicle?.make || "");
@@ -157,6 +157,20 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
             : "FIND PARTS"}
         </div>
       </button>
+
+      {(year || make || model || savedVehicle) && (
+        <button
+          onClick={() => {
+            setYear("");
+            setMake("");
+            setModel("");
+            clearVehicle();
+          }}
+          className="mt-2 w-full text-center font-body text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+        >
+          Clear Selection
+        </button>
+      )}
     </div>
   );
 };
