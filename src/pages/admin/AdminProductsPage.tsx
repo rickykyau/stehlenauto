@@ -172,7 +172,7 @@ export default function AdminProductsPage() {
       const q = search.trim();
       const skus = p.variants.map((v: any) => v.sku || "").join(" ");
       const tags = (p.tags || []).join(" ");
-      const matchesSearch = !q || fuzzyMatch(q, p.title, p.cb_item_name, p.product_type, skus, tags);
+      const matchesSearch = !q || fuzzyMatch(q, p.title, p.cb_item_name, p.part_number, p.product_type, skus, tags);
       const matchesStatus = filterStatus === "all" || p.status === filterStatus;
       const matchesType = filterType === "all" || p.product_type === filterType;
       const matchesLow = !filterLowStock || getTotalInventory(p.variants) < 10;
