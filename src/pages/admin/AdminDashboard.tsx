@@ -52,7 +52,7 @@ export default function AdminDashboard() {
       setActivePromos(promosRes.count ?? 0);
       setActiveNow(activeRes.count ?? 0);
       setRecentUsers(recentUsersRes.data ?? []);
-      setRecentActivity(activityRes.data ?? []);
+      setRecentOrders((activityRes.data as any[]) ?? []);
       setTotalOrders(ordersCountRes.count ?? 0);
       setOrdersToday(ordersTodayRes.count ?? 0);
       setInventoryAlerts((alertsRes.data as any[]) ?? []);
