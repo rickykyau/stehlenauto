@@ -104,6 +104,7 @@ const SiteHeader = () => {
   }, []);
 
   const handleSignOut = async () => {
+    trackEvent("logout");
     await supabase.auth.signOut();
     navigate("/");
   };

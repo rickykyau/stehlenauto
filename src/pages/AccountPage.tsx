@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Settings, Package, MapPin, Truck, LogOut, ChevronRight } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import { useVehicle } from "@/contexts/VehicleContext";
