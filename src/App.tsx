@@ -51,6 +51,9 @@ import AdminOrdersPage from "./pages/admin/AdminOrdersPage.tsx";
 import AdminProductsPage from "./pages/admin/AdminProductsPage.tsx";
 import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage.tsx";
 import AdminPromoCodeDetailPage from "./pages/admin/AdminPromoCodeDetailPage.tsx";
+import AdminChatLogsPage from "./pages/admin/AdminChatLogsPage.tsx";
+import AdminSupportTicketsPage from "./pages/admin/AdminSupportTicketsPage.tsx";
+import ChatWidget from "./components/ChatWidget.tsx";
 
 const queryClient = new QueryClient();
 
