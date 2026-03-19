@@ -247,6 +247,7 @@ export type Database = {
           images: Json
           last_synced_at: string
           metafields: Json | null
+          part_number: string | null
           product_type: string | null
           shopify_product_id: string
           status: string
@@ -264,6 +265,7 @@ export type Database = {
           images?: Json
           last_synced_at?: string
           metafields?: Json | null
+          part_number?: string | null
           product_type?: string | null
           shopify_product_id: string
           status?: string
@@ -281,6 +283,7 @@ export type Database = {
           images?: Json
           last_synced_at?: string
           metafields?: Json | null
+          part_number?: string | null
           product_type?: string | null
           shopify_product_id?: string
           status?: string

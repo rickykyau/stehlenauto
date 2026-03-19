@@ -164,14 +164,15 @@ serve(async (req) => {
 
       const metafields = (product.metafields?.edges || []).map((e: any) => e.node);
 
+      // Extract CB Item Name from cb_integration.item_name ONLY
       let cbItemName: string | null = null;
+      let partNumber: string | null = null;
       for (const mf of metafields) {
-        if (
-          (mf.namespace === "cb_integration" && mf.key === "item_name") ||
-          (mf.namespace === "custom" && mf.key === "part_number")
-        ) {
+        if (mf.namespace === "cb_integration" && mf.key === "item_name") {
           cbItemName = mf.value;
-          break;
+        }
+        if (mf.namespace === "custom" && mf.key === "part_number") {
+          partNumber = mf.value;
         }
       }
 
@@ -214,6 +215,7 @@ serve(async (req) => {
         images,
         fitment_vehicles: fitmentVehicles,
         cb_item_name: cbItemName,
+        part_number: partNumber,
         metafields: metafieldsClean,
         updated_at: product.updatedAt || now,
         last_synced_at: now,

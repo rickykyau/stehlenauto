@@ -17,6 +17,7 @@ interface ProductCache {
   fitment_vehicles: any[];
   last_synced_at: string;
   cb_item_name: string | null;
+  part_number: string | null;
   metafields: any[];
 }
 
@@ -171,7 +172,7 @@ export default function AdminProductsPage() {
       const q = search.trim();
       const skus = p.variants.map((v: any) => v.sku || "").join(" ");
       const tags = (p.tags || []).join(" ");
-      const matchesSearch = !q || fuzzyMatch(q, p.title, p.cb_item_name, p.product_type, skus, tags);
+      const matchesSearch = !q || fuzzyMatch(q, p.title, p.cb_item_name, p.part_number, p.product_type, skus, tags);
       const matchesStatus = filterStatus === "all" || p.status === filterStatus;
       const matchesType = filterType === "all" || p.product_type === filterType;
       const matchesLow = !filterLowStock || getTotalInventory(p.variants) < 10;
@@ -325,6 +326,7 @@ export default function AdminProductsPage() {
           <thead>
             <tr className="border-b border-border text-left">
               <SortHeader field="cb_item_name" label="CB ITEM NAME" />
+              <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">PART #</th>
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground w-12"></th>
               <SortHeader field="title" label="TITLE" />
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">TYPE</th>
@@ -337,9 +339,9 @@ export default function AdminProductsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
+              <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
             ) : paginatedProducts.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-xs">
+              <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground text-xs">
                 {products.length === 0 ? 'No products synced yet. Click "Sync Products" to fetch from Shopify.' : "No matching products."}
               </td></tr>
             ) : (
@@ -423,6 +425,9 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
         <td className="px-4 py-3 font-body text-foreground text-xs max-w-[160px] truncate">
           {p.cb_item_name || <span className="text-muted-foreground">—</span>}
         </td>
+        <td className="px-4 py-3 font-body text-muted-foreground text-xs max-w-[140px] truncate">
+          {p.part_number || <span className="text-muted-foreground">—</span>}
+        </td>
         <td className="px-4 py-3">
           {p.images?.[0] ? (
             <img src={(p.images[0] as any).src} alt="" className="w-10 h-10 object-cover border border-border" />
@@ -455,7 +460,7 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
       </tr>
       {expanded && (
         <tr className="border-b border-border bg-accent/10">
-          <td colSpan={9} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4">
             <div className="grid md:grid-cols-3 gap-6">
               <div>
                 <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">VARIANTS</h4>
@@ -474,6 +479,7 @@ function ProductRow({ product: p, totalInv, isLow, priceRange, expanded, onToggl
                 <h4 className="font-display text-[9px] tracking-widest text-muted-foreground mb-3">INFO</h4>
                 <div className="text-sm font-body space-y-1">
                   <p><span className="text-muted-foreground">CB Item Name:</span> <span className="text-foreground">{p.cb_item_name || "—"}</span></p>
+                  <p><span className="text-muted-foreground">Part Number:</span> <span className="text-foreground">{p.part_number || "—"}</span></p>
                   <p><span className="text-muted-foreground">Vendor:</span> <span className="text-foreground">{p.vendor || "—"}</span></p>
                   <p><span className="text-muted-foreground">Shopify ID:</span> <span className="text-foreground">{p.shopify_product_id}</span></p>
                   <p><span className="text-muted-foreground">Last synced:</span> <span className="text-foreground">{new Date(p.last_synced_at).toLocaleString()}</span></p>
