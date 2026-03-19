@@ -15,8 +15,9 @@ import { storefrontApiRequest } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { isUniversalProduct } from "@/lib/shopify";
+import { supabase } from "@/integrations/supabase/client";
 
-/* ─── All 12 Categories ─── */
+/* ─── All 12 Categories (fallback defaults) ─── */
 
 const ALL_CATEGORIES = [
   { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", fallbackCount: 190, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
@@ -44,7 +45,6 @@ const COLLECTION_IMAGE_QUERY = `
   }
 `;
 
-/** Parse year range from a product title. Returns [startYear, endYear] or null. */
 function parseYearRange(title: string): [number, number] | null {
   const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
   if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
@@ -68,13 +68,9 @@ function countVehicleMatches(
 ): number {
   return products.filter((p) => {
     const title = p.title.toLowerCase();
-    // Universal products always count
     if (title.includes("universal")) return true;
-    // Check make
     if (!title.includes(vehicle.make.toLowerCase())) return false;
-    // Check model
     if (!title.includes(vehicle.model.toLowerCase())) return false;
-    // Check year
     const y = parseInt(vehicle.year);
     const range = parseYearRange(p.title);
     if (!range) return false;
@@ -107,9 +103,54 @@ function useCategoryData() {
   });
 }
 
-/* ─── Featured Products — fetch specific handles for category diversity ─── */
+/* ─── Admin-managed category config ─── */
+interface AdminCategory {
+  handle: string;
+  title: string;
+  visible: boolean;
+  order: number;
+}
 
-const FEATURED_HANDLES = [
+function useAdminCategories() {
+  return useQuery({
+    queryKey: ["homepage-categories-config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("homepage_content")
+        .select("content")
+        .eq("section", "categories")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      if (!data?.content) return null;
+      return ((data.content as any).categories as AdminCategory[])?.sort((a, b) => a.order - b.order) ?? null;
+    },
+    staleTime: 60_000,
+  });
+}
+
+/* ─── Admin-managed featured product handles ─── */
+function useAdminFeaturedHandles() {
+  return useQuery({
+    queryKey: ["homepage-featured-config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("homepage_content")
+        .select("content")
+        .eq("section", "featured")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+      if (!data?.content) return null;
+      return ((data.content as any).handles as string[]) ?? null;
+    },
+    staleTime: 60_000,
+  });
+}
+
+/* ─── Featured Products ─── */
+
+const FALLBACK_HANDLES = [
   "2020-2023-tesla-model-y-rear-bumper-guard-black",
   "2022-2025-toyota-tundra-5-5-bed-tonneau-cover-led-light-kit",
   "2005-2015-nissan-xterra-class-3-trailer-hitch-ball-mount-kit",
@@ -141,12 +182,6 @@ const PRODUCT_FRAGMENT = `
   }
 `;
 
-const FEATURED_PRODUCTS_QUERY = `
-  query GetFeaturedByHandle {
-    ${FEATURED_HANDLES.map((h, i) => `p${i + 1}: productByHandle(handle: "${h}") { ${PRODUCT_FRAGMENT} }`).join("\n    ")}
-  }
-`;
-
 function normalizeFeaturedNode(node: any): ShopifyProduct {
   const firstVariant = node.variants?.edges?.[0]?.node;
   return {
@@ -172,25 +207,27 @@ function normalizeFeaturedNode(node: any): ShopifyProduct {
   };
 }
 
-function useFeaturedProducts() {
+function useFeaturedProducts(handles: string[]) {
   return useQuery({
-    queryKey: ["featured-products-by-handle"],
+    queryKey: ["featured-products-by-handle", handles],
     queryFn: async () => {
+      if (handles.length === 0) return [];
+      const query = `
+        query GetFeaturedByHandle {
+          ${handles.map((h, i) => `p${i + 1}: productByHandle(handle: "${h}") { ${PRODUCT_FRAGMENT} }`).join("\n    ")}
+        }
+      `;
       try {
-        const response = await storefrontApiRequest(FEATURED_PRODUCTS_QUERY);
-        console.log("Featured products API response:", response);
+        const response = await storefrontApiRequest(query);
         const data = response?.data;
         if (!data) return [];
-
         const products: ShopifyProduct[] = [];
-        for (let i = 1; i <= FEATURED_HANDLES.length; i++) {
+        for (let i = 1; i <= handles.length; i++) {
           const node = data[`p${i}`];
           if (node) products.push(normalizeFeaturedNode(node));
         }
-        console.log("Featured products count:", products.length);
         return products;
-      } catch (error) {
-        console.error("Featured products fetch failed:", error);
+      } catch {
         return [];
       }
     },
@@ -199,7 +236,9 @@ function useFeaturedProducts() {
 }
 
 function FeaturedProductsSection() {
-  const { data: products, isLoading } = useFeaturedProducts();
+  const { data: adminHandles } = useAdminFeaturedHandles();
+  const handles = adminHandles ?? FALLBACK_HANDLES;
+  const { data: products, isLoading } = useFeaturedProducts(handles);
 
   if (isLoading) {
     return (
@@ -242,14 +281,6 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
   const hasVehicle = vehicleCount !== undefined;
   const dimmed = hasVehicle && vehicleCount === 0;
 
-  {/*
-   * NOTE: Category card "darkness" is caused by the SOURCE IMAGES from Shopify,
-   * not CSS overlays. These are auto parts product photos shot on dark/black
-   * backgrounds. The only CSS darkening is a small bottom gradient for text readability.
-   * No opacity, brightness, or overlay filters are applied to the image itself.
-   * To make cards brighter, the source images in Shopify need to be re-shot
-   * or edited with lighter/white backgrounds.
-   */}
   return (
     <Link
       to={`/collections/all?category=${handle}`}
@@ -265,7 +296,6 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
       ) : (
         <div className="w-full h-full bg-card" />
       )}
-      {/* Bottom-only gradient for text readability — NO full-card overlay */}
       <div
         className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, transparent 50%)" }}
@@ -286,7 +316,16 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
 
 const IndexTemplate = () => {
   const { data: categoryData } = useCategoryData();
+  const { data: adminCategories } = useAdminCategories();
   const { vehicle } = useVehicle();
+
+  // Use admin-managed categories if available, otherwise fallback
+  const displayCategories = adminCategories
+    ? adminCategories.filter((c) => c.visible).map((c) => {
+        const fallback = ALL_CATEGORIES.find((ac) => ac.handle === c.handle);
+        return { ...c, fallbackCount: fallback?.fallbackCount ?? 0, image: fallback?.image ?? "" };
+      })
+    : ALL_CATEGORIES;
 
   return (
     <div className="min-h-screen bg-background">
@@ -302,7 +341,7 @@ const IndexTemplate = () => {
           </Link>
         </div>
         <HorizontalCarousel loop>
-          {ALL_CATEGORIES.map((cat) => {
+          {displayCategories.map((cat) => {
             const info = categoryData?.[cat.handle];
             const vehicleCount = vehicle && info?.products
               ? countVehicleMatches(info.products, vehicle)
