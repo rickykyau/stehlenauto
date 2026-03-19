@@ -1,0 +1,1 @@
+ALTER TABLE public.products_cache ADD COLUMN IF NOT EXISTS cb_item_name text, ADD COLUMN IF NOT EXISTS metafields jsonb DEFAULT '[]'::jsonb;

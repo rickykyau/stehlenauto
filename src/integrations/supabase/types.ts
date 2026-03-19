@@ -240,11 +240,13 @@ export type Database = {
       }
       products_cache: {
         Row: {
+          cb_item_name: string | null
           created_at: string
           fitment_vehicles: Json
           id: string
           images: Json
           last_synced_at: string
+          metafields: Json | null
           product_type: string | null
           shopify_product_id: string
           status: string
@@ -255,11 +257,13 @@ export type Database = {
           vendor: string | null
         }
         Insert: {
+          cb_item_name?: string | null
           created_at?: string
           fitment_vehicles?: Json
           id?: string
           images?: Json
           last_synced_at?: string
+          metafields?: Json | null
           product_type?: string | null
           shopify_product_id: string
           status?: string
@@ -270,11 +274,13 @@ export type Database = {
           vendor?: string | null
         }
         Update: {
+          cb_item_name?: string | null
           created_at?: string
           fitment_vehicles?: Json
           id?: string
           images?: Json
           last_synced_at?: string
+          metafields?: Json | null
           product_type?: string | null
           shopify_product_id?: string
           status?: string
