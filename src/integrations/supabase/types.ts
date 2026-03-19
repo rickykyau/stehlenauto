@@ -444,6 +444,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_status: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          progress: number
+          started_at: string | null
+          status: string
+          sync_type: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          progress?: number
+          started_at?: string | null
+          status?: string
+          sync_type: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          progress?: number
+          started_at?: string | null
+          status?: string
+          sync_type?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_activity_log: {
         Row: {
           created_at: string
