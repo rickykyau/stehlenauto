@@ -13,6 +13,8 @@ import {
   ClipboardList,
   AlertTriangle,
   RefreshCw,
+  MessageCircle,
+  Ticket,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/useAdmin";
 import { supabase } from "@/integrations/supabase/client";
