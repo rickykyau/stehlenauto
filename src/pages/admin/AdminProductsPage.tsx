@@ -326,6 +326,7 @@ export default function AdminProductsPage() {
           <thead>
             <tr className="border-b border-border text-left">
               <SortHeader field="cb_item_name" label="CB ITEM NAME" />
+              <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">PART #</th>
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground w-12"></th>
               <SortHeader field="title" label="TITLE" />
               <th className="px-4 py-3 font-display text-[9px] tracking-widest text-muted-foreground">TYPE</th>
