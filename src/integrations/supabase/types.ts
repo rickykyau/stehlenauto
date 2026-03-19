@@ -366,6 +366,7 @@ export type Database = {
           id: string
           is_active: boolean
           max_uses: number | null
+          max_uses_per_user: number | null
           minimum_order_amount: number | null
           product_ids: string[] | null
           starts_at: string
@@ -385,6 +386,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_uses?: number | null
+          max_uses_per_user?: number | null
           minimum_order_amount?: number | null
           product_ids?: string[] | null
           starts_at?: string
@@ -404,6 +406,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_uses?: number | null
+          max_uses_per_user?: number | null
           minimum_order_amount?: number | null
           product_ids?: string[] | null
           starts_at?: string
