@@ -341,7 +341,7 @@ export default function AdminProductsPage() {
             {loading ? (
               <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">Loading…</td></tr>
             ) : paginatedProducts.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground text-xs">
+              <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground text-xs">
                 {products.length === 0 ? 'No products synced yet. Click "Sync Products" to fetch from Shopify.' : "No matching products."}
               </td></tr>
             ) : (
