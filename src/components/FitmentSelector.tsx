@@ -88,8 +88,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       const v = { year, make, model };
       setVehicle(v);
       onVehicleSelect?.(v);
-      trackEvent("find_parts", { year, make, model });
-      trackEvent("vehicle_selected", { year, make, model });
+      trackEvent("vehicle_selected", { vehicle_year: year, vehicle_make: make, vehicle_model: model });
       navigate("/collections/all");
     }
   };

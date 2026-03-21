@@ -276,11 +276,19 @@ const ProductTemplate = () => {
 
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
+    const cartPrice = parseFloat(selectedVariant.price.amount);
     trackEvent("add_to_cart", {
-      product_name: product.title,
-      product_id: product.id,
-      price: selectedVariant.price.amount,
-      variant: selectedVariant.title,
+      currency: "USD",
+      value: cartPrice * qty,
+      items: [{
+        item_id: product.id,
+        item_name: product.title,
+        item_brand: product.vendor || "Stehlen",
+        price: cartPrice,
+        quantity: qty,
+        item_category: product.productType || undefined,
+        variant: selectedVariant.title,
+      }],
     });
     await addItem({
       product: { node: product },

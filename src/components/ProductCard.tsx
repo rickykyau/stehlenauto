@@ -30,6 +30,18 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     if (!firstVariant) return;
+    trackEvent("add_to_cart", {
+      currency: "USD",
+      value: price,
+      items: [{
+        item_id: p.id,
+        item_name: p.title,
+        item_brand: p.vendor || "Stehlen",
+        price,
+        quantity: 1,
+        item_category: p.productType || undefined,
+      }],
+    });
     await addItem({
       product,
       variantId: firstVariant.id,
