@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useNavigate } from "react-router-dom";
 import { useCartStore } from "@/stores/cartStore";
+import { trackEvent } from "@/lib/analytics";
 
 interface ChatMessage {
   id: string;
