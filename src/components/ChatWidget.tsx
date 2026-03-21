@@ -283,6 +283,36 @@ export default function ChatWidget() {
                               <ExternalLink className="w-3 h-3" />
                               VIEW
                             </button>
+                            {product.inStock && product.variantId && (
+                              <button
+                                onClick={async () => {
+                                  const cartPrice = parseFloat(product.price);
+                                  trackEvent("add_to_cart", {
+                                    currency: "USD",
+                                    value: cartPrice,
+                                    items: [{
+                                      item_id: product.id,
+                                      item_name: product.title,
+                                      item_brand: "Stehlen",
+                                      price: cartPrice,
+                                      quantity: 1,
+                                    }],
+                                  });
+                                  await addItem({
+                                    product: { node: { id: product.id, title: product.title, handle: product.handle, description: "", priceRange: { minVariantPrice: { amount: product.price, currencyCode: "USD" } }, images: { edges: product.image ? [{ node: { url: product.image, altText: null } }] : [] }, variants: { edges: [{ node: { id: product.variantId!, title: "Default", price: { amount: product.price, currencyCode: "USD" }, availableForSale: true, selectedOptions: [] } }] }, productType: "", tags: [], options: [] } },
+                                    variantId: product.variantId!,
+                                    variantTitle: "Default",
+                                    price: { amount: product.price, currencyCode: "USD" },
+                                    quantity: 1,
+                                    selectedOptions: [],
+                                  });
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-[10px] font-display tracking-wider bg-primary text-primary-foreground hover:brightness-110 transition-colors"
+                              >
+                                <ShoppingCart className="w-3 h-3" />
+                                ADD
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>
