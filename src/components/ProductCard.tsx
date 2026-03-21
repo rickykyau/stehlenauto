@@ -4,6 +4,7 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Plus, Loader2, Truck } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { trackEvent } from "@/lib/analytics";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 
@@ -29,6 +30,18 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
     if (!firstVariant) return;
+    trackEvent("add_to_cart", {
+      currency: "USD",
+      value: price,
+      items: [{
+        item_id: p.id,
+        item_name: p.title,
+        item_brand: "Stehlen",
+        price,
+        quantity: 1,
+        item_category: p.productType || undefined,
+      }],
+    });
     await addItem({
       product,
       variantId: firstVariant.id,
