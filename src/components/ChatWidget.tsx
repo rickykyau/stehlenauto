@@ -56,6 +56,7 @@ export default function ChatWidget() {
   const { vehicle } = useVehicle();
   const navigate = useNavigate();
   const openCart = useCartStore((s) => s.openCart);
+  const addItem = useCartStore((s) => s.addItem);
 
   // Get user session
   useEffect(() => {
