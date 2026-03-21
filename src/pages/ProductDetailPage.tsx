@@ -208,13 +208,21 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  // Track product view
+  // Track product view (GA4 standard)
   useEffect(() => {
     if (product) {
-      trackEvent("product_viewed", {
-        product_name: product.title,
-        product_id: product.id,
-        product_handle: slug,
+      const viewPrice = parseFloat(product.priceRange?.minVariantPrice?.amount || "0");
+      trackEvent("view_item", {
+        currency: "USD",
+        value: viewPrice,
+        items: [{
+          item_id: product.id,
+          item_name: product.title,
+          item_brand: product.vendor || "Stehlen",
+          price: viewPrice,
+          quantity: 1,
+          item_category: product.productType || undefined,
+        }],
       });
     }
   }, [product?.id]);
