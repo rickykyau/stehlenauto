@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
+import { trackEvent } from "@/lib/analytics";
 import PromoCodeInput from "./PromoCodeInput";
 
 interface AppliedPromo {
@@ -43,16 +44,31 @@ const CartDrawer = () => {
   // Clear promo when cart empties
   useEffect(() => { if (items.length === 0) setAppliedPromo(null); }, [items.length]);
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const checkoutUrl = getCheckoutUrl();
-    if (checkoutUrl) {
-      // Append discount code to checkout URL if promo applied
-      const url = appliedPromo
-        ? `${checkoutUrl}${checkoutUrl.includes("?") ? "&" : "?"}discount=${appliedPromo.code}`
-        : checkoutUrl;
-      window.open(url, '_blank');
-      closeCart();
-    }
+    if (!checkoutUrl) return;
+
+    const totalValue = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
+    trackEvent("begin_checkout", {
+      currency: "USD",
+      value: totalValue,
+      items: items.map((i) => ({
+        item_id: i.product.node.id,
+        item_name: i.product.node.title,
+        item_brand: "Stehlen",
+        price: parseFloat(i.price.amount),
+        quantity: i.quantity,
+      })),
+    });
+
+    // Allow time for the event to send before redirect
+    await new Promise((r) => setTimeout(r, 150));
+
+    const url = appliedPromo
+      ? `${checkoutUrl}${checkoutUrl.includes("?") ? "&" : "?"}discount=${appliedPromo.code}`
+      : checkoutUrl;
+    window.open(url, "_blank");
+    closeCart();
   };
 
   return (
