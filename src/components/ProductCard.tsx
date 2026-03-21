@@ -36,7 +36,7 @@ const ProductCard = ({ product, compact = false }: ProductCardProps) => {
       items: [{
         item_id: p.id,
         item_name: p.title,
-        item_brand: p.vendor || "Stehlen",
+        item_brand: "Stehlen",
         price,
         quantity: 1,
         item_category: p.productType || undefined,
