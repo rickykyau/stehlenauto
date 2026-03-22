@@ -599,18 +599,13 @@ serve(async (req) => {
     cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*/g, "").trim();
     cleanResponse = cleanResponse.replace(/\[\/ACTION_JSON\]/g, "").trim();
 
-    // Handle escalation
-    if (responseAction?.type === "escalate" && convId) {
-      await supabase.from("support_tickets").insert({
-        user_id: userId,
-        conversation_id: convId,
-        subject: responseAction.data?.subject || "Customer support request",
-        description: responseAction.data?.description || message,
-        status: "open",
-        priority: "medium",
-      });
-      await supabase.from("chat_conversations").update({ status: "escalated" }).eq("id", convId);
-    }
+    // Strip any leaked XML function_calls / invoke tags (Claude hallucinations)
+    cleanResponse = cleanResponse.replace(/<\/?function_calls>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?invoke[^>]*>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?antml:[^>]*>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?parameter[^>]*>[\s\S]*?<\/parameter>/gi, "").trim();
+    // Strip any remaining XML-like tool blocks
+    cleanResponse = cleanResponse.replace(/<[\s\S]*?<\/antml:[^>]*>/gi, "").trim();
 
     // 8. Store assistant message
     if (convId) {
