@@ -146,6 +146,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
 
   const applyVehicle = () => {
     if (!vehicle) return;
+    trackEvent("filter_applied", { filter_type: "vehicle", filter_value: vehicleLabel });
     onFilterChange({ ...filters, year: vehicle.year, make: vehicle.make, model: vehicle.model });
   };
 
