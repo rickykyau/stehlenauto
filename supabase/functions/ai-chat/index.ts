@@ -389,11 +389,17 @@ serve(async (req) => {
             return bQty - aQty;
           });
 
+          const totalMatched = vehicleMatched.length;
           const finalProducts = vehicleMatched.slice(0, 8);
 
           if (finalProducts.length > 0) {
             productsForResponse = finalProducts.map(buildProductCard);
-            productContext = `\n\nShowing ALL products matching ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model} (sorted by availability, top ${finalProducts.length}):\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Show these products immediately. Do NOT ask any more questions. After showing them, offer: "Want to see more in a specific category like bull guards or tonneau covers?"`;
+            const vehicleSlug = `${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}`.trim();
+            const viewAllLink = `/collections/all`;
+            const totalNote = totalMatched > finalProducts.length
+              ? `\n\nIMPORTANT: After showing the products, add this message: "Showing ${finalProducts.length} of ${totalMatched} parts for your ${vehicleSlug}. [View all ${totalMatched} parts →](${viewAllLink})"`
+              : "";
+            productContext = `\n\nShowing ALL products matching ${vehicleSlug} (sorted by availability, top ${finalProducts.length} of ${totalMatched} total):\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Show these products immediately. Do NOT ask any more questions. After showing them, offer: "Want to see more in a specific category like bull guards or tonneau covers?"${totalNote}`;
           } else {
             // Broaden: search by make+model only, ignoring year
             const broadMatched = products.filter((p: any) => {
