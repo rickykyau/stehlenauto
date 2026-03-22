@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Truck, ChevronDown } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
@@ -67,6 +67,24 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
   const [year, setYear] = useState(savedVehicle?.year || "");
   const [make, setMake] = useState(savedVehicle?.make || "");
   const [model, setModel] = useState(savedVehicle?.model || "");
+  const completedRef = useRef(false);
+
+  // Track abandonment on unmount
+  useEffect(() => {
+    return () => {
+      if (completedRef.current) return; // ymm_completed already fired
+      const hasStarted = !!(year || make);
+      const isComplete = !!(year && make && model);
+      if (hasStarted && !isComplete) {
+        const lastStep = make ? "make" : year ? "year" : "none";
+        trackEvent("ymm_abandoned", {
+          last_step: lastStep,
+          vehicle_year: year || null,
+          vehicle_make: make || null,
+        });
+      }
+    };
+  }, [year, make, model]);
 
   // Fetch all products for counting (only when year+make are set)
   const { data } = useShopifyProducts({ first: 250, query: make ? `*${make}*` : undefined });
@@ -85,6 +103,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
 
   const handleSubmit = () => {
     if (year && make && model) {
+      completedRef.current = true;
       const v = { year, make, model };
       setVehicle(v);
       onVehicleSelect?.(v);
@@ -160,6 +179,8 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       {(year || make || model || savedVehicle) && (
         <button
           onClick={() => {
+            trackEvent("ymm_cleared", { had_vehicle: !!(year && make && model) });
+            completedRef.current = true; // prevent abandonment fire on clear
             setYear("");
             setMake("");
             setModel("");
