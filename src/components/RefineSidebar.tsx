@@ -42,6 +42,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
   const toggleDecade = (d: string) => setExpandedDecades((prev) => ({ ...prev, [d]: !prev[d] }));
 
   const update = (patch: Partial<RefineFilters>) => {
+    // Track each filter change
+    if (patch.year !== undefined) {
+      trackEvent("filter_applied", { filter_type: "year", filter_value: patch.year || "all" });
+    }
+    if (patch.make !== undefined) {
+      trackEvent("filter_applied", { filter_type: "make", filter_value: patch.make || "all" });
+    }
+    if (patch.model !== undefined) {
+      trackEvent("filter_applied", { filter_type: "model", filter_value: patch.model || "all" });
+    }
+    if (patch.category !== undefined) {
+      const cat = CATEGORIES.find((c) => c.handle === patch.category);
+      trackEvent("filter_applied", { filter_type: "category", filter_value: cat?.label || patch.category || "all" });
+    }
     onFilterChange({ ...filters, ...patch });
   };
 
