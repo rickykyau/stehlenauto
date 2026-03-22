@@ -28,8 +28,12 @@ Your capabilities:
 
 Guidelines:
 - Be helpful, concise, and friendly
-- When a customer mentions their vehicle WITHOUT specifying a product category, ask what type of parts they're looking for. List categories: Bull Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks. Do NOT show random products.
-- Only show product cards when you have BOTH a vehicle AND a product category, or when the customer asks for a specific category without a vehicle.
+- CRITICAL RULE — SHOW PRODUCTS FIRST, ASK QUESTIONS LATER:
+  * When the customer says "all", "show me all", "everything", "show me everything", "what do you have", or any variation — STOP asking questions and IMMEDIATELY show the products provided in the context. Action beats clarification.
+  * After showing products, THEN offer: "Want to see more in a specific category like bull guards or tonneau covers?"
+  * Do NOT ask about cab style, trim level, engine, or subcategories unless the customer specifically asks for help narrowing down.
+- When a customer mentions their vehicle WITHOUT specifying a product category AND without saying "all/everything", ask what type of parts they're looking for. List categories: Bull Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks.
+- Only show product cards when you have product data in the context. Use the PRODUCTS_JSON format below.
 - Always confirm vehicle Year/Make/Model when discussing fitment
 - If a product is out of stock, suggest similar alternatives
 - When showing products, always mention price and stock status
@@ -62,7 +66,6 @@ interface ChatRequest {
   vehicleContext: { year: string; make: string; model: string } | null;
 }
 
-// Category mapping from natural language to product_type values
 const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string }> = [
   { patterns: /bull\s*guard|bull\s*bar|grille\s*guard/i, productType: "bull guard", label: "Bull Guards" },
   { patterns: /tonneau\s*cover|bed\s*cover/i, productType: "tonneau cover", label: "Tonneau Covers" },
@@ -80,7 +83,6 @@ const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string
 ];
 
 function parseVehicle(message: string, vehicleContext: { year: string; make: string; model: string } | null) {
-  // Try explicit patterns
   const patterns = [
     /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
     /(?:is\s+a|have\s+a|drive\s+a|own\s+a|got\s+a|my)\s+(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
@@ -97,6 +99,10 @@ function detectCategory(message: string): { productType: string; label: string }
     if (cat.patterns.test(message)) return { productType: cat.productType, label: cat.label };
   }
   return null;
+}
+
+function isShowAllIntent(message: string): boolean {
+  return /\b(show\s*(me\s*)?(all|everything)|all\s*(products?|parts?|of\s*(them|it))?|everything|what\s*(do\s*)?you\s*have|show\s*products?|see\s*(all|everything)|list\s*(all|everything))\b/i.test(message);
 }
 
 function matchesVehicle(tags: string[], make: string, model: string, year?: string): boolean {
@@ -120,12 +126,9 @@ function matchesVehicle(tags: string[], make: string, model: string, year?: stri
 
   if (!makeMatch || !modelMatch) return false;
 
-  // Year matching: if year provided, check; but don't disqualify if year tags use ranges
   if (year) {
-    const yearNum = parseInt(year);
     const yearMatch = tagsLower.some(t => t === `year:${year}` || t === year);
     if (!yearMatch) {
-      // Check title for year-range patterns like "2015+" or "2015-2024"
       return true; // Allow through - year range matching is fuzzy
     }
   }
@@ -147,7 +150,6 @@ function buildProductCard(p: any) {
   const firstVariant = variants[0] || {};
   const price = firstVariant.price || "0.00";
   const inStock = firstVariant.inventory_quantity > 0 || firstVariant.available !== false;
-  // Use the stored handle from Shopify, fallback to title-based only as last resort
   const handle = p.handle || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   return {
@@ -159,7 +161,7 @@ function buildProductCard(p: any) {
     handle,
     inStock,
     variantId: firstVariant.id || firstVariant.admin_graphql_api_id || "",
-    inventoryQuantity: firstVariant.inventory_quantity,
+    inventoryQuantity: firstVariant.inventory_quantity ?? 0,
     partNumber: p.part_number,
     cbItemName: p.cb_item_name,
   };
@@ -226,19 +228,18 @@ serve(async (req) => {
     // 4. Detect intent
     const parsedVehicle = parseVehicle(message, vehicleContext);
     const detectedCategory = detectCategory(message);
+    const showAll = isShowAllIntent(message);
 
     const needsProductSearch =
+      showAll || detectedCategory != null ||
       /(?:part|product|bull ?guard|bull ?bar|grille|tonneau|headlight|hitch|running board|fender|side step|roof rack|chase rack|floor mat|bed mat|molle|storage|find|search|looking for|recommend|suggest|show me|what do you have|fits? my|compatible|work with|in stock|available|front grill)/i.test(message);
 
     let productContext = "";
     let productsForResponse: any[] = [];
 
     if (needsProductSearch) {
-      // If vehicle mentioned but NO category, don't search - ask for category
-      if (parsedVehicle && !detectedCategory) {
-        productContext = `\n\nThe customer mentioned their vehicle (${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}) but did NOT specify a product category. Do NOT show any products. Instead, ask what type of parts they're looking for and list these categories: Bull Guards/Grille Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards/Side Steps, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks/Sport Bars, MOLLE Panels, Fender Flares, Under Seat Storage.`;
-      } else if (detectedCategory) {
-        // We have a category - search products
+      // "Show all" for a vehicle — search ALL categories
+      if (parsedVehicle && (showAll || (!detectedCategory && showAll))) {
         const { data: products } = await supabase
           .from("products_cache")
           .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
@@ -246,10 +247,58 @@ serve(async (req) => {
           .limit(500);
 
         if (products?.length) {
-          // Step 1: Filter by category
-          const categoryFiltered = products.filter((p: any) => matchesCategory(p, detectedCategory.productType));
+          const vehicleMatched = products.filter((p: any) => {
+            const tags = p.tags || [];
+            return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model, parsedVehicle.year);
+          });
 
-          // Step 2: If vehicle, filter by vehicle
+          // Sort by inventory quantity descending (in-stock first)
+          vehicleMatched.sort((a: any, b: any) => {
+            const aQty = (Array.isArray(a.variants) ? a.variants : [])[0]?.inventory_quantity ?? 0;
+            const bQty = (Array.isArray(b.variants) ? b.variants : [])[0]?.inventory_quantity ?? 0;
+            return bQty - aQty;
+          });
+
+          const finalProducts = vehicleMatched.slice(0, 8);
+
+          if (finalProducts.length > 0) {
+            productsForResponse = finalProducts.map(buildProductCard);
+            productContext = `\n\nShowing ALL products matching ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model} (sorted by availability, top ${finalProducts.length}):\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Show these products immediately. Do NOT ask any more questions. After showing them, offer: "Want to see more in a specific category like bull guards or tonneau covers?"`;
+          } else {
+            // Broaden: search by make+model only, ignoring year
+            const broadMatched = products.filter((p: any) => {
+              const tags = p.tags || [];
+              return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model);
+            });
+            broadMatched.sort((a: any, b: any) => {
+              const aQty = (Array.isArray(a.variants) ? a.variants : [])[0]?.inventory_quantity ?? 0;
+              const bQty = (Array.isArray(b.variants) ? b.variants : [])[0]?.inventory_quantity ?? 0;
+              return bQty - aQty;
+            });
+            const broadFinal = broadMatched.slice(0, 8);
+            if (broadFinal.length > 0) {
+              productsForResponse = broadFinal.map(buildProductCard);
+              productContext = `\n\nNo exact ${parsedVehicle.year} matches, but these products fit the ${parsedVehicle.make} ${parsedVehicle.model} (may cover your year via year-range fitment):\n${JSON.stringify(productsForResponse, null, 2)}\n\nShow these immediately. Note that while we don't have year-specific listings for ${parsedVehicle.year}, many of these cover it via year ranges like "2015+" or "2020-2025".`;
+            } else {
+              productContext = `\n\nNo products found for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. Tell the customer honestly and suggest browsing our full catalog.`;
+            }
+          }
+        }
+      }
+      // Vehicle mentioned but NO category and NOT "show all" — ask for category
+      else if (parsedVehicle && !detectedCategory && !showAll) {
+        productContext = `\n\nThe customer mentioned their vehicle (${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}) but did NOT specify a product category. Do NOT show any products. Instead, ask what type of parts they're looking for and list these categories: Bull Guards/Grille Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards/Side Steps, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks/Sport Bars, MOLLE Panels, Fender Flares, Under Seat Storage. Also mention they can say "show me all" to see everything for their vehicle.`;
+      }
+      // Have a category — search with category filter
+      else if (detectedCategory) {
+        const { data: products } = await supabase
+          .from("products_cache")
+          .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
+          .eq("status", "active")
+          .limit(500);
+
+        if (products?.length) {
+          const categoryFiltered = products.filter((p: any) => matchesCategory(p, detectedCategory.productType));
           let finalProducts: any[] = [];
           let isExactMatch = true;
 
@@ -260,7 +309,6 @@ serve(async (req) => {
             });
 
             if (vehicleMatched.length > 0) {
-              // Sort: exact year match first
               if (parsedVehicle.year) {
                 vehicleMatched.sort((a: any, b: any) => {
                   const aYear = (a.tags || []).some((t: string) => t.toLowerCase() === `year:${parsedVehicle.year}` || t === parsedVehicle.year);
@@ -270,18 +318,15 @@ serve(async (req) => {
               }
               finalProducts = vehicleMatched.slice(0, 4);
             } else {
-              // No exact match - show category results with disclaimer
               isExactMatch = false;
               finalProducts = categoryFiltered.slice(0, 4);
             }
           } else {
-            // Category only, no vehicle
             finalProducts = categoryFiltered.slice(0, 4);
           }
 
           if (finalProducts.length > 0) {
             productsForResponse = finalProducts.map(buildProductCard);
-
             if (!isExactMatch && parsedVehicle) {
               productContext = `\n\nNo exact ${detectedCategory.label} found for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. These are our ${detectedCategory.label} but may NOT fit this specific vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer "We don't currently have ${detectedCategory.label} that fits your ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. Would you like to see our full ${detectedCategory.label} selection or try a different part type?" and show the products with a clear note they may not fit.`;
             } else {
@@ -291,8 +336,27 @@ serve(async (req) => {
             productContext = `\n\nNo ${detectedCategory.label} products found${parsedVehicle ? ` for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}` : ""}. Tell the customer honestly and ask if they'd like to try a different category.`;
           }
         }
-      } else {
-        // Generic search without vehicle or category - use keyword matching
+      }
+      // "Show all" without a vehicle — show popular products
+      else if (showAll && !parsedVehicle) {
+        const { data: products } = await supabase
+          .from("products_cache")
+          .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, cb_item_name, part_number, status")
+          .eq("status", "active")
+          .limit(200);
+
+        if (products?.length) {
+          products.sort((a: any, b: any) => {
+            const aQty = (Array.isArray(a.variants) ? a.variants : [])[0]?.inventory_quantity ?? 0;
+            const bQty = (Array.isArray(b.variants) ? b.variants : [])[0]?.inventory_quantity ?? 0;
+            return bQty - aQty;
+          });
+          productsForResponse = products.slice(0, 8).map(buildProductCard);
+          productContext = `\n\nShowing top products sorted by availability:\n${JSON.stringify(productsForResponse, null, 2)}\n\nShow these immediately. Ask if they want to filter by vehicle or category.`;
+        }
+      }
+      // Generic keyword search
+      else {
         const keywords = message.toLowerCase().split(/\s+/).filter(
           (w: string) => w.length > 2 && !["the", "for", "and", "you", "have", "any", "can", "get", "what", "does", "this", "that", "with", "fit", "fits", "will", "need", "want", "like", "are", "there", "show", "find", "parts", "part", "looking"].includes(w)
         );
@@ -412,8 +476,8 @@ serve(async (req) => {
     }
 
     // If Claude didn't include products but we found some, include them
-    if (responseProducts.length === 0 && productsForResponse.length > 0 && detectedCategory) {
-      responseProducts = productsForResponse.slice(0, 4);
+    if (responseProducts.length === 0 && productsForResponse.length > 0) {
+      responseProducts = productsForResponse;
     }
 
     const actionMatch = aiResponse.match(/\[ACTION_JSON\]\s*([\s\S]*?)\s*\[\/ACTION_JSON\]/);
