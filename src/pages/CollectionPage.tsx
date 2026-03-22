@@ -665,8 +665,8 @@ const CollectionTemplate = () => {
                         </span>
                       </div>
                     )}
-                    {universalProducts.map((product) => (
-                      <ProductCard key={product.node.id} product={product} />
+                    {universalProducts.map((product, uIdx) => (
+                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + uIdx} />
                     ))}
                   </>
                 )}

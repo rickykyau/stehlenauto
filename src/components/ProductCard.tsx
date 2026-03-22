@@ -54,8 +54,20 @@ const ProductCard = ({ product, compact = false, listName, index }: ProductCardP
     });
   };
 
+  const handleSelectItem = () => {
+    if (listName !== undefined) {
+      trackEvent("select_item", {
+        item_list_name: listName,
+        item_id: p.id,
+        item_name: p.title,
+        price,
+        index: index ?? 0,
+      });
+    }
+  };
+
   return (
-    <Link to={`/products/${p.handle}`} className="block h-full">
+    <Link to={`/products/${p.handle}`} className="block h-full" onClick={handleSelectItem}>
       <div className="group bg-card border border-border overflow-hidden transition-colors hover:border-primary/40 flex flex-col h-full">
         {/* Image */}
         <div className={`relative ${compact ? "aspect-[4/3]" : "aspect-square"} bg-muted overflow-hidden`}>
