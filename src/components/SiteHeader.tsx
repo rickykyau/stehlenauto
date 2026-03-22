@@ -517,6 +517,7 @@ const SiteHeader = () => {
               <Link
                 to="/collections/all"
                 className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground font-display text-xs tracking-widest hover:brightness-110 transition-all btn-press"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: "Shop All Products", menu_level: "top", page_location: window.location.pathname })}
               >
                 SHOP ALL PRODUCTS
               </Link>
