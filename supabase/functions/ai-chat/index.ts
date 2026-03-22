@@ -210,23 +210,48 @@ function matchesCategory(product: any, categoryType: string): boolean {
 }
 
 function buildProductCard(p: any) {
-  const images = Array.isArray(p.images) ? p.images : [];
-  const firstImage = images[0]?.src || images[0]?.url || images[0] || "";
-  const variants = Array.isArray(p.variants) ? p.variants : [];
+  // Parse images — could be JSON string or array
+  let images: any[] = [];
+  try {
+    images = typeof p.images === "string" ? JSON.parse(p.images) : Array.isArray(p.images) ? p.images : [];
+  } catch { images = []; }
+
+  // Extract first image URL — handle multiple formats
+  let firstImage = "";
+  if (images.length > 0) {
+    const img = images[0];
+    firstImage = img?.src || img?.url || img?.node?.url || (typeof img === "string" ? img : "");
+  }
+
+  // Parse variants — could be JSON string or array
+  let variants: any[] = [];
+  try {
+    variants = typeof p.variants === "string" ? JSON.parse(p.variants) : Array.isArray(p.variants) ? p.variants : [];
+  } catch { variants = []; }
+
   const firstVariant = variants[0] || {};
-  const price = firstVariant.price || "0.00";
+
+  // Extract price — handle string, number, or {amount} object
+  let rawPrice = firstVariant.price;
+  if (rawPrice && typeof rawPrice === "object" && rawPrice.amount) {
+    rawPrice = rawPrice.amount;
+  }
+  const price = rawPrice ? String(rawPrice) : "0.00";
+
   const inStock = firstVariant.inventory_quantity > 0 || firstVariant.available !== false;
+
+  // Use handle from DB, or generate from title as fallback
   const handle = p.handle || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
   return {
     id: p.shopify_product_id,
     cacheId: p.id,
     title: p.title,
-    price: typeof price === "string" ? price : String(price),
+    price,
     image: firstImage,
     handle,
     inStock,
-    variantId: firstVariant.id || firstVariant.admin_graphql_api_id || "",
+    variantId: firstVariant.id ? String(firstVariant.id) : "",
     inventoryQuantity: firstVariant.inventory_quantity ?? 0,
     partNumber: p.part_number,
     cbItemName: p.cb_item_name,
@@ -573,6 +598,14 @@ serve(async (req) => {
     cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/g, "").trim();
     cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*/g, "").trim();
     cleanResponse = cleanResponse.replace(/\[\/ACTION_JSON\]/g, "").trim();
+
+    // Strip any leaked XML function_calls / invoke tags (Claude hallucinations)
+    cleanResponse = cleanResponse.replace(/<\/?function_calls>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?invoke[^>]*>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?antml:[^>]*>/gi, "").trim();
+    cleanResponse = cleanResponse.replace(/<\/?parameter[^>]*>[\s\S]*?<\/parameter>/gi, "").trim();
+    // Strip any remaining XML-like tool blocks
+    cleanResponse = cleanResponse.replace(/<[\s\S]*?<\/antml:[^>]*>/gi, "").trim();
 
     // Handle escalation
     if (responseAction?.type === "escalate" && convId) {
