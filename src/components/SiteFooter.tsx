@@ -1,6 +1,10 @@
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
+
+const SOCIAL_PLATFORMS = ["facebook", "instagram", "youtube"] as const;
+const SOCIAL_ICONS = [Facebook, Instagram, Youtube] as const;
 
 const SiteFooter = () => {
   return (
