@@ -15,7 +15,7 @@ import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailableFilterOptions, CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
-import { isUniversalProduct, MAKE_COLLECTION_MAP, COLLECTION_PRODUCTS_QUERY, storefrontApiRequest } from "@/lib/shopify";
+import { isUniversalProduct, MAKE_COLLECTION_MAP, COLLECTION_PRODUCTS_QUERY, storefrontApiRequest, buildYMMTagQuery } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
@@ -270,12 +270,30 @@ const CollectionTemplate = () => {
   const { sortKey, reverse } = SORT_MAP[sort];
 
   // ── Determine data fetching strategy ──
-  // Make filter → fetch from make's collection via collectionByHandle
-  // Category filter (no make) → fetch via products query with product_type filter
-  // Both → fetch from make collection, filter by category client-side
+  // When full YMM is set → use tag-based products query (most accurate)
+  // Make only → fetch from make's collection
+  // Category only → products query with product_type filter
   // Neither → fetch all products
 
+  const hasFullYMM = !!(filters.year && filters.make && filters.model);
+
+  // Build tag-based query when YMM filters are active
+  const ymmTagQuery = useMemo(() => {
+    if (!hasFullYMM) return undefined;
+    const categoryPart = filters.category && CATEGORY_KEYWORDS[filters.category]
+      ? `product_type:*${CATEGORY_KEYWORDS[filters.category]}*`
+      : undefined;
+    return buildYMMTagQuery({
+      year: filters.year,
+      make: filters.make,
+      model: filters.model,
+      categoryQuery: categoryPart,
+    });
+  }, [hasFullYMM, filters.year, filters.make, filters.model, filters.category]);
+
   const makeCollectionHandle = useMemo(() => {
+    // Don't use collection when full YMM is set — use tag query instead
+    if (hasFullYMM) return null;
     if (filters.make && filters.make !== "Universal" && MAKE_COLLECTION_MAP[filters.make]) {
       return MAKE_COLLECTION_MAP[filters.make];
     }
@@ -284,10 +302,11 @@ const CollectionTemplate = () => {
       return handle;
     }
     return null;
-  }, [filters.make, isAllProducts, handle]);
+  }, [filters.make, isAllProducts, handle, hasFullYMM]);
 
-  // Build a product_type query for category filtering (used when no make collection)
+  // Build a product_type query for category filtering (used when no make collection and no YMM)
   const categoryProductQuery = useMemo(() => {
+    if (hasFullYMM) return undefined; // handled by ymmTagQuery
     if (makeCollectionHandle) return undefined; // category filtering done client-side when fetching from make collection
     if (filters.category && CATEGORY_KEYWORDS[filters.category]) {
       return `product_type:*${CATEGORY_KEYWORDS[filters.category]}*`;
@@ -296,9 +315,13 @@ const CollectionTemplate = () => {
       return "tag:'universal fit'";
     }
     return undefined;
-  }, [filters.category, filters.make, makeCollectionHandle]);
+  }, [filters.category, filters.make, makeCollectionHandle, hasFullYMM]);
 
-  // Fetch from a specific make collection when a make filter is active
+  // Determine the query for useShopifyProducts
+  const productsQuery = ymmTagQuery || categoryProductQuery;
+  const productsFirst = hasFullYMM ? 100 : ITEMS_PER_PAGE;
+
+  // Fetch from a specific make collection when only make filter is active (no full YMM)
   const { data: collectionData, isLoading: collectionLoading } = useCollectionProducts({
     collectionHandle: makeCollectionHandle,
     first: ITEMS_PER_PAGE,
@@ -306,12 +329,12 @@ const CollectionTemplate = () => {
     reverse,
   });
 
-  // Fetch via products query when no make collection (all products or category-filtered)
+  // Fetch via products query (YMM tag query, category filter, or all products)
   const { data: allProductsData, isLoading: allProductsLoading } = useShopifyProducts({
-    first: ITEMS_PER_PAGE,
+    first: productsFirst,
     sortKey,
     reverse,
-    query: categoryProductQuery,
+    query: productsQuery,
   });
 
   // Choose the right data source
@@ -323,27 +346,27 @@ const CollectionTemplate = () => {
   const pageInfo = sourceData?.pageInfo;
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
-  // Client-side filtering: only year/model + category when fetching from make collection
+  // Client-side filtering: minimal when using tag-based query
   const { vehicleProducts, universalProducts } = useMemo(() => {
     let filtered = rawDisplayProducts;
 
     // If we fetched from make collection but also have a category filter, apply category client-side
-    if (filters.make && MAKE_COLLECTION_MAP[filters.make] && filters.category) {
+    if (!hasFullYMM && filters.make && MAKE_COLLECTION_MAP[filters.make] && filters.category) {
       filtered = filtered.filter((p) => matchesCategory(p, filters.category!));
     }
 
-    // Year filtering is always client-side (parse from product titles)
-    if (filters.year) {
-      filtered = filtered.filter((p) =>
-        isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
-      );
-    }
-
-    // Model filtering is always client-side
-    if (filters.model) {
-      filtered = filtered.filter((p) =>
-        isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
-      );
+    // When using collection (make-only, no full YMM), apply year/model client-side
+    if (!hasFullYMM) {
+      if (filters.year) {
+        filtered = filtered.filter((p) =>
+          isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
+        );
+      }
+      if (filters.model) {
+        filtered = filtered.filter((p) =>
+          isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
+        );
+      }
     }
 
     // Separate vehicle-specific and universal products
@@ -354,7 +377,7 @@ const CollectionTemplate = () => {
       return { vehicleProducts: vehicleSpecific, universalProducts: universal };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category]);
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, hasFullYMM]);
 
   const displayProducts = includeUniversal
     ? [...vehicleProducts, ...universalProducts]
@@ -403,7 +426,7 @@ const CollectionTemplate = () => {
   }, [filters.year, filters.make, filters.model, isLoading, displayProducts.length]);
 
   // Reset on query/sort change
-  const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
+  const queryKey = `${makeCollectionHandle}-${productsQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}-${filters.year}-${filters.model}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
   if (queryKey !== lastQueryKey) {
     setAllProducts([]);
@@ -459,11 +482,11 @@ const CollectionTemplate = () => {
         setNextCursor(newPageInfo?.endCursor || null);
         setHasMore(newPageInfo?.hasNextPage || false);
       } else {
-        // Load more from products query (all products or category-filtered)
+        // Load more from products query (YMM tag query, category, or all)
         const { storefrontApiRequest: apiReq, PRODUCTS_QUERY } = await import("@/lib/shopify");
         const result = await apiReq(PRODUCTS_QUERY, {
-          first: ITEMS_PER_PAGE,
-          query: categoryProductQuery || null,
+          first: hasFullYMM ? 100 : ITEMS_PER_PAGE,
+          query: productsQuery || null,
           sortKey,
           reverse,
           after: currentCursor,
@@ -480,7 +503,7 @@ const CollectionTemplate = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, currentCursor, makeCollectionHandle, categoryProductQuery, sortKey, reverse, allProducts, initialProducts]);
+  }, [loadingMore, currentCursor, makeCollectionHandle, productsQuery, hasFullYMM, sortKey, reverse, allProducts, initialProducts]);
 
   const setSort = (s: SortOption) => {
     const params = new URLSearchParams(searchParams);

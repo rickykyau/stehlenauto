@@ -71,6 +71,47 @@ export function isUniversalProduct(product: ShopifyProduct): boolean {
   return tags.some(tag => tag.toLowerCase() === 'universal fit');
 }
 
+// ── YMM Tag Query Builder ──────────────────────────────
+
+/**
+ * Build a Shopify Storefront API query string using tag: filters
+ * for Year/Make/Model. Each tag is ANDed together.
+ * Handles model variants like "F-150" / "F150".
+ */
+export function buildYMMTagQuery(options: {
+  year?: string | null;
+  make?: string | null;
+  model?: string | null;
+  categoryQuery?: string;
+}): string {
+  const parts: string[] = [];
+
+  if (options.year) parts.push(`tag:"${options.year}"`);
+  if (options.make) parts.push(`tag:"${options.make}"`);
+
+  if (options.model) {
+    const model = options.model;
+    const modelNoHyphen = model.replace(/-/g, '');
+    const modelWithHyphen = model.includes('-') ? null : model.replace(/(\D)(\d)/g, '$1-$2');
+
+    // Build OR variants for the model
+    const modelVariants = [model];
+    if (modelNoHyphen !== model) modelVariants.push(modelNoHyphen);
+    if (modelWithHyphen && modelWithHyphen !== model) modelVariants.push(modelWithHyphen);
+
+    if (modelVariants.length === 1) {
+      parts.push(`tag:"${model}"`);
+    } else {
+      // Shopify supports OR in query syntax
+      parts.push(`(${modelVariants.map(v => `tag:"${v}"`).join(' OR ')})`);
+    }
+  }
+
+  if (options.categoryQuery) parts.push(options.categoryQuery);
+
+  return parts.join(' ');
+}
+
 // ── API Helper ─────────────────────────────────────────
 
 export async function storefrontApiRequest(query: string, variables: Record<string, unknown> = {}) {

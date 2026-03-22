@@ -4,6 +4,7 @@ import { Shield, Truck, ChevronDown } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyProducts } from "@/hooks/useShopifyProducts";
+import { buildYMMTagQuery } from "@/lib/shopify";
 
 const YEARS = Array.from({ length: 30 }, (_, i) => (2025 - i).toString());
 const MAKES = ["Ford", "Chevy", "Dodge", "GMC", "Toyota", "Nissan", "Jeep", "Ram"];
@@ -17,45 +18,6 @@ const MODELS: Record<string, string[]> = {
   Jeep: ["Wrangler", "Grand Cherokee", "Cherokee", "Gladiator", "Compass"],
   Ram: ["1500", "2500", "3500"],
 };
-
-/** Parse year range from product title */
-function parseYearRange(title: string): [number, number] | null {
-  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
-  const plusMatch = title.match(/(\d{4})\+/);
-  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
-  const singleMatch = title.match(/^(\d{4})\s/);
-  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
-  return null;
-}
-
-/** Count products matching a specific year+make+model */
-function countMatchingProducts(
-  products: Array<{ node: { title: string; tags: string[] } }>,
-  year: string,
-  make: string,
-  model: string
-): number {
-  const y = parseInt(year);
-  return products.filter((p) => {
-    const title = p.node.title.toLowerCase();
-    const range = parseYearRange(p.node.title);
-    if (!range) return false;
-    const yearFits = y >= range[0] && y <= range[1];
-    if (!yearFits) return false;
-
-    // Check make via tags first, then title
-    const makeTags = (p.node.tags || [])
-      .filter((t) => t.toLowerCase().startsWith("make:"))
-      .map((t) => t.substring(5).trim().toLowerCase());
-    const makeFits = makeTags.length > 0
-      ? makeTags.includes(make.toLowerCase())
-      : title.includes(make.toLowerCase());
-    if (!makeFits) return false;
-
-    return title.includes(model.toLowerCase());
-  }).length;
-}
 
 interface FitmentSelectorProps {
   onVehicleSelect?: (vehicle: { year: string; make: string; model: string }) => void;
@@ -72,7 +34,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
   // Track abandonment on unmount
   useEffect(() => {
     return () => {
-      if (completedRef.current) return; // ymm_completed already fired
+      if (completedRef.current) return;
       const hasStarted = !!(year || make);
       const isComplete = !!(year && make && model);
       if (hasStarted && !isComplete) {
@@ -86,17 +48,30 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
     };
   }, [year, make, model]);
 
-  // Fetch all products for counting (only when year+make are set)
-  const { data } = useShopifyProducts({ first: 250, query: make ? `*${make}*` : undefined });
+  // Build tag-based query for counting when year+make are set
+  const countQuery = useMemo(() => {
+    if (!year || !make) return undefined;
+    return buildYMMTagQuery({ year, make });
+  }, [year, make]);
+
+  // Fetch products matching year+make via tags for counting
+  const { data } = useShopifyProducts({ first: 250, query: countQuery });
   const allProducts = data?.products || [];
 
-  // Compute model counts
+  // Compute model counts using tag matching
   const modelCounts = useMemo(() => {
     if (!year || !make || allProducts.length === 0) return new Map<string, number>();
     const counts = new Map<string, number>();
     const models = MODELS[make] || [];
     for (const m of models) {
-      counts.set(m, countMatchingProducts(allProducts, year, make, m));
+      const modelLower = m.toLowerCase();
+      const modelNoHyphen = m.replace(/-/g, '').toLowerCase();
+      const count = allProducts.filter((p) => {
+        const tags = (p.node.tags || []).map(t => t.toLowerCase());
+        // Check if product has this model tag (with or without hyphen)
+        return tags.includes(modelLower) || tags.includes(modelNoHyphen);
+      }).length;
+      counts.set(m, count);
     }
     return counts;
   }, [year, make, allProducts]);
