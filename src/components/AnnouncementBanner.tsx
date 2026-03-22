@@ -34,6 +34,14 @@ export default function AnnouncementBanner() {
 
   if (dismissed || !banner?.enabled || !banner.text) return null;
 
+  // Track view once visible (inline since banner renders conditionally)
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (viewedRef.current || !bannerRef.current) return;
+    viewedRef.current = true;
+    trackEvent("promotion_viewed", { promotion_id: "announcement_bar", promotion_name: banner.text, creative_slot: "announcement_bar" });
+  }, [banner.text]);
+
   const handleDismiss = () => {
     setDismissed(true);
     sessionStorage.setItem("banner_dismissed", "1");
