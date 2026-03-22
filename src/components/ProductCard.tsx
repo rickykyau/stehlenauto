@@ -15,7 +15,7 @@ interface ProductCardProps {
   index?: number;
 }
 
-const ProductCard = ({ product, compact = false }: ProductCardProps) => {
+const ProductCard = ({ product, compact = false, listName, index }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
   const universal = isUniversalProduct(product);
