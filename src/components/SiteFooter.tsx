@@ -68,7 +68,7 @@ const SiteFooter = () => {
               <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="font-body text-sm text-secondary-foreground">City of Industry, CA</span>
             </div>
-            <Link to="/contact" className="font-body text-sm text-primary hover:underline mt-1 inline-block">Contact Us</Link>
+            <Link to="/contact" className="font-body text-sm text-primary hover:underline mt-1 inline-block" onClick={() => trackEvent("footer_link_clicked", { link_text: "Contact Us", link_url: "/contact" })}>Contact Us</Link>
             <p className="font-display text-[10px] tracking-wider text-muted-foreground mt-2">9AM–5PM MON–FRI PST</p>
           </div>
         </div>
