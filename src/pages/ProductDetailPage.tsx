@@ -341,7 +341,10 @@ const ProductTemplate = () => {
                 {images.map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedImage(i)}
+                    onClick={() => {
+                      setSelectedImage(i);
+                      trackEvent("product_image_viewed", { item_id: product.id, image_index: i, action: "click" });
+                    }}
                     className={`w-16 h-16 border-2 overflow-hidden transition-colors shrink-0 ${
                       selectedImage === i ? "border-primary" : "border-border opacity-60 hover:opacity-100"
                     }`}
