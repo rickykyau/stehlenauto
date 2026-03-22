@@ -37,6 +37,7 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
     if (fetchError || !data) {
       setLoading(false);
       setError("Invalid promo code");
+      trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal });
       return;
     }
 
