@@ -3,6 +3,7 @@ import { SlidersHorizontal, ChevronDown, ChevronRight, Car } from "lucide-react"
 import type { AvailableOptions } from "@/hooks/useAvailableFilterOptions";
 import { CATEGORIES, MAKES, MODELS_BY_MAKE } from "@/hooks/useAvailableFilterOptions";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { trackEvent } from "@/lib/analytics";
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
 
@@ -41,6 +42,20 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
   const toggleDecade = (d: string) => setExpandedDecades((prev) => ({ ...prev, [d]: !prev[d] }));
 
   const update = (patch: Partial<RefineFilters>) => {
+    // Track each filter change
+    if (patch.year !== undefined) {
+      trackEvent("filter_applied", { filter_type: "year", filter_value: patch.year || "all" });
+    }
+    if (patch.make !== undefined) {
+      trackEvent("filter_applied", { filter_type: "make", filter_value: patch.make || "all" });
+    }
+    if (patch.model !== undefined) {
+      trackEvent("filter_applied", { filter_type: "model", filter_value: patch.model || "all" });
+    }
+    if (patch.category !== undefined) {
+      const cat = CATEGORIES.find((c) => c.handle === patch.category);
+      trackEvent("filter_applied", { filter_type: "category", filter_value: cat?.label || patch.category || "all" });
+    }
     onFilterChange({ ...filters, ...patch });
   };
 
@@ -131,6 +146,7 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
 
   const applyVehicle = () => {
     if (!vehicle) return;
+    trackEvent("filter_applied", { filter_type: "vehicle", filter_value: vehicleLabel });
     onFilterChange({ ...filters, year: vehicle.year, make: vehicle.make, model: vehicle.model });
   };
 

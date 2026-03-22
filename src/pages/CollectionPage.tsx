@@ -487,6 +487,7 @@ const CollectionTemplate = () => {
     params.set("sort_by", s);
     setSearchParams(params);
     setShowSortMenu(false);
+    trackEvent("sort_changed", { sort_option: s });
   };
 
   const activeFilterCount =
