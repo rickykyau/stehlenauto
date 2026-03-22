@@ -82,6 +82,8 @@ const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string
   { patterns: /under.?seat\s*storage/i, productType: "under seat storage", label: "Under Seat Storage" },
 ];
 
+const PRODUCT_CACHE_SELECT = "id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status";
+
 function parseVehicle(message: string, vehicleContext: { year: string; make: string; model: string } | null) {
   const patterns = [
     /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
@@ -120,6 +122,53 @@ function detectCategory(message: string): { productType: string; label: string }
 
 function isShowAllIntent(message: string): boolean {
   return /\b(show\s*(me\s*)?(all|everything)|all\s*(products?|parts?|of\s*(them|it))?|everything|what\s*(do\s*)?you\s*have|show\s*products?|see\s*(all|everything)|list\s*(all|everything))\b/i.test(message);
+}
+
+function normalizeVehicleValue(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function toTagCase(value: string): string {
+  return normalizeVehicleValue(value)
+    .split(" ")
+    .map((part) => {
+      if (!part) return part;
+      if (/^[A-Z0-9-]+$/.test(part)) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
+function buildModelVariants(model: string): string[] {
+  const normalized = normalizeVehicleValue(model);
+  const compact = normalized.replace(/[\s-]/g, "");
+  const hyphenated = normalized.replace(/\s+/g, "-");
+  const spaced = normalized.replace(/-/g, " ");
+  const upper = hyphenated.toUpperCase();
+
+  return Array.from(new Set([normalized, hyphenated, spaced, compact, upper].filter(Boolean)));
+}
+
+function escapeArrayValue(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function escapeIlikeValue(value: string): string {
+  return normalizeVehicleValue(value).replace(/[%*,]/g, " ").trim();
+}
+
+function applyVehicleSqlFilter(query: any, vehicle: { make: string; model: string } | null) {
+  if (!vehicle?.make || !vehicle?.model) return query;
+
+  const makeFilter = toTagCase(vehicle.make);
+  const modelVariants = buildModelVariants(vehicle.model);
+  const sqlOrParts = [
+    ...modelVariants.map((variant) => `tags.cs.{${escapeArrayValue(variant)}}`),
+    ...modelVariants.map((variant) => `title.ilike.%${escapeIlikeValue(makeFilter)}%${escapeIlikeValue(variant)}%`),
+    ...modelVariants.map((variant) => `title.ilike.%${escapeIlikeValue(variant)}%`),
+  ];
+
+  return query.contains("tags", [makeFilter]).or(sqlOrParts.join(","));
 }
 
 function matchesVehicle(tags: string[], make: string, model: string, year?: string): boolean {
@@ -261,11 +310,14 @@ serve(async (req) => {
     if (needsProductSearch) {
       // "Show all" for a vehicle — search ALL categories
       if (parsedVehicle && (showAll || (!detectedCategory && showAll))) {
-        const { data: products } = await supabase
+        let productsQuery = supabase
           .from("products_cache")
-          .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
-          .eq("status", "active")
-          .limit(500);
+          .select(PRODUCT_CACHE_SELECT)
+          .eq("status", "active");
+
+        productsQuery = applyVehicleSqlFilter(productsQuery, parsedVehicle);
+
+        const { data: products } = await productsQuery.limit(50);
 
         if (products?.length) {
           const vehicleMatched = products.filter((p: any) => {
@@ -312,11 +364,17 @@ serve(async (req) => {
       }
       // Have a category — search with category filter
       else if (detectedCategory) {
-        const { data: products } = await supabase
+        let productsQuery = supabase
           .from("products_cache")
-          .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
+          .select(PRODUCT_CACHE_SELECT)
           .eq("status", "active")
-          .limit(500);
+          .ilike("product_type", `%${detectedCategory.productType}%`);
+
+        if (parsedVehicle) {
+          productsQuery = applyVehicleSqlFilter(productsQuery, parsedVehicle);
+        }
+
+        const { data: products } = await productsQuery.limit(50);
 
         if (products?.length) {
           const categoryFiltered = products.filter((p: any) => matchesCategory(p, detectedCategory.productType));
