@@ -123,6 +123,7 @@ const HeroSection = () => {
             <Link
               to={slide.secondary_button_link || "/collections/all?sort_by=best-selling"}
               className="inline-flex items-center gap-2 h-16 px-10 border-2 border-foreground/20 text-foreground font-display text-base tracking-widest hover:border-primary hover:text-primary transition-colors btn-press"
+              onClick={trackHeroClick}
             >
               {slide.secondary_button_text}
             </Link>
