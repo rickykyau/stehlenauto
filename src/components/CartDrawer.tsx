@@ -39,8 +39,29 @@ const CartDrawer = () => {
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Sync cart when drawer opens
-  useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
+  // Track cart open/close and sync
+  useEffect(() => {
+    if (isOpen) {
+      syncCart();
+      cartOpenedAtRef.current = Date.now();
+      trackEvent("view_cart", {
+        currency: "USD",
+        value: items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0),
+        items: items.map((i) => ({
+          item_id: i.product.node.id,
+          item_name: i.product.node.title,
+          price: parseFloat(i.price.amount),
+          quantity: i.quantity,
+        })),
+      });
+    } else if (cartOpenedAtRef.current > 0) {
+      trackEvent("cart_closed", {
+        cart_value: items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0),
+        cart_item_count: items.length,
+        duration_seconds: Math.round((Date.now() - cartOpenedAtRef.current) / 1000),
+      });
+    }
+  }, [isOpen, syncCart]);
 
   // Clear promo when cart empties
   useEffect(() => { if (items.length === 0) setAppliedPromo(null); }, [items.length]);
