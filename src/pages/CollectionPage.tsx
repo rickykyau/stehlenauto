@@ -380,6 +380,28 @@ const CollectionTemplate = () => {
     }
   }, [isLoading, displayProducts, listName]);
 
+  // Fire ymm_completed / fitment_no_results when full YMM selection renders
+  const ymmFiredRef = useRef("");
+  useEffect(() => {
+    if (!filters.year || !filters.make || !filters.model || isLoading) return;
+    const key = `${filters.year}-${filters.make}-${filters.model}`;
+    if (ymmFiredRef.current === key) return;
+    ymmFiredRef.current = key;
+    trackEvent("ymm_completed", {
+      vehicle_year: filters.year,
+      vehicle_make: filters.make,
+      vehicle_model: filters.model,
+      results_count: displayProducts.length,
+    });
+    if (displayProducts.length === 0) {
+      trackEvent("fitment_no_results", {
+        vehicle_year: filters.year,
+        vehicle_make: filters.make,
+        vehicle_model: filters.model,
+      });
+    }
+  }, [filters.year, filters.make, filters.model, isLoading, displayProducts.length]);
+
   // Reset on query/sort change
   const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
