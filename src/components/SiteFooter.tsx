@@ -17,8 +17,13 @@ const SiteFooter = () => {
             Heavy-duty truck accessories. Engineered for precision. Built for the long haul.
           </p>
           <div className="flex gap-3 mt-6">
-            {[Facebook, Instagram, Youtube].map((Icon, i) => (
-              <a key={i} href="#" className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+            {SOCIAL_ICONS.map((Icon, i) => (
+              <a
+                key={i}
+                href="#"
+                className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                onClick={() => trackEvent("social_link_clicked", { platform: SOCIAL_PLATFORMS[i] })}
+              >
                 <Icon className="w-4 h-4" />
               </a>
             ))}
