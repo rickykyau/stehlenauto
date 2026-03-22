@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tag, Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 interface PromoResult {
   id: string;
