@@ -578,6 +578,7 @@ const MenuLink = ({ icon, label, to }: { icon: React.ReactNode; label: string; t
   <Link
     to={to}
     className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+    onClick={() => trackEvent("nav_menu_click", { menu_item: label, menu_level: "top", page_location: window.location.pathname })}
   >
     <span className="text-muted-foreground group-hover:text-primary transition-colors">{icon}</span>
     <span className="font-body text-sm text-foreground">{label}</span>
