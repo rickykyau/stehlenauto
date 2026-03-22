@@ -287,7 +287,12 @@ export default function ChatWidget() {
                           a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                         }}
                       >
-                        {msg.content}
+                        {msg.content
+                          .replace(/<\/?function_calls>/gi, "")
+                          .replace(/<\/?invoke[^>]*>/gi, "")
+                          .replace(/<\/?antml:[^>]*>/gi, "")
+                          .replace(/<\/?parameter[^>]*>/gi, "")
+                          .trim()}
                       </ReactMarkdown>
                     ) : (
                       msg.content
