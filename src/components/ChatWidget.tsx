@@ -107,6 +107,15 @@ export default function ChatWidget() {
     if (!text.trim() || isLoading) return;
     if (messages.length >= MAX_MESSAGES) return;
 
+    const newCount = userMessageCount + 1;
+    setUserMessageCount(newCount);
+
+    trackEvent("chat_message_sent", {
+      message_length: text.trim().length,
+      message_number: newCount,
+      is_first_message: newCount === 1,
+    });
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
