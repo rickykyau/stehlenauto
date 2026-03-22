@@ -431,7 +431,12 @@ const ProductTemplate = () => {
                         return (
                           <button
                             key={value}
-                            onClick={() => variantIdx >= 0 && setSelectedVariantIdx(variantIdx)}
+                            onClick={() => {
+                              if (variantIdx >= 0) {
+                                setSelectedVariantIdx(variantIdx);
+                                trackEvent("product_variant_selected", { item_id: product.id, variant_type: option.name, variant_value: value });
+                              }
+                            }}
                             className={`px-3 py-1.5 border font-display text-[10px] tracking-wider transition-colors ${
                               isSelected
                                 ? "border-primary bg-primary/10 text-primary"
