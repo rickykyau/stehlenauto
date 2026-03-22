@@ -42,13 +42,14 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
     }
 
     const now = new Date();
-    if (!data.is_active) { setLoading(false); setError("This code is no longer active"); return; }
-    if (new Date(data.expires_at) <= now) { setLoading(false); setError("This code has expired"); return; }
-    if (new Date(data.starts_at) > now) { setLoading(false); setError("This code is not yet valid"); return; }
-    if (data.max_uses && data.current_uses >= data.max_uses) { setLoading(false); setError("This code has reached its usage limit"); return; }
+    if (!data.is_active) { setLoading(false); setError("This code is no longer active"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (new Date(data.expires_at) <= now) { setLoading(false); setError("This code has expired"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (new Date(data.starts_at) > now) { setLoading(false); setError("This code is not yet valid"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (data.max_uses && data.current_uses >= data.max_uses) { setLoading(false); setError("This code has reached its usage limit"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
     if (data.minimum_order_amount && subtotal < data.minimum_order_amount) {
       setLoading(false);
       setError(`Minimum order of $${data.minimum_order_amount.toFixed(2)} required`);
+      trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal });
       return;
     }
 
