@@ -50,6 +50,14 @@ const ProductCard = ({ product, compact = false, listName, index, crossSellSourc
         item_category: p.productType || undefined,
       }],
     });
+    if (crossSellSource) {
+      trackEvent("cross_sell_added", {
+        source_item_id: crossSellSource.sourceItemId,
+        added_item_id: p.id,
+        added_item_name: p.title,
+        placement: crossSellSource.placement,
+      });
+    }
     await addItem({
       product,
       variantId: firstVariant.id,
