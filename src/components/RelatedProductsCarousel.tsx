@@ -16,6 +16,8 @@ const RelatedProductsCarousel = ({ currentProductId, currentProductHandle, curre
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
+  const viewedRef = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   const make = useMemo(() => {
     const tag = tags.find(t => t.toLowerCase().startsWith('make:'));
