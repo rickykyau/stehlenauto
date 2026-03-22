@@ -32,15 +32,15 @@ export default function AnnouncementBanner() {
       });
   }, []);
 
-  if (dismissed || !banner?.enabled || !banner.text) return null;
-
-  // Track view once visible (inline since banner renders conditionally)
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Track view once banner is visible
+  const bannerText = banner?.text || "";
   useEffect(() => {
-    if (viewedRef.current || !bannerRef.current) return;
+    if (viewedRef.current || !bannerRef.current || !banner?.enabled || !bannerText || dismissed) return;
     viewedRef.current = true;
-    trackEvent("promotion_viewed", { promotion_id: "announcement_bar", promotion_name: banner.text, creative_slot: "announcement_bar" });
-  }, [banner.text]);
+    trackEvent("promotion_viewed", { promotion_id: "announcement_bar", promotion_name: bannerText, creative_slot: "announcement_bar" });
+  }, [banner?.enabled, bannerText, dismissed]);
+
+  if (dismissed || !banner?.enabled || !banner.text) return null;
 
   const handleDismiss = () => {
     setDismissed(true);
