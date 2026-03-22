@@ -515,7 +515,6 @@ serve(async (req) => {
     cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/g, "").trim();
     cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*/g, "").trim();
     cleanResponse = cleanResponse.replace(/\[\/ACTION_JSON\]/g, "").trim();
-    }
 
     // Handle escalation
     if (responseAction?.type === "escalate" && convId) {
