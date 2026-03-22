@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Truck, ChevronDown } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
