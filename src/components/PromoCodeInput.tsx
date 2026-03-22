@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Tag, Check, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 interface PromoResult {
   id: string;
@@ -36,17 +37,19 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
     if (fetchError || !data) {
       setLoading(false);
       setError("Invalid promo code");
+      trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal });
       return;
     }
 
     const now = new Date();
-    if (!data.is_active) { setLoading(false); setError("This code is no longer active"); return; }
-    if (new Date(data.expires_at) <= now) { setLoading(false); setError("This code has expired"); return; }
-    if (new Date(data.starts_at) > now) { setLoading(false); setError("This code is not yet valid"); return; }
-    if (data.max_uses && data.current_uses >= data.max_uses) { setLoading(false); setError("This code has reached its usage limit"); return; }
+    if (!data.is_active) { setLoading(false); setError("This code is no longer active"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (new Date(data.expires_at) <= now) { setLoading(false); setError("This code has expired"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (new Date(data.starts_at) > now) { setLoading(false); setError("This code is not yet valid"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
+    if (data.max_uses && data.current_uses >= data.max_uses) { setLoading(false); setError("This code has reached its usage limit"); trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal }); return; }
     if (data.minimum_order_amount && subtotal < data.minimum_order_amount) {
       setLoading(false);
       setError(`Minimum order of $${data.minimum_order_amount.toFixed(2)} required`);
+      trackEvent("coupon_applied", { coupon_code: code.trim().toUpperCase(), success: false, cart_value: subtotal });
       return;
     }
 
@@ -69,6 +72,7 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
     }
 
     setLoading(false);
+    trackEvent("coupon_applied", { coupon_code: data.code, success: true, cart_value: subtotal });
     onApply({
       id: data.id,
       code: data.code,
@@ -91,7 +95,7 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
           <span className="font-display text-[10px] tracking-wider text-primary">{appliedPromo.code}</span>
           <span className="font-body text-xs text-primary/70">({discountLabel})</span>
         </div>
-        <button onClick={onRemove} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => { trackEvent("coupon_removed", { coupon_code: appliedPromo.code }); onRemove(); }} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
