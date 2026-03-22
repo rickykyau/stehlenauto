@@ -653,8 +653,8 @@ const CollectionTemplate = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-                {vehicleProducts.map((product) => (
-                  <ProductCard key={product.node.id} product={product} />
+                {vehicleProducts.map((product, index) => (
+                  <ProductCard key={product.node.id} product={product} listName={listName} index={index} />
                 ))}
                 {includeUniversal && universalProducts.length > 0 && (
                   <>
