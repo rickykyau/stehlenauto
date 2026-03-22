@@ -517,6 +517,7 @@ const SiteHeader = () => {
               <Link
                 to="/collections/all"
                 className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground font-display text-xs tracking-widest hover:brightness-110 transition-all btn-press"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: "Shop All Products", menu_level: "top", page_location: window.location.pathname })}
               >
                 SHOP ALL PRODUCTS
               </Link>
@@ -540,6 +541,7 @@ const SiteHeader = () => {
                 key={cat.handle}
                 to={`/collections/all?category=${cat.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: cat.label, menu_level: "submenu", page_location: window.location.pathname })}
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{cat.label}</span>
               </Link>
@@ -563,6 +565,7 @@ const SiteHeader = () => {
                 key={v.handle}
                 to={`/collections/all?make=${v.label}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: v.label, menu_level: "submenu", page_location: window.location.pathname })}
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{v.label}</span>
               </Link>
@@ -578,6 +581,7 @@ const MenuLink = ({ icon, label, to }: { icon: React.ReactNode; label: string; t
   <Link
     to={to}
     className="flex items-center gap-3 px-5 py-4 hover:bg-accent/50 transition-colors group"
+    onClick={() => trackEvent("nav_menu_click", { menu_item: label, menu_level: "top", page_location: window.location.pathname })}
   >
     <span className="text-muted-foreground group-hover:text-primary transition-colors">{icon}</span>
     <span className="font-body text-sm text-foreground">{label}</span>
