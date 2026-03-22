@@ -426,7 +426,7 @@ const CollectionTemplate = () => {
   }, [filters.year, filters.make, filters.model, isLoading, displayProducts.length]);
 
   // Reset on query/sort change
-  const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
+  const queryKey = `${makeCollectionHandle}-${productsQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}-${filters.year}-${filters.model}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
   if (queryKey !== lastQueryKey) {
     setAllProducts([]);
@@ -482,11 +482,11 @@ const CollectionTemplate = () => {
         setNextCursor(newPageInfo?.endCursor || null);
         setHasMore(newPageInfo?.hasNextPage || false);
       } else {
-        // Load more from products query (all products or category-filtered)
+        // Load more from products query (YMM tag query, category, or all)
         const { storefrontApiRequest: apiReq, PRODUCTS_QUERY } = await import("@/lib/shopify");
         const result = await apiReq(PRODUCTS_QUERY, {
-          first: ITEMS_PER_PAGE,
-          query: categoryProductQuery || null,
+          first: hasFullYMM ? 100 : ITEMS_PER_PAGE,
+          query: productsQuery || null,
           sortKey,
           reverse,
           after: currentCursor,
@@ -503,7 +503,7 @@ const CollectionTemplate = () => {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, currentCursor, makeCollectionHandle, categoryProductQuery, sortKey, reverse, allProducts, initialProducts]);
+  }, [loadingMore, currentCursor, makeCollectionHandle, productsQuery, hasFullYMM, sortKey, reverse, allProducts, initialProducts]);
 
   const setSort = (s: SortOption) => {
     const params = new URLSearchParams(searchParams);
