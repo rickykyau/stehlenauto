@@ -4,6 +4,7 @@
  */
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import ProductCard from "@/components/ProductCard";
@@ -373,7 +374,11 @@ const IndexTemplate = () => {
           { label: "MANUFACTURER WARRANTY", desc: "On every product" },
           { label: "EASY RETURNS", desc: "30-day hassle-free returns" },
         ].map((trust, i) => (
-          <div key={i} className="p-6 border-r border-b border-border last:border-r-0 text-center">
+          <div
+            key={i}
+            className="p-6 border-r border-b border-border last:border-r-0 text-center cursor-pointer hover:bg-accent/30 transition-colors"
+            onClick={() => trackEvent("trust_badge_clicked", { badge_type: trust.label.toLowerCase().replace(/\s+/g, "_") })}
+          >
             <div className="w-3 h-3 bg-primary mx-auto mb-3" />
             <h4 className="font-display text-xs tracking-widest mb-1">{trust.label}</h4>
             <p className="font-body text-xs text-muted-foreground">{trust.desc}</p>

@@ -1,6 +1,10 @@
 import { Facebook, Instagram, Youtube, Phone, Mail, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
+
+const SOCIAL_PLATFORMS = ["facebook", "instagram", "youtube"] as const;
+const SOCIAL_ICONS = [Facebook, Instagram, Youtube] as const;
 
 const SiteFooter = () => {
   return (
@@ -13,8 +17,13 @@ const SiteFooter = () => {
             Heavy-duty truck accessories. Engineered for precision. Built for the long haul.
           </p>
           <div className="flex gap-3 mt-6">
-            {[Facebook, Instagram, Youtube].map((Icon, i) => (
-              <a key={i} href="#" className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+            {SOCIAL_ICONS.map((Icon, i) => (
+              <a
+                key={i}
+                href="#"
+                className="w-8 h-8 border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
+                onClick={() => trackEvent("social_link_clicked", { platform: SOCIAL_PLATFORMS[i] })}
+              >
                 <Icon className="w-4 h-4" />
               </a>
             ))}
@@ -33,7 +42,11 @@ const SiteFooter = () => {
               { label: "Shipping Policy", to: "/shipping-policy" },
             ].map((link) => (
               <li key={link.label}>
-                <Link to={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</Link>
+                <Link
+                  to={link.to}
+                  className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
+                  onClick={() => trackEvent("footer_link_clicked", { link_text: link.label, link_url: link.to })}
+                >{link.label}</Link>
               </li>
             ))}
           </ul>
@@ -55,7 +68,7 @@ const SiteFooter = () => {
               <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
               <span className="font-body text-sm text-secondary-foreground">City of Industry, CA</span>
             </div>
-            <Link to="/contact" className="font-body text-sm text-primary hover:underline mt-1 inline-block">Contact Us</Link>
+            <Link to="/contact" className="font-body text-sm text-primary hover:underline mt-1 inline-block" onClick={() => trackEvent("footer_link_clicked", { link_text: "Contact Us", link_url: "/contact" })}>Contact Us</Link>
             <p className="font-display text-[10px] tracking-wider text-muted-foreground mt-2">9AM–5PM MON–FRI PST</p>
           </div>
         </div>

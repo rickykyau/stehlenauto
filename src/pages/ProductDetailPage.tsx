@@ -497,7 +497,11 @@ const ProductTemplate = () => {
               { icon: RotateCcw, label: "30-Day", sublabel: "Returns" },
               { icon: Shield, label: "Manufacturer", sublabel: "Warranty" },
             ].map(({ icon: Icon, label, sublabel }) => (
-              <div key={label} className="flex items-center gap-2 border border-border p-2 bg-card">
+              <div
+                key={label}
+                className="flex items-center gap-2 border border-border p-2 bg-card cursor-pointer hover:border-primary/40 transition-colors"
+                onClick={() => trackEvent("trust_badge_clicked", { badge_type: `${label}_${sublabel}`.toLowerCase().replace(/\s+/g, "_") })}
+              >
                 <Icon className="w-4 h-4 text-primary shrink-0" />
                 <div>
                   <span className="font-display text-[9px] tracking-wider text-foreground block leading-tight">{label}</span>
