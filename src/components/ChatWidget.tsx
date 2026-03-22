@@ -51,6 +51,8 @@ export default function ChatWidget() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [userMessageCount, setUserMessageCount] = useState(0);
+  const chatOpenedAtRef = useRef<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { vehicle } = useVehicle();
@@ -105,6 +107,15 @@ export default function ChatWidget() {
     if (!text.trim() || isLoading) return;
     if (messages.length >= MAX_MESSAGES) return;
 
+    const newCount = userMessageCount + 1;
+    setUserMessageCount(newCount);
+
+    trackEvent("chat_message_sent", {
+      message_length: text.trim().length,
+      message_number: newCount,
+      is_first_message: newCount === 1,
+    });
+
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -147,6 +158,16 @@ export default function ChatWidget() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+
+      // Track product recommendations
+      if (data.products?.length > 0) {
+        data.products.forEach((product: ProductCard) => {
+          trackEvent("chat_product_recommended", {
+            item_id: product.id,
+            item_name: product.title,
+          });
+        });
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setMessages((prev) => [
@@ -161,7 +182,7 @@ export default function ChatWidget() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, conversationId, userId, vehicle]);
+  }, [messages, isLoading, conversationId, userId, vehicle, userMessageCount]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -177,7 +198,11 @@ export default function ChatWidget() {
       {/* Floating button */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true);
+            chatOpenedAtRef.current = Date.now();
+            trackEvent("chat_opened", { page_location: window.location.pathname });
+          }}
           className="fixed bottom-6 right-6 z-[60] w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:brightness-110 transition-all btn-press group"
           aria-label="Open chat"
         >
@@ -223,7 +248,13 @@ export default function ChatWidget() {
                 <Home className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  trackEvent("chat_closed", {
+                    messages_sent: userMessageCount,
+                    duration_seconds: Math.round((Date.now() - chatOpenedAtRef.current) / 1000),
+                  });
+                  setIsOpen(false);
+                }}
                 className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close chat"
               >
@@ -276,6 +307,11 @@ export default function ChatWidget() {
                           <div className="flex gap-1.5">
                             <button
                               onClick={() => {
+                                trackEvent("chat_product_clicked", {
+                                  item_id: product.id,
+                                  item_name: product.title,
+                                  source: "chat_widget",
+                                });
                                 navigate(`/products/${product.handle}`);
                                 setIsOpen(false);
                               }}
