@@ -298,7 +298,6 @@ export default function ChatWidget() {
                           .replace(/([^\n])(\n?\d+\. )/g, "$1\n$2")
                           .trim()}
                       </ReactMarkdown>
-                      </ReactMarkdown>
                     ) : (
                       msg.content
                     )}
