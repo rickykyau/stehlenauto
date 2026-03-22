@@ -11,6 +11,8 @@ import { isUniversalProduct } from "@/lib/shopify";
 interface ProductCardProps {
   product: ShopifyProduct;
   compact?: boolean;
+  listName?: string;
+  index?: number;
 }
 
 const ProductCard = ({ product, compact = false }: ProductCardProps) => {
