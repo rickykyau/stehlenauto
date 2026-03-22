@@ -78,7 +78,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative border-b border-border overflow-hidden">
+    <section ref={sectionRef} className="relative border-b border-border overflow-hidden">
       <div className="absolute inset-0">
         <img src={bgImage} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
