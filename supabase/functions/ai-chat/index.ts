@@ -243,7 +243,11 @@ serve(async (req) => {
     }
 
     // 4. Detect intent
-    const parsedVehicle = parseVehicle(message, vehicleContext);
+    let parsedVehicle = parseVehicle(message, vehicleContext);
+    // If no vehicle in current message or context, check conversation history
+    if (!parsedVehicle) {
+      parsedVehicle = parseVehicleFromHistory(conversationHistory || []);
+    }
     const detectedCategory = detectCategory(message);
     const showAll = isShowAllIntent(message);
 
