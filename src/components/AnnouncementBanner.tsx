@@ -14,6 +14,8 @@ interface BannerSettings {
 export default function AnnouncementBanner() {
   const [banner, setBanner] = useState<BannerSettings | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const viewedRef = useRef(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem("banner_dismissed")) {
