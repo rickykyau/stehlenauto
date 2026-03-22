@@ -2,6 +2,7 @@
  * SHOPIFY TEMPLATE: templates/collection.liquid
  */
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
