@@ -439,10 +439,17 @@ serve(async (req) => {
           let isExactMatch = true;
 
           if (parsedVehicle) {
-            const vehicleMatched = categoryFiltered.filter((p: any) => {
+            let vehicleMatched = categoryFiltered.filter((p: any) => {
               const tags = p.tags || [];
               return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model, parsedVehicle.year);
             });
+
+            // Apply year-range filter from product titles
+            if (parsedVehicle.year) {
+              const customerYear = parseInt(parsedVehicle.year);
+              const yearFiltered = filterByYearRange(vehicleMatched, customerYear);
+              if (yearFiltered.length > 0) vehicleMatched = yearFiltered;
+            }
 
             if (vehicleMatched.length > 0) {
               if (parsedVehicle.year) {
