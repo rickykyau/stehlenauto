@@ -564,6 +564,7 @@ const SiteHeader = () => {
                 key={v.handle}
                 to={`/collections/all?make=${v.label}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: v.label, menu_level: "submenu", page_location: window.location.pathname })}
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{v.label}</span>
               </Link>
