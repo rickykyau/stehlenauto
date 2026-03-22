@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 interface BannerSettings {
   enabled: boolean;
@@ -13,6 +14,8 @@ interface BannerSettings {
 export default function AnnouncementBanner() {
   const [banner, setBanner] = useState<BannerSettings | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const viewedRef = useRef(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem("banner_dismissed")) {
@@ -29,6 +32,14 @@ export default function AnnouncementBanner() {
       });
   }, []);
 
+  // Track view once banner is visible
+  const bannerText = banner?.text || "";
+  useEffect(() => {
+    if (viewedRef.current || !bannerRef.current || !banner?.enabled || !bannerText || dismissed) return;
+    viewedRef.current = true;
+    trackEvent("promotion_viewed", { promotion_id: "announcement_bar", promotion_name: bannerText, creative_slot: "announcement_bar" });
+  }, [banner?.enabled, bannerText, dismissed]);
+
   if (dismissed || !banner?.enabled || !banner.text) return null;
 
   const handleDismiss = () => {
@@ -42,11 +53,16 @@ export default function AnnouncementBanner() {
 
   return (
     <div
+      ref={bannerRef}
       className="relative flex items-center justify-center px-10 py-2"
       style={{ backgroundColor: banner.bg_color, color: banner.text_color }}
     >
       {banner.link_url ? (
-        <a href={banner.link_url} className="hover:underline">{content}</a>
+        <a
+          href={banner.link_url}
+          className="hover:underline"
+          onClick={() => trackEvent("promotion_clicked", { promotion_id: "announcement_bar", promotion_name: banner.text, creative_slot: "announcement_bar" })}
+        >{content}</a>
       ) : (
         content
       )}

@@ -1,7 +1,9 @@
+import { useEffect, useRef } from "react";
 import { ArrowRight, Shield, Truck, RotateCcw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 import heroBg from "@/assets/hero-bullbar.jpg";
 
 interface HeroSlide {
@@ -50,9 +52,33 @@ const HeroSection = () => {
   const headlineLines = slide.headline.split("\\n").length > 1
     ? slide.headline.split("\\n")
     : slide.headline.split("\n");
+  const viewedRef = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const promoName = headlineLines.join(" ").trim();
+
+  useEffect(() => {
+    if (viewedRef.current || !sectionRef.current) return;
+    const el = sectionRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewedRef.current) {
+          viewedRef.current = true;
+          trackEvent("promotion_viewed", { promotion_id: "hero_banner", promotion_name: promoName, creative_slot: "hero" });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [promoName]);
+
+  const trackHeroClick = () => {
+    trackEvent("promotion_clicked", { promotion_id: "hero_banner", promotion_name: promoName, creative_slot: "hero" });
+  };
 
   return (
-    <section className="relative border-b border-border overflow-hidden">
+    <section ref={sectionRef} className="relative border-b border-border overflow-hidden">
       <div className="absolute inset-0">
         <img src={bgImage} alt="" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
@@ -87,6 +113,7 @@ const HeroSection = () => {
             <Link
               to={slide.primary_button_link || "/collections/all"}
               className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+              onClick={trackHeroClick}
             >
               {slide.primary_button_text}
               <ArrowRight className="w-5 h-5" />
@@ -96,6 +123,7 @@ const HeroSection = () => {
             <Link
               to={slide.secondary_button_link || "/collections/all?sort_by=best-selling"}
               className="inline-flex items-center gap-2 h-16 px-10 border-2 border-foreground/20 text-foreground font-display text-base tracking-widest hover:border-primary hover:text-primary transition-colors btn-press"
+              onClick={trackHeroClick}
             >
               {slide.secondary_button_text}
             </Link>
