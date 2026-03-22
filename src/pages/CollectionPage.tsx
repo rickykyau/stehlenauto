@@ -362,6 +362,24 @@ const CollectionTemplate = () => {
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
+  // Fire view_item_list once per unique list
+  const listName = title || "All Products";
+  useEffect(() => {
+    if (!isLoading && displayProducts.length > 0 && viewItemListFiredRef.current !== listName) {
+      viewItemListFiredRef.current = listName;
+      trackEvent("view_item_list", {
+        item_list_name: listName,
+        items: displayProducts.slice(0, 5).map((product, index) => ({
+          item_id: product.node.id,
+          item_name: product.node.title,
+          item_category: listName,
+          price: parseFloat(product.node.priceRange.minVariantPrice.amount),
+          index,
+        })),
+      });
+    }
+  }, [isLoading, displayProducts, listName]);
+
   // Reset on query/sort change
   const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
   const [lastQueryKey, setLastQueryKey] = useState(queryKey);
