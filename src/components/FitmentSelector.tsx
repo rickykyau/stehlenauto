@@ -67,6 +67,24 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
   const [year, setYear] = useState(savedVehicle?.year || "");
   const [make, setMake] = useState(savedVehicle?.make || "");
   const [model, setModel] = useState(savedVehicle?.model || "");
+  const completedRef = useRef(false);
+
+  // Track abandonment on unmount
+  useEffect(() => {
+    return () => {
+      if (completedRef.current) return; // ymm_completed already fired
+      const hasStarted = !!(year || make);
+      const isComplete = !!(year && make && model);
+      if (hasStarted && !isComplete) {
+        const lastStep = make ? "make" : year ? "year" : "none";
+        trackEvent("ymm_abandoned", {
+          last_step: lastStep,
+          vehicle_year: year || null,
+          vehicle_make: make || null,
+        });
+      }
+    };
+  }, [year, make, model]);
 
   // Fetch all products for counting (only when year+make are set)
   const { data } = useShopifyProducts({ first: 250, query: make ? `*${make}*` : undefined });
