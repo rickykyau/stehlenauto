@@ -182,7 +182,7 @@ export default function ChatWidget() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, isLoading, conversationId, userId, vehicle]);
+  }, [messages, isLoading, conversationId, userId, vehicle, userMessageCount]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
