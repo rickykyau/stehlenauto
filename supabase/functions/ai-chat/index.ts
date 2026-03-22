@@ -94,6 +94,23 @@ function parseVehicle(message: string, vehicleContext: { year: string; make: str
   return vehicleContext ? { ...vehicleContext } : null;
 }
 
+// Extract vehicle from conversation history if not in current message
+function parseVehicleFromHistory(history: Array<{ role: string; content: string }>): { year: string; make: string; model: string } | null {
+  const patterns = [
+    /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
+  ];
+  // Search backwards through history (most recent first)
+  for (let i = history.length - 1; i >= 0; i--) {
+    const msg = history[i];
+    if (msg.role !== "user") continue;
+    for (const re of patterns) {
+      const m = msg.content.match(re);
+      if (m) return { year: m[1], make: m[2], model: m[3].trim() };
+    }
+  }
+  return null;
+}
+
 function detectCategory(message: string): { productType: string; label: string } | null {
   for (const cat of CATEGORY_MAP) {
     if (cat.patterns.test(message)) return { productType: cat.productType, label: cat.label };
@@ -226,7 +243,11 @@ serve(async (req) => {
     }
 
     // 4. Detect intent
-    const parsedVehicle = parseVehicle(message, vehicleContext);
+    let parsedVehicle = parseVehicle(message, vehicleContext);
+    // If no vehicle in current message or context, check conversation history
+    if (!parsedVehicle) {
+      parsedVehicle = parseVehicleFromHistory(conversationHistory || []);
+    }
     const detectedCategory = detectCategory(message);
     const showAll = isShowAllIntent(message);
 
@@ -471,9 +492,13 @@ serve(async (req) => {
     if (productsMatch) {
       try {
         responseProducts = JSON.parse(productsMatch[1]);
-        cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*?\[\/PRODUCTS_JSON\]/, "").trim();
       } catch { /* ignore */ }
     }
+    // Always strip PRODUCTS_JSON tags from response text
+    cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*?\[\/PRODUCTS_JSON\]/g, "").trim();
+    // Also strip partial/malformed tags
+    cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[\/PRODUCTS_JSON\]/g, "").trim();
 
     // If Claude didn't include products but we found some, include them
     if (responseProducts.length === 0 && productsForResponse.length > 0) {
@@ -484,9 +509,12 @@ serve(async (req) => {
     if (actionMatch) {
       try {
         responseAction = JSON.parse(actionMatch[1]);
-        cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/, "").trim();
       } catch { /* ignore */ }
     }
+    // Always strip ACTION_JSON tags from response text
+    cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[\/ACTION_JSON\]/g, "").trim();
 
     // Handle escalation
     if (responseAction?.type === "escalate" && convId) {
