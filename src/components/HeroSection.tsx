@@ -22,7 +22,7 @@ const DEFAULT_SLIDE: HeroSlide = {
   primary_button_text: "SHOP ALL PARTS",
   primary_button_link: "/collections/all",
   secondary_button_text: "BEST SELLERS",
-  secondary_button_link: "/collections/all?sort=best-selling",
+  secondary_button_link: "/collections/all?sort_by=best-selling",
   background_image: "",
 };
 
