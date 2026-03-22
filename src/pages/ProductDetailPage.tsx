@@ -514,7 +514,10 @@ const ProductTemplate = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    trackEvent("product_tab_clicked", { item_id: product.id, tab_name: TAB_LABELS[tab].toLowerCase().replace(/\s+/g, "_") });
+                  }}
                   className={`px-4 py-2.5 font-display text-[10px] tracking-widest whitespace-nowrap transition-colors border-b-2 -mb-px ${
                     activeTab === tab
                       ? "border-primary text-primary"
