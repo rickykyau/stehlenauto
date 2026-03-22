@@ -158,6 +158,16 @@ export default function ChatWidget() {
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+
+      // Track product recommendations
+      if (data.products?.length > 0) {
+        data.products.forEach((product: ProductCard) => {
+          trackEvent("chat_product_recommended", {
+            item_id: product.id,
+            item_name: product.title,
+          });
+        });
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setMessages((prev) => [
