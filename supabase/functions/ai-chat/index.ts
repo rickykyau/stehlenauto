@@ -205,6 +205,28 @@ function matchesVehicle(tags: string[], make: string, model: string, year?: stri
   return true;
 }
 
+function filterByYearRange(products: any[], customerYear: number): any[] {
+  return products.filter((p: any) => {
+    const title = p.title || '';
+    // Match "2015-2018", "08-10", "1999–2016" (en-dash too)
+    const rangeMatch = title.match(/(\d{2,4})\s*[-–]\s*(\d{2,4})/);
+    // Match "2017+"
+    const plusMatch = title.match(/(\d{4})\+/);
+    if (rangeMatch) {
+      let start = parseInt(rangeMatch[1]);
+      let end = parseInt(rangeMatch[2]);
+      if (start < 100) start += 2000;
+      if (end < 100) end += 2000;
+      return customerYear >= start && customerYear <= end;
+    }
+    if (plusMatch) {
+      return customerYear >= parseInt(plusMatch[1]);
+    }
+    // No year in title — include as universal/unknown
+    return true;
+  });
+}
+
 function matchesCategory(product: any, categoryType: string): boolean {
   const pt = (product.product_type || "").toLowerCase();
   const title = (product.title || "").toLowerCase();
