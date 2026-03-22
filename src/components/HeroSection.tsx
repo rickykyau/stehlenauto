@@ -22,7 +22,7 @@ const DEFAULT_SLIDE: HeroSlide = {
   primary_button_text: "SHOP ALL PARTS",
   primary_button_link: "/collections/all",
   secondary_button_text: "BEST SELLERS",
-  secondary_button_link: "/collections/bull-bars",
+  secondary_button_link: "/collections/all?sort=best-selling",
   background_image: "",
 };
 
@@ -94,7 +94,7 @@ const HeroSection = () => {
           )}
           {slide.secondary_button_text && (
             <Link
-              to={slide.secondary_button_link || "/collections/bull-bars"}
+              to={slide.secondary_button_link || "/collections/all?sort=best-selling"}
               className="inline-flex items-center gap-2 h-16 px-10 border-2 border-foreground/20 text-foreground font-display text-base tracking-widest hover:border-primary hover:text-primary transition-colors btn-press"
             >
               {slide.secondary_button_text}
