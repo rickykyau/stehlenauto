@@ -103,6 +103,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
 
   const handleSubmit = () => {
     if (year && make && model) {
+      completedRef.current = true;
       const v = { year, make, model };
       setVehicle(v);
       onVehicleSelect?.(v);
