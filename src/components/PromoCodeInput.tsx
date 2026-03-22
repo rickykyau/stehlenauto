@@ -72,6 +72,7 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
     }
 
     setLoading(false);
+    trackEvent("coupon_applied", { coupon_code: data.code, success: true, cart_value: subtotal });
     onApply({
       id: data.id,
       code: data.code,
