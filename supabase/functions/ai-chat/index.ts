@@ -214,7 +214,6 @@ function matchesCategory(product: any, categoryType: string): boolean {
 }
 
 function buildProductCard(p: any) {
-  console.log("BUILD_CARD_DEBUG:", JSON.stringify({ title: p.title, imagesType: typeof p.images, isArray: Array.isArray(p.images), firstImg: Array.isArray(p.images) ? p.images[0] : "not-array", variantsType: typeof p.variants, isVarArray: Array.isArray(p.variants), firstVar: Array.isArray(p.variants) ? p.variants[0] : "not-array", handle: p.handle }));
   let images: any[] = [];
   try {
     images = typeof p.images === "string" ? JSON.parse(p.images) : Array.isArray(p.images) ? p.images : [];
