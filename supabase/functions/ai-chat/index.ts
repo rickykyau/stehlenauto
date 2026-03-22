@@ -94,6 +94,23 @@ function parseVehicle(message: string, vehicleContext: { year: string; make: str
   return vehicleContext ? { ...vehicleContext } : null;
 }
 
+// Extract vehicle from conversation history if not in current message
+function parseVehicleFromHistory(history: Array<{ role: string; content: string }>): { year: string; make: string; model: string } | null {
+  const patterns = [
+    /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
+  ];
+  // Search backwards through history (most recent first)
+  for (let i = history.length - 1; i >= 0; i--) {
+    const msg = history[i];
+    if (msg.role !== "user") continue;
+    for (const re of patterns) {
+      const m = msg.content.match(re);
+      if (m) return { year: m[1], make: m[2], model: m[3].trim() };
+    }
+  }
+  return null;
+}
+
 function detectCategory(message: string): { productType: string; label: string } | null {
   for (const cat of CATEGORY_MAP) {
     if (cat.patterns.test(message)) return { productType: cat.productType, label: cat.label };
