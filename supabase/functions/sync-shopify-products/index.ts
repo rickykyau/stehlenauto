@@ -297,7 +297,6 @@ serve(async (req) => {
 
     const foundMakes = new Set<string>();
     const foundYears = new Set<string>();
-    // Track which models appear with which makes
     const makeModelMap = new Map<string, Set<string>>();
 
     for (const product of (allCachedProducts || [])) {
@@ -305,30 +304,36 @@ serve(async (req) => {
       const productMakes = new Set<string>();
 
       for (const tag of tags) {
-        // Check if tag is a year (4-digit number 1980-2030)
+        // Years: exact 4-digit tags
         if (/^\d{4}$/.test(tag)) {
           const y = parseInt(tag);
           if (y >= 1980 && y <= 2030) foundYears.add(tag);
+          continue;
         }
-        // Check if tag matches a known make
+        // Makes: exact known make OR "make:" prefix
         if (knownMakes.has(tag)) {
           foundMakes.add(tag);
           productMakes.add(tag);
           if (!makeModelMap.has(tag)) makeModelMap.set(tag, new Set());
+        } else if (tag.startsWith("make:")) {
+          const m = tag.replace("make:", "").trim();
+          if (m.length > 0 && knownMakes.has(m)) {
+            foundMakes.add(m);
+            productMakes.add(m);
+            if (!makeModelMap.has(m)) makeModelMap.set(m, new Set());
+          }
         }
       }
 
-      // Any non-year, non-make tag that's not a common generic tag could be a model
-      // We identify models as tags that co-occur with a make and look like model names
+      // Models: ONLY tags with "model:" prefix
       if (productMakes.size > 0) {
         for (const tag of tags) {
-          if (/^\d{4}$/.test(tag)) continue; // skip years
-          if (knownMakes.has(tag)) continue; // skip makes
-          if (tag.toLowerCase() === "universal fit") continue;
-          // Model tags are typically short alphanumeric strings
-          if (tag.length > 0 && tag.length <= 30) {
-            for (const make of productMakes) {
-              makeModelMap.get(make)!.add(tag);
+          if (tag.startsWith("model:")) {
+            const model = tag.replace("model:", "").trim();
+            if (model.length > 0 && model.length <= 25) {
+              for (const make of productMakes) {
+                makeModelMap.get(make)!.add(model);
+              }
             }
           }
         }
