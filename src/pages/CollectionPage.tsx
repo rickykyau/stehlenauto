@@ -207,6 +207,7 @@ const CollectionTemplate = () => {
     category: null,
   });
   const vehicleSyncedRef = useRef(false);
+  const viewItemListFiredRef = useRef<string | null>(null);
   const lastCategoryParam = useRef<string | null>(null);
   const lastMakeParam = useRef<string | null>(null);
 
