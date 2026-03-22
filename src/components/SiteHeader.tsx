@@ -201,7 +201,7 @@ const SiteHeader = () => {
 
   const handleSearchSubmit = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && searchQuery.trim()) {
-      trackEvent("search", { search_term: searchQuery.trim() });
+      trackEvent("search", { search_term: searchQuery.trim().toLowerCase() });
       setSearchDropdownOpen(false);
       navigate(`/collections/all?q=${encodeURIComponent(searchQuery.trim())}`);
     }
