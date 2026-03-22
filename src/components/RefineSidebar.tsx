@@ -31,6 +31,7 @@ interface RefineSidebarProps {
 type Section = "year" | "make" | "model" | "category";
 
 const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions }: RefineSidebarProps) => {
+  const { makes: MAKES, models: MODELS_BY_MAKE } = useYMMConfig();
   const [expanded, setExpanded] = useState<Record<Section, boolean>>({
     year: true,
     make: true,

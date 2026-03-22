@@ -12,6 +12,7 @@ interface FitmentSelectorProps {
 }
 
 const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
+  const { makes: MAKES, models: MODELS, years: YEARS } = useYMMConfig();
   const { vehicle: savedVehicle, setVehicle, clearVehicle } = useVehicle();
   const navigate = useNavigate();
   const [year, setYear] = useState(savedVehicle?.year || "");
