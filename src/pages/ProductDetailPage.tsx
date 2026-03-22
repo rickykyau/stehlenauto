@@ -358,7 +358,10 @@ const ProductTemplate = () => {
             {/* Main Image */}
             <div
               className="relative flex-1 bg-card cursor-pointer group max-h-[500px] overflow-hidden"
-              onClick={() => setLightboxOpen(true)}
+              onClick={() => {
+                setLightboxOpen(true);
+                trackEvent("product_image_viewed", { item_id: product.id, image_index: selectedImage, action: "zoom" });
+              }}
             >
               <img
                 src={images[selectedImage]?.node?.url || "/placeholder.svg"}
