@@ -287,12 +287,13 @@ export default function ChatWidget() {
                           a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                         }}
                       >
-                        {msg.content
+                      {msg.content
                           .replace(/<\/?function_calls>/gi, "")
                           .replace(/<\/?invoke[^>]*>/gi, "")
                           .replace(/<\/?antml:[^>]*>/gi, "")
                           .replace(/<\/?parameter[^>]*>/gi, "")
                           // Ensure list items have proper line breaks for markdown rendering
+                          .replace(/([^\n])\s*- \*\*/g, "$1\n- **")
                           .replace(/([^\n])(\n?- )/g, "$1\n$2")
                           .replace(/([^\n])(\n?\* )/g, "$1\n$2")
                           .replace(/([^\n])(\n?\d+\. )/g, "$1\n$2")
@@ -360,14 +361,16 @@ export default function ChatWidget() {
                                       quantity: 1,
                                     }],
                                   });
+                                   const fullVariantId = product.variantId!.startsWith("gid://") ? product.variantId! : `gid://shopify/ProductVariant/${product.variantId}`;
                                   await addItem({
-                                    product: { node: { id: product.id, title: product.title, handle: product.handle, description: "", priceRange: { minVariantPrice: { amount: product.price, currencyCode: "USD" } }, images: { edges: product.image ? [{ node: { url: product.image, altText: null } }] : [] }, variants: { edges: [{ node: { id: product.variantId!, title: "Default", price: { amount: product.price, currencyCode: "USD" }, availableForSale: true, selectedOptions: [] } }] }, productType: "", tags: [], options: [] } },
-                                    variantId: product.variantId!,
+                                    product: { node: { id: product.id, title: product.title, handle: product.handle, description: "", priceRange: { minVariantPrice: { amount: product.price, currencyCode: "USD" } }, images: { edges: product.image ? [{ node: { url: product.image, altText: null } }] : [] }, variants: { edges: [{ node: { id: fullVariantId, title: "Default", price: { amount: product.price, currencyCode: "USD" }, availableForSale: true, selectedOptions: [] } }] }, productType: "", tags: [], options: [] } },
+                                    variantId: fullVariantId,
                                     variantTitle: "Default",
                                     price: { amount: product.price, currencyCode: "USD" },
                                     quantity: 1,
                                     selectedOptions: [],
                                   });
+                                  openCart();
                                 }}
                                 className="flex items-center gap-1 px-2 py-1 text-[10px] font-display tracking-wider bg-primary text-primary-foreground hover:brightness-110 transition-colors"
                               >

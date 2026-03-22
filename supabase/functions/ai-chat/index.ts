@@ -276,7 +276,7 @@ function buildProductCard(p: any) {
     image: firstImage,
     handle,
     inStock,
-    variantId: firstVariant.id ? String(firstVariant.id) : "",
+    variantId: firstVariant.id ? (String(firstVariant.id).startsWith("gid://") ? String(firstVariant.id) : `gid://shopify/ProductVariant/${firstVariant.id}`) : "",
     inventoryQuantity: firstVariant.inventory_quantity ?? 0,
     partNumber: p.part_number,
     cbItemName: p.cb_item_name,
