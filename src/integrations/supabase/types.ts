@@ -670,6 +670,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ymm_config: {
+        Row: {
+          id: number
+          make_collection_map: Json
+          makes: Json
+          models: Json
+          updated_at: string
+          years: Json
+        }
+        Insert: {
+          id?: number
+          make_collection_map?: Json
+          makes?: Json
+          models?: Json
+          updated_at?: string
+          years?: Json
+        }
+        Update: {
+          id?: number
+          make_collection_map?: Json
+          makes?: Json
+          models?: Json
+          updated_at?: string
+          years?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
