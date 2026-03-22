@@ -319,7 +319,7 @@ export default function ChatWidget() {
                           <p className="font-body text-xs text-foreground line-clamp-2 mb-1">{product.title}</p>
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-display text-sm text-primary font-bold">
-                              ${parseFloat(product.price).toFixed(2)}
+                              ${!isNaN(parseFloat(product.price)) ? parseFloat(product.price).toFixed(2) : "N/A"}
                             </span>
                             <span className={`text-[10px] font-display ${product.inStock ? "text-green-500" : "text-destructive"}`}>
                               {product.inStock ? "IN STOCK" : "OUT OF STOCK"}
