@@ -113,6 +113,7 @@ const HeroSection = () => {
             <Link
               to={slide.primary_button_link || "/collections/all"}
               className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+              onClick={trackHeroClick}
             >
               {slide.primary_button_text}
               <ArrowRight className="w-5 h-5" />
