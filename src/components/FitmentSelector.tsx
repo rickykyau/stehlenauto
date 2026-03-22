@@ -5,25 +5,14 @@ import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useShopifyProducts } from "@/hooks/useShopifyProducts";
 import { buildYMMTagQuery } from "@/lib/shopify";
-
-const YEARS = Array.from({ length: 30 }, (_, i) => (2025 - i).toString());
-const MAKES = ["Ford", "Chevy", "Dodge", "GMC", "Toyota", "Nissan", "Jeep", "Ram"];
-const MODELS: Record<string, string[]> = {
-  Ford: ["F-150", "F-250", "F-350", "Ranger", "Bronco", "Explorer", "Expedition", "Mustang"],
-  Chevy: ["Silverado 1500", "Silverado 2500", "Colorado", "Tahoe", "Suburban", "Traverse"],
-  Dodge: ["Ram 1500", "Ram 2500", "Dakota", "Durango", "Charger", "Challenger"],
-  GMC: ["Sierra 1500", "Sierra 2500", "Canyon", "Yukon", "Acadia"],
-  Toyota: ["Tacoma", "Tundra", "4Runner", "Highlander", "RAV4"],
-  Nissan: ["Frontier", "Titan", "Pathfinder", "Xterra", "Armada"],
-  Jeep: ["Wrangler", "Grand Cherokee", "Cherokee", "Gladiator", "Compass"],
-  Ram: ["1500", "2500", "3500"],
-};
+import { useYMMConfig } from "@/hooks/useYMMConfig";
 
 interface FitmentSelectorProps {
   onVehicleSelect?: (vehicle: { year: string; make: string; model: string }) => void;
 }
 
 const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
+  const { makes: MAKES, models: MODELS, years: YEARS } = useYMMConfig();
   const { vehicle: savedVehicle, setVehicle, clearVehicle } = useVehicle();
   const navigate = useNavigate();
   const [year, setYear] = useState(savedVehicle?.year || "");

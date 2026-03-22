@@ -33,25 +33,8 @@ const CATEGORIES = [
   { handle: "under-seat-storage", label: "Under Seat Storage" },
 ];
 
-const MAKES = [
-  "Chevy", "Chrysler", "Dodge", "Ford", "GMC", "Honda",
-  "Jeep", "Nissan", "Ram", "Toyota", "Volkswagen", "Universal",
-];
-
-const MODELS_BY_MAKE: Record<string, string[]> = {
-  Ford: ["Bronco", "Edge", "Escape", "Excursion", "Expedition", "Explorer", "F-150", "F-250", "F-350", "F-450", "Flex", "Focus", "Maverick", "Mustang", "Ranger", "Super Duty"],
-  Chevy: ["Avalanche", "Blazer", "Colorado", "Equinox", "Express", "Malibu", "S-10", "Silverado 1500", "Silverado 2500", "Silverado 3500", "Suburban", "Tahoe", "Trailblazer", "Traverse"],
-  Dodge: ["Charger", "Challenger", "Dakota", "Durango", "Grand Caravan", "Journey", "Nitro"],
-  GMC: ["Acadia", "Canyon", "Envoy", "Jimmy", "Sierra 1500", "Sierra 2500", "Sierra 3500", "Terrain", "Yukon"],
-  Toyota: ["4Runner", "Camry", "Corolla", "FJ Cruiser", "Highlander", "Land Cruiser", "RAV4", "Sequoia", "Tacoma", "Tundra"],
-  Nissan: ["Armada", "Frontier", "Murano", "Pathfinder", "Rogue", "Titan", "Xterra"],
-  Jeep: ["Cherokee", "Commander", "Compass", "Gladiator", "Grand Cherokee", "Liberty", "Patriot", "Renegade", "Wrangler"],
-  Ram: ["1500", "2500", "3500"],
-  Honda: ["Accord", "Civic", "CR-V", "HR-V", "Odyssey", "Passport", "Pilot", "Ridgeline"],
-  Chrysler: ["200", "300", "Pacifica", "Town & Country", "Voyager"],
-  Volkswagen: ["Atlas", "Golf", "Jetta", "Passat", "Tiguan", "Touareg"],
-  Universal: ["Universal"],
-};
+// MAKES and MODELS_BY_MAKE are now re-exported from useYMMConfig defaults for backward compat
+import { DEFAULT_MAKES as MAKES, DEFAULT_MODELS as MODELS_BY_MAKE } from "@/hooks/useYMMConfig";
 
 function parseYearRange(title: string): [number, number] | null {
   const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);

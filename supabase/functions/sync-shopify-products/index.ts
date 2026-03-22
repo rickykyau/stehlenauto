@@ -268,6 +268,91 @@ serve(async (req) => {
       { onConflict: "key" }
     );
 
+    // ── Build YMM config from synced products ──
+    console.log("Building YMM config from products_cache...");
+    const { data: allCachedProducts } = await supabase
+      .from("products_cache")
+      .select("tags")
+      .eq("status", "active");
+
+    const knownMakes = new Set([
+      "Acura", "Audi", "BMW", "Buick", "Cadillac", "Chevrolet", "Chevy", "Chrysler",
+      "Dodge", "Ford", "GMC", "Honda", "Hummer", "Hyundai", "Infiniti", "Isuzu",
+      "Jeep", "Kia", "Land Rover", "Lexus", "Lincoln", "Mazda", "Mercedes", "Mercury",
+      "Mini", "Mitsubishi", "Nissan", "Pontiac", "Ram", "Scion", "Subaru", "Suzuki",
+      "Tesla", "Toyota", "Volkswagen", "Volvo",
+    ]);
+
+    const makeCollectionMap: Record<string, string> = {
+      "Acura": "acura-parts", "Audi": "audi-parts", "Buick": "buick-parts",
+      "Cadillac": "cadillac-parts", "Chevrolet": "chevy-parts", "Chevy": "chevy-parts",
+      "Chrysler": "chrysler-parts", "Dodge": "dodge-parts", "Ford": "ford-parts",
+      "GMC": "gmc-parts", "Honda": "honda-parts", "Hyundai": "hyundai-parts",
+      "Infiniti": "infiniti-parts", "Jeep": "jeep-parts", "Kia": "kia-parts",
+      "Lexus": "lexus-parts", "Lincoln": "lincoln-parts", "Mazda": "mazda-parts",
+      "Mercedes": "mercedes-benz-parts", "Mercury": "mercury-parts",
+      "Nissan": "nissan-parts", "Pontiac": "pontiac-parts", "Ram": "dodge-parts",
+      "Subaru": "subaru-parts", "Toyota": "toyota-parts", "Volkswagen": "volkswagen-parts",
+    };
+
+    const foundMakes = new Set<string>();
+    const foundYears = new Set<string>();
+    // Track which models appear with which makes
+    const makeModelMap = new Map<string, Set<string>>();
+
+    for (const product of (allCachedProducts || [])) {
+      const tags: string[] = product.tags || [];
+      const productMakes = new Set<string>();
+
+      for (const tag of tags) {
+        // Check if tag is a year (4-digit number 1980-2030)
+        if (/^\d{4}$/.test(tag)) {
+          const y = parseInt(tag);
+          if (y >= 1980 && y <= 2030) foundYears.add(tag);
+        }
+        // Check if tag matches a known make
+        if (knownMakes.has(tag)) {
+          foundMakes.add(tag);
+          productMakes.add(tag);
+          if (!makeModelMap.has(tag)) makeModelMap.set(tag, new Set());
+        }
+      }
+
+      // Any non-year, non-make tag that's not a common generic tag could be a model
+      // We identify models as tags that co-occur with a make and look like model names
+      if (productMakes.size > 0) {
+        for (const tag of tags) {
+          if (/^\d{4}$/.test(tag)) continue; // skip years
+          if (knownMakes.has(tag)) continue; // skip makes
+          if (tag.toLowerCase() === "universal fit") continue;
+          // Model tags are typically short alphanumeric strings
+          if (tag.length > 0 && tag.length <= 30) {
+            for (const make of productMakes) {
+              makeModelMap.get(make)!.add(tag);
+            }
+          }
+        }
+      }
+    }
+
+    const ymmMakes = Array.from(foundMakes).sort();
+    const ymmYears = Array.from(foundYears).sort((a, b) => parseInt(b) - parseInt(a));
+    const ymmModels: Record<string, string[]> = {};
+    for (const [make, models] of makeModelMap) {
+      ymmModels[make] = Array.from(models).sort();
+    }
+
+    await supabase.from("ymm_config" as any).upsert({
+      id: 1,
+      makes: ymmMakes,
+      models: ymmModels,
+      years: ymmYears,
+      make_collection_map: makeCollectionMap,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+
+    console.log(`YMM config built: ${ymmMakes.length} makes, ${ymmYears.length} years`);
+
     // Mark sync as completed
     await updateSyncStatus({
       status: "completed",
