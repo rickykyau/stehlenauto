@@ -205,6 +205,28 @@ function matchesVehicle(tags: string[], make: string, model: string, year?: stri
   return true;
 }
 
+function filterByYearRange(products: any[], customerYear: number): any[] {
+  return products.filter((p: any) => {
+    const title = p.title || '';
+    // Match "2015-2018", "08-10", "1999–2016" (en-dash too)
+    const rangeMatch = title.match(/(\d{2,4})\s*[-–]\s*(\d{2,4})/);
+    // Match "2017+"
+    const plusMatch = title.match(/(\d{4})\+/);
+    if (rangeMatch) {
+      let start = parseInt(rangeMatch[1]);
+      let end = parseInt(rangeMatch[2]);
+      if (start < 100) start += 2000;
+      if (end < 100) end += 2000;
+      return customerYear >= start && customerYear <= end;
+    }
+    if (plusMatch) {
+      return customerYear >= parseInt(plusMatch[1]);
+    }
+    // No year in title — include as universal/unknown
+    return true;
+  });
+}
+
 function matchesCategory(product: any, categoryType: string): boolean {
   const pt = (product.product_type || "").toLowerCase();
   const title = (product.title || "").toLowerCase();
@@ -348,10 +370,17 @@ serve(async (req) => {
         const { data: products } = await productsQuery.limit(50);
 
         if (products?.length) {
-          const vehicleMatched = products.filter((p: any) => {
+          let vehicleMatched = products.filter((p: any) => {
             const tags = p.tags || [];
             return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model, parsedVehicle.year);
           });
+
+          // Apply year-range filter from product titles
+          if (parsedVehicle.year) {
+            const customerYear = parseInt(parsedVehicle.year);
+            const yearFiltered = filterByYearRange(vehicleMatched, customerYear);
+            if (yearFiltered.length > 0) vehicleMatched = yearFiltered;
+          }
 
           // Sort by inventory quantity descending (in-stock first)
           vehicleMatched.sort((a: any, b: any) => {
@@ -410,10 +439,17 @@ serve(async (req) => {
           let isExactMatch = true;
 
           if (parsedVehicle) {
-            const vehicleMatched = categoryFiltered.filter((p: any) => {
+            let vehicleMatched = categoryFiltered.filter((p: any) => {
               const tags = p.tags || [];
               return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model, parsedVehicle.year);
             });
+
+            // Apply year-range filter from product titles
+            if (parsedVehicle.year) {
+              const customerYear = parseInt(parsedVehicle.year);
+              const yearFiltered = filterByYearRange(vehicleMatched, customerYear);
+              if (yearFiltered.length > 0) vehicleMatched = yearFiltered;
+            }
 
             if (vehicleMatched.length > 0) {
               if (parsedVehicle.year) {

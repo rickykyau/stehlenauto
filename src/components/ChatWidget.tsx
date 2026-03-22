@@ -292,6 +292,10 @@ export default function ChatWidget() {
                           .replace(/<\/?invoke[^>]*>/gi, "")
                           .replace(/<\/?antml:[^>]*>/gi, "")
                           .replace(/<\/?parameter[^>]*>/gi, "")
+                          // Ensure list items have proper line breaks for markdown rendering
+                          .replace(/([^\n])(\n?- )/g, "$1\n$2")
+                          .replace(/([^\n])(\n?\* )/g, "$1\n$2")
+                          .replace(/([^\n])(\n?\d+\. )/g, "$1\n$2")
                           .trim()}
                       </ReactMarkdown>
                     ) : (
