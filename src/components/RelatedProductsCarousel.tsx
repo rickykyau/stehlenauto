@@ -3,6 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import HorizontalCarousel from "@/components/HorizontalCarousel";
 import { storefrontApiRequest, COLLECTION_PRODUCTS_QUERY, PRODUCTS_QUERY, MAKE_COLLECTION_MAP } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { trackEvent } from "@/lib/analytics";
 
 interface RelatedProductsCarouselProps {
   currentProductId: string;
