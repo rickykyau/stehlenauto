@@ -95,7 +95,7 @@ export default function PromoCodeInput({ subtotal, appliedPromo, onApply, onRemo
           <span className="font-display text-[10px] tracking-wider text-primary">{appliedPromo.code}</span>
           <span className="font-body text-xs text-primary/70">({discountLabel})</span>
         </div>
-        <button onClick={onRemove} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={() => { trackEvent("coupon_removed", { coupon_code: appliedPromo.code }); onRemove(); }} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
