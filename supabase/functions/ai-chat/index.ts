@@ -492,9 +492,13 @@ serve(async (req) => {
     if (productsMatch) {
       try {
         responseProducts = JSON.parse(productsMatch[1]);
-        cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*?\[\/PRODUCTS_JSON\]/, "").trim();
       } catch { /* ignore */ }
     }
+    // Always strip PRODUCTS_JSON tags from response text
+    cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*?\[\/PRODUCTS_JSON\]/g, "").trim();
+    // Also strip partial/malformed tags
+    cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[\/PRODUCTS_JSON\]/g, "").trim();
 
     // If Claude didn't include products but we found some, include them
     if (responseProducts.length === 0 && productsForResponse.length > 0) {
@@ -505,8 +509,12 @@ serve(async (req) => {
     if (actionMatch) {
       try {
         responseAction = JSON.parse(actionMatch[1]);
-        cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/, "").trim();
       } catch { /* ignore */ }
+    }
+    // Always strip ACTION_JSON tags from response text
+    cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*?\[\/ACTION_JSON\]/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[ACTION_JSON\][\s\S]*/g, "").trim();
+    cleanResponse = cleanResponse.replace(/\[\/ACTION_JSON\]/g, "").trim();
     }
 
     // Handle escalation
