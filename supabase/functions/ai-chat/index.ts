@@ -160,15 +160,19 @@ function escapeIlikeValue(value: string): string {
 function applyVehicleSqlFilter(query: any, vehicle: { make: string; model: string } | null) {
   if (!vehicle?.make || !vehicle?.model) return query;
 
-  const makeFilter = toTagCase(vehicle.make);
+  const make = escapeIlikeValue(vehicle.make);
   const modelVariants = buildModelVariants(vehicle.model);
-  const sqlOrParts = [
-    ...modelVariants.map((variant) => `tags.cs.{${escapeArrayValue(variant)}}`),
-    ...modelVariants.map((variant) => `title.ilike.%${escapeIlikeValue(makeFilter)}%${escapeIlikeValue(variant)}%`),
-    ...modelVariants.map((variant) => `title.ilike.%${escapeIlikeValue(variant)}%`),
-  ];
 
-  return query.contains("tags", [makeFilter]).or(sqlOrParts.join(","));
+  // Build OR conditions that check title for make+model combos
+  // We can't use .contains on tags for partial matches, so use title ILIKE
+  const orParts: string[] = [];
+  for (const variant of modelVariants) {
+    const v = escapeIlikeValue(variant);
+    orParts.push(`title.ilike.%${make}%${v}%`);
+    orParts.push(`title.ilike.%${v}%`);
+  }
+
+  return query.or(orParts.join(","));
 }
 
 function matchesVehicle(tags: string[], make: string, model: string, year?: string): boolean {
@@ -210,7 +214,6 @@ function matchesCategory(product: any, categoryType: string): boolean {
 }
 
 function buildProductCard(p: any) {
-  // Parse images — could be JSON string or array
   let images: any[] = [];
   try {
     images = typeof p.images === "string" ? JSON.parse(p.images) : Array.isArray(p.images) ? p.images : [];
