@@ -287,12 +287,13 @@ export default function ChatWidget() {
                           a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                         }}
                       >
-                        {msg.content
+                      {msg.content
                           .replace(/<\/?function_calls>/gi, "")
                           .replace(/<\/?invoke[^>]*>/gi, "")
                           .replace(/<\/?antml:[^>]*>/gi, "")
                           .replace(/<\/?parameter[^>]*>/gi, "")
                           // Ensure list items have proper line breaks for markdown rendering
+                          .replace(/([^\n])\s*- \*\*/g, "$1\n- **")
                           .replace(/([^\n])(\n?- )/g, "$1\n$2")
                           .replace(/([^\n])(\n?\* )/g, "$1\n$2")
                           .replace(/([^\n])(\n?\d+\. )/g, "$1\n$2")
