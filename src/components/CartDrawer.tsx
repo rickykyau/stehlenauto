@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { X, Minus, Plus, ShoppingCart, ArrowRight, Trash2, Loader2, ExternalLink } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
@@ -21,6 +21,7 @@ const CartDrawer = () => {
   } = useCartStore();
 
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const cartOpenedAtRef = useRef<number>(0);
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
@@ -38,8 +39,29 @@ const CartDrawer = () => {
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Sync cart when drawer opens
-  useEffect(() => { if (isOpen) syncCart(); }, [isOpen, syncCart]);
+  // Track cart open/close and sync
+  useEffect(() => {
+    if (isOpen) {
+      syncCart();
+      cartOpenedAtRef.current = Date.now();
+      trackEvent("view_cart", {
+        currency: "USD",
+        value: items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0),
+        items: items.map((i) => ({
+          item_id: i.product.node.id,
+          item_name: i.product.node.title,
+          price: parseFloat(i.price.amount),
+          quantity: i.quantity,
+        })),
+      });
+    } else if (cartOpenedAtRef.current > 0) {
+      trackEvent("cart_closed", {
+        cart_value: items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0),
+        cart_item_count: items.length,
+        duration_seconds: Math.round((Date.now() - cartOpenedAtRef.current) / 1000),
+      });
+    }
+  }, [isOpen, syncCart]);
 
   // Clear promo when cart empties
   useEffect(() => { if (items.length === 0) setAppliedPromo(null); }, [items.length]);
@@ -146,7 +168,17 @@ const CartDrawer = () => {
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center border border-border">
                           <button
-                            onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                            onClick={() => {
+                              const newQty = item.quantity - 1;
+                              trackEvent("cart_quantity_changed", {
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                old_quantity: item.quantity,
+                                new_quantity: newQty,
+                                direction: "decrease",
+                              });
+                              updateQuantity(item.variantId, newQty);
+                            }}
                             disabled={isLoading}
                             className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                             aria-label="Decrease quantity"
@@ -157,7 +189,17 @@ const CartDrawer = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                            onClick={() => {
+                              const newQty = item.quantity + 1;
+                              trackEvent("cart_quantity_changed", {
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                old_quantity: item.quantity,
+                                new_quantity: newQty,
+                                direction: "increase",
+                              });
+                              updateQuantity(item.variantId, newQty);
+                            }}
                             disabled={isLoading}
                             className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                             aria-label="Increase quantity"
@@ -166,7 +208,19 @@ const CartDrawer = () => {
                           </button>
                         </div>
                         <button
-                          onClick={() => removeItem(item.variantId)}
+                          onClick={() => {
+                            trackEvent("remove_from_cart", {
+                              currency: "USD",
+                              value: parseFloat(item.price.amount) * item.quantity,
+                              items: [{
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                price: parseFloat(item.price.amount),
+                                quantity: item.quantity,
+                              }],
+                            });
+                            removeItem(item.variantId);
+                          }}
                           disabled={isLoading}
                           className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                           aria-label="Remove item"
