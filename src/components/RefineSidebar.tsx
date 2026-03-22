@@ -3,6 +3,7 @@ import { SlidersHorizontal, ChevronDown, ChevronRight, Car } from "lucide-react"
 import type { AvailableOptions } from "@/hooks/useAvailableFilterOptions";
 import { CATEGORIES, MAKES, MODELS_BY_MAKE } from "@/hooks/useAvailableFilterOptions";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { trackEvent } from "@/lib/analytics";
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
 
