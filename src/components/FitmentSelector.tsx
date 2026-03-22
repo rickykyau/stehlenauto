@@ -104,7 +104,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
         <div className="relative border-b md:border-b-0 md:border-r border-border">
           <select
             value={year}
-            onChange={(e) => { setYear(e.target.value); setMake(""); setModel(""); }}
+            onChange={(e) => { const v = e.target.value; setYear(v); setMake(""); setModel(""); if (v) trackEvent("ymm_step_completed", { step: "year", value: v }); }}
             className="w-full h-12 px-4 bg-input text-foreground font-display text-sm tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
           >
             <option value="">YEAR</option>
