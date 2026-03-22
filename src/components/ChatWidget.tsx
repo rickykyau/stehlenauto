@@ -248,7 +248,13 @@ export default function ChatWidget() {
                 <Home className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => {
+                  trackEvent("chat_closed", {
+                    messages_sent: userMessageCount,
+                    duration_seconds: Math.round((Date.now() - chatOpenedAtRef.current) / 1000),
+                  });
+                  setIsOpen(false);
+                }}
                 className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close chat"
               >
