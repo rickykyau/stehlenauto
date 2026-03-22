@@ -607,6 +607,19 @@ serve(async (req) => {
     // Strip any remaining XML-like tool blocks
     cleanResponse = cleanResponse.replace(/<[\s\S]*?<\/antml:[^>]*>/gi, "").trim();
 
+    // Handle escalation
+    if (responseAction?.type === "escalate" && convId) {
+      await supabase.from("support_tickets").insert({
+        user_id: userId,
+        conversation_id: convId,
+        subject: responseAction.data?.subject || "Customer support request",
+        description: responseAction.data?.description || message,
+        status: "open",
+        priority: "medium",
+      });
+      await supabase.from("chat_conversations").update({ status: "escalated" }).eq("id", convId);
+    }
+
     // 8. Store assistant message
     if (convId) {
       await supabase.from("chat_messages").insert({
