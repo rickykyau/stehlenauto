@@ -21,6 +21,7 @@ const CartDrawer = () => {
   } = useCartStore();
 
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const cartOpenedAtRef = useRef<number>(0);
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = items.reduce((sum, i) => sum + parseFloat(i.price.amount) * i.quantity, 0);
