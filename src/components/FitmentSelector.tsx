@@ -129,7 +129,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
         <div className="relative">
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => { const v = e.target.value; setModel(v); if (v) trackEvent("ymm_step_completed", { step: "model", value: v }); }}
             disabled={!make}
             className="w-full h-12 px-4 bg-input text-foreground font-display text-sm tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
           >
