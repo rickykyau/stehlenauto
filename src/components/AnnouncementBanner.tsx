@@ -53,11 +53,16 @@ export default function AnnouncementBanner() {
 
   return (
     <div
+      ref={bannerRef}
       className="relative flex items-center justify-center px-10 py-2"
       style={{ backgroundColor: banner.bg_color, color: banner.text_color }}
     >
       {banner.link_url ? (
-        <a href={banner.link_url} className="hover:underline">{content}</a>
+        <a
+          href={banner.link_url}
+          className="hover:underline"
+          onClick={() => trackEvent("promotion_clicked", { promotion_id: "announcement_bar", promotion_name: banner.text, creative_slot: "announcement_bar" })}
+        >{content}</a>
       ) : (
         content
       )}
