@@ -8,14 +8,20 @@ import { trackEvent } from "@/lib/analytics";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 
+export interface CrossSellSource {
+  sourceItemId: string;
+  placement: "pdp" | "cart" | "post_add";
+}
+
 interface ProductCardProps {
   product: ShopifyProduct;
   compact?: boolean;
   listName?: string;
   index?: number;
+  crossSellSource?: CrossSellSource;
 }
 
-const ProductCard = ({ product, compact = false, listName, index }: ProductCardProps) => {
+const ProductCard = ({ product, compact = false, listName, index, crossSellSource }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
   const universal = isUniversalProduct(product);
@@ -44,6 +50,14 @@ const ProductCard = ({ product, compact = false, listName, index }: ProductCardP
         item_category: p.productType || undefined,
       }],
     });
+    if (crossSellSource) {
+      trackEvent("cross_sell_added", {
+        source_item_id: crossSellSource.sourceItemId,
+        added_item_id: p.id,
+        added_item_name: p.title,
+        placement: crossSellSource.placement,
+      });
+    }
     await addItem({
       product,
       variantId: firstVariant.id,
@@ -62,6 +76,14 @@ const ProductCard = ({ product, compact = false, listName, index }: ProductCardP
         item_name: p.title,
         price,
         index: index ?? 0,
+      });
+    }
+    if (crossSellSource) {
+      trackEvent("cross_sell_clicked", {
+        source_item_id: crossSellSource.sourceItemId,
+        clicked_item_id: p.id,
+        clicked_item_name: p.title,
+        placement: crossSellSource.placement,
       });
     }
   };

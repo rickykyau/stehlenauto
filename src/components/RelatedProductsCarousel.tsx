@@ -3,6 +3,7 @@ import ProductCard from "@/components/ProductCard";
 import HorizontalCarousel from "@/components/HorizontalCarousel";
 import { storefrontApiRequest, COLLECTION_PRODUCTS_QUERY, PRODUCTS_QUERY, MAKE_COLLECTION_MAP } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { trackEvent } from "@/lib/analytics";
 
 interface RelatedProductsCarouselProps {
   currentProductId: string;
@@ -15,6 +16,8 @@ const RelatedProductsCarousel = ({ currentProductId, currentProductHandle, curre
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
+  const viewedRef = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   const make = useMemo(() => {
     const tag = tags.find(t => t.toLowerCase().startsWith('make:'));
@@ -112,16 +115,43 @@ const RelatedProductsCarousel = ({ currentProductId, currentProductHandle, curre
     fetchRelated();
   }, [currentProductId, currentProductHandle, currentProductType, make, model, isUniversal]);
 
+  // IntersectionObserver for cross_sell_viewed
+  useEffect(() => {
+    if (viewedRef.current || products.length === 0 || !sectionRef.current) return;
+    const el = sectionRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewedRef.current) {
+          viewedRef.current = true;
+          trackEvent("cross_sell_viewed", {
+            source_item_id: currentProductId,
+            recommended_items: products.slice(0, 4).map(p => p.node.id),
+            placement: "pdp",
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [products, currentProductId]);
+
   if (loading || products.length === 0) return null;
 
   return (
-    <section className="border-b border-border">
+    <section ref={sectionRef} className="border-b border-border">
       <div className="px-4 lg:px-8 py-4 border-b border-border">
         <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">YOU MAY ALSO LIKE</h2>
       </div>
       <HorizontalCarousel>
         {products.map((p) => (
-          <ProductCard key={p.node.id} product={p} compact />
+          <ProductCard
+            key={p.node.id}
+            product={p}
+            compact
+            crossSellSource={{ sourceItemId: currentProductId, placement: "pdp" }}
+          />
         ))}
       </HorizontalCarousel>
     </section>
