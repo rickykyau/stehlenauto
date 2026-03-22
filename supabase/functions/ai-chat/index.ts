@@ -128,54 +128,117 @@ serve(async (req) => {
     // 4. Detect intent and search products
     const lowerMsg = message.toLowerCase();
     const needsProductSearch =
-      /(?:part|product|bull ?guard|grille|tonneau|headlight|hitch|running board|fender|side step|roof rack|chase rack|floor mat|bed mat|molle|storage|find|search|looking for|recommend|suggest|show me|what do you have|fits? my|compatible|work with|in stock|available)/i.test(message);
+      /(?:part|product|bull ?guard|bull ?bar|grille|tonneau|headlight|hitch|running board|fender|side step|roof rack|chase rack|floor mat|bed mat|molle|storage|find|search|looking for|recommend|suggest|show me|what do you have|fits? my|compatible|work with|in stock|available|front grill)/i.test(message);
 
     let productContext = "";
     let productsForResponse: any[] = [];
 
     if (needsProductSearch) {
-      // Build search query
-      let query = supabase
+      // --- Parse vehicle from message ---
+      const vehicleRegex = /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i;
+      const vehicleMatch2 = message.match(vehicleRegex);
+      let parsedVehicle = vehicleContext ? { ...vehicleContext } : null;
+      if (vehicleMatch2) {
+        parsedVehicle = {
+          year: vehicleMatch2[1],
+          make: vehicleMatch2[2],
+          model: vehicleMatch2[3].trim(),
+        };
+      } else {
+        const altMatch = message.match(/(?:is\s+a|have\s+a|drive\s+a|own\s+a|got\s+a)\s+(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i);
+        if (altMatch) {
+          parsedVehicle = { year: altMatch[1], make: altMatch[2], model: altMatch[3].trim() };
+        }
+      }
+
+      // --- Parse product category from message ---
+      const categoryMap: Array<{ patterns: RegExp; productType: string }> = [
+        { patterns: /bull\s*guard|bull\s*bar|grille\s*guard/i, productType: "bull guard" },
+        { patterns: /tonneau\s*cover|bed\s*cover/i, productType: "tonneau cover" },
+        { patterns: /headlight/i, productType: "headlight" },
+        { patterns: /trailer\s*hitch|(?:^|\s)hitch(?:\s|$)/i, productType: "trailer hitch" },
+        { patterns: /running\s*board|side\s*step/i, productType: "running board" },
+        { patterns: /front\s*grill|(?:^|\s)grill(?:e)?(?:\s|$)/i, productType: "grill" },
+        { patterns: /floor\s*mat/i, productType: "floor mat" },
+        { patterns: /bed\s*mat/i, productType: "bed mat" },
+        { patterns: /roof\s*rack/i, productType: "roof rack" },
+        { patterns: /chase\s*rack|sport\s*bar/i, productType: "chase rack" },
+        { patterns: /molle\s*panel/i, productType: "molle" },
+        { patterns: /fender\s*flare/i, productType: "fender flare" },
+        { patterns: /under.?seat\s*storage/i, productType: "under seat storage" },
+      ];
+
+      let detectedCategory: string | null = null;
+      for (const cat of categoryMap) {
+        if (cat.patterns.test(message)) {
+          detectedCategory = cat.productType;
+          break;
+        }
+      }
+
+      // --- Query products_cache ---
+      const { data: products } = await supabase
         .from("products_cache")
         .select("id, title, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
-        .eq("status", "active");
-
-      // Extract search terms
-      const searchTerms = message.replace(/[?!.,]/g, "").trim();
-
-      // Try text search on title
-      const { data: products } = await query.limit(50);
+        .eq("status", "active")
+        .limit(200);
 
       if (products?.length) {
-        // Filter by keyword matching
-        const keywords = searchTerms.toLowerCase().split(/\s+/).filter(
-          (w: string) => w.length > 2 && !["the", "for", "and", "you", "have", "any", "can", "get", "what", "does", "this", "that", "with", "fit", "fits", "will", "need", "want", "like", "are", "there"].includes(w)
-        );
-
-        let filtered = products;
-
-        if (keywords.length > 0) {
-          filtered = products.filter((p: any) => {
-            const searchable = `${p.title} ${p.product_type || ""} ${(p.tags || []).join(" ")} ${p.cb_item_name || ""} ${p.part_number || ""}`.toLowerCase();
-            return keywords.some((kw: string) => searchable.includes(kw));
+        // Filter by category (product_type)
+        let categoryFiltered = products;
+        if (detectedCategory) {
+          categoryFiltered = products.filter((p: any) => {
+            const pt = (p.product_type || "").toLowerCase();
+            const title = (p.title || "").toLowerCase();
+            const tagsStr = (p.tags || []).join(" ").toLowerCase();
+            return pt.includes(detectedCategory!.toLowerCase()) || title.includes(detectedCategory!.toLowerCase()) || tagsStr.includes(detectedCategory!.toLowerCase());
           });
         }
 
-        // Filter by vehicle if mentioned
-        const vehicleToCheck = vehicleContext;
-        if (vehicleToCheck && filtered.length > 0) {
-          const vehicleFiltered = filtered.filter((p: any) => {
+        // Filter by vehicle (tags)
+        const veh = parsedVehicle;
+        let vehicleAndCategoryFiltered: any[] = [];
+
+        if (veh) {
+          const makeLower = veh.make.toLowerCase();
+          const modelNorm = veh.model.replace(/\s+/g, "-").toLowerCase();
+          const modelAlt = modelNorm.replace(/-/g, "");
+
+          vehicleAndCategoryFiltered = categoryFiltered.filter((p: any) => {
             const tags = (p.tags || []).map((t: string) => t.toLowerCase());
-            const makeMatch = tags.some((t: string) => t.includes(`make:${vehicleToCheck.make.toLowerCase()}`) || t.includes(vehicleToCheck.make.toLowerCase()));
             const isUniversal = tags.some((t: string) => t.includes("universal"));
-            return makeMatch || isUniversal;
+            const makeMatch = tags.some((t: string) => t === `make:${makeLower}` || t === makeLower);
+            const modelMatch = tags.some((t: string) => {
+              const tNorm = t.replace(/\s+/g, "-");
+              return t === `model:${modelNorm}` || tNorm === `model:${modelNorm}` || t === `model:${modelAlt}` || tNorm.includes(modelNorm) || t.includes(modelAlt);
+            });
+            const yearMatch = !veh.year || tags.some((t: string) => t === `year:${veh.year}` || t === veh.year);
+            return isUniversal || (makeMatch && modelMatch && yearMatch);
           });
-          if (vehicleFiltered.length > 0) {
-            filtered = vehicleFiltered;
-          }
         }
 
-        // Limit to 10 results
+        let filtered: any[];
+        let isExactMatch = true;
+
+        if (veh && vehicleAndCategoryFiltered.length > 0) {
+          filtered = vehicleAndCategoryFiltered;
+        } else if (veh && detectedCategory && vehicleAndCategoryFiltered.length === 0 && categoryFiltered.length > 0) {
+          filtered = categoryFiltered.slice(0, 10);
+          isExactMatch = false;
+        } else if (detectedCategory && categoryFiltered.length > 0) {
+          filtered = categoryFiltered;
+        } else {
+          const keywords = lowerMsg.split(/\s+/).filter(
+            (w: string) => w.length > 2 && !["the", "for", "and", "you", "have", "any", "can", "get", "what", "does", "this", "that", "with", "fit", "fits", "will", "need", "want", "like", "are", "there", "show"].includes(w)
+          );
+          filtered = keywords.length > 0
+            ? products.filter((p: any) => {
+                const searchable = `${p.title} ${p.product_type || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
+                return keywords.some((kw: string) => searchable.includes(kw));
+              })
+            : [];
+        }
+
         filtered = filtered.slice(0, 10);
 
         if (filtered.length > 0) {
@@ -186,7 +249,7 @@ serve(async (req) => {
             const firstVariant = variants[0] || {};
             const price = firstVariant.price || "0.00";
             const inStock = firstVariant.inventory_quantity > 0 || firstVariant.available !== false;
-            const handle = p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+            const handle = (p.metafields?.handle) || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
             return {
               id: p.shopify_product_id,
@@ -203,9 +266,13 @@ serve(async (req) => {
             };
           });
 
-          productContext = `\n\nProduct search results from database:\n${JSON.stringify(productsForResponse, null, 2)}`;
+          if (!isExactMatch && veh) {
+            productContext = `\n\nNo exact products found for ${veh.year || ""} ${veh.make} ${veh.model} in the "${detectedCategory}" category. These products match the category but may NOT fit this vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer we don't have exact matches for their vehicle and clearly note these may not fit.`;
+          } else {
+            productContext = `\n\nProduct search results from database:\n${JSON.stringify(productsForResponse, null, 2)}`;
+          }
         } else {
-          productContext = "\n\nNo products found matching the search criteria.";
+          productContext = `\n\nNo products found${veh ? ` for ${veh.year || ""} ${veh.make} ${veh.model}` : ""}${detectedCategory ? ` in "${detectedCategory}" category` : ""}. Tell the customer honestly.`;
         }
       }
     }
