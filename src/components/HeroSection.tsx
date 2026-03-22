@@ -52,6 +52,30 @@ const HeroSection = () => {
   const headlineLines = slide.headline.split("\\n").length > 1
     ? slide.headline.split("\\n")
     : slide.headline.split("\n");
+  const viewedRef = useRef(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const promoName = headlineLines.join(" ").trim();
+
+  useEffect(() => {
+    if (viewedRef.current || !sectionRef.current) return;
+    const el = sectionRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewedRef.current) {
+          viewedRef.current = true;
+          trackEvent("promotion_viewed", { promotion_id: "hero_banner", promotion_name: promoName, creative_slot: "hero" });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [promoName]);
+
+  const trackHeroClick = () => {
+    trackEvent("promotion_clicked", { promotion_id: "hero_banner", promotion_name: promoName, creative_slot: "hero" });
+  };
 
   return (
     <section className="relative border-b border-border overflow-hidden">
