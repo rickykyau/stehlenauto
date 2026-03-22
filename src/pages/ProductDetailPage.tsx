@@ -341,7 +341,10 @@ const ProductTemplate = () => {
                 {images.map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setSelectedImage(i)}
+                    onClick={() => {
+                      setSelectedImage(i);
+                      trackEvent("product_image_viewed", { item_id: product.id, image_index: i, action: "click" });
+                    }}
                     className={`w-16 h-16 border-2 overflow-hidden transition-colors shrink-0 ${
                       selectedImage === i ? "border-primary" : "border-border opacity-60 hover:opacity-100"
                     }`}
@@ -355,7 +358,10 @@ const ProductTemplate = () => {
             {/* Main Image */}
             <div
               className="relative flex-1 bg-card cursor-pointer group max-h-[500px] overflow-hidden"
-              onClick={() => setLightboxOpen(true)}
+              onClick={() => {
+                setLightboxOpen(true);
+                trackEvent("product_image_viewed", { item_id: product.id, image_index: selectedImage, action: "zoom" });
+              }}
             >
               <img
                 src={images[selectedImage]?.node?.url || "/placeholder.svg"}
@@ -425,7 +431,12 @@ const ProductTemplate = () => {
                         return (
                           <button
                             key={value}
-                            onClick={() => variantIdx >= 0 && setSelectedVariantIdx(variantIdx)}
+                            onClick={() => {
+                              if (variantIdx >= 0) {
+                                setSelectedVariantIdx(variantIdx);
+                                trackEvent("product_variant_selected", { item_id: product.id, variant_type: option.name, variant_value: value });
+                              }
+                            }}
                             className={`px-3 py-1.5 border font-display text-[10px] tracking-wider transition-colors ${
                               isSelected
                                 ? "border-primary bg-primary/10 text-primary"
@@ -503,7 +514,10 @@ const ProductTemplate = () => {
               {tabs.map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    trackEvent("product_tab_clicked", { item_id: product.id, tab_name: TAB_LABELS[tab].toLowerCase().replace(/\s+/g, "_") });
+                  }}
                   className={`px-4 py-2.5 font-display text-[10px] tracking-widest whitespace-nowrap transition-colors border-b-2 -mb-px ${
                     activeTab === tab
                       ? "border-primary text-primary"
