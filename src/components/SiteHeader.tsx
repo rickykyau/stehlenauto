@@ -540,6 +540,7 @@ const SiteHeader = () => {
                 key={cat.handle}
                 to={`/collections/all?category=${cat.handle}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-accent/50 transition-colors group"
+                onClick={() => trackEvent("nav_menu_click", { menu_item: cat.label, menu_level: "submenu", page_location: window.location.pathname })}
               >
                 <span className="font-body text-sm text-foreground group-hover:text-primary transition-colors">{cat.label}</span>
               </Link>
