@@ -2,6 +2,7 @@
  * SHOPIFY TEMPLATE: templates/collection.liquid
  */
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
@@ -206,6 +207,7 @@ const CollectionTemplate = () => {
     category: null,
   });
   const vehicleSyncedRef = useRef(false);
+  const viewItemListFiredRef = useRef<string | null>(null);
   const lastCategoryParam = useRef<string | null>(null);
   const lastMakeParam = useRef<string | null>(null);
 
@@ -359,6 +361,24 @@ const CollectionTemplate = () => {
     : vehicleProducts;
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
+
+  // Fire view_item_list once per unique list
+  const listName = title || "All Products";
+  useEffect(() => {
+    if (!isLoading && displayProducts.length > 0 && viewItemListFiredRef.current !== listName) {
+      viewItemListFiredRef.current = listName;
+      trackEvent("view_item_list", {
+        item_list_name: listName,
+        items: displayProducts.slice(0, 5).map((product, index) => ({
+          item_id: product.node.id,
+          item_name: product.node.title,
+          item_category: listName,
+          price: parseFloat(product.node.priceRange.minVariantPrice.amount),
+          index,
+        })),
+      });
+    }
+  }, [isLoading, displayProducts, listName]);
 
   // Reset on query/sort change
   const queryKey = `${makeCollectionHandle}-${categoryProductQuery}-${sortKey}-${reverse}-${filters.make}-${filters.category}`;
@@ -633,8 +653,8 @@ const CollectionTemplate = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-fade-in">
-                {vehicleProducts.map((product) => (
-                  <ProductCard key={product.node.id} product={product} />
+                {vehicleProducts.map((product, index) => (
+                  <ProductCard key={product.node.id} product={product} listName={listName} index={index} />
                 ))}
                 {includeUniversal && universalProducts.length > 0 && (
                   <>
@@ -645,8 +665,8 @@ const CollectionTemplate = () => {
                         </span>
                       </div>
                     )}
-                    {universalProducts.map((product) => (
-                      <ProductCard key={product.node.id} product={product} />
+                    {universalProducts.map((product, uIdx) => (
+                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + uIdx} />
                     ))}
                   </>
                 )}
