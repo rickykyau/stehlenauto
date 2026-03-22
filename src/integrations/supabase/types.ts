@@ -317,6 +317,7 @@ export type Database = {
           cb_item_name: string | null
           created_at: string
           fitment_vehicles: Json
+          handle: string | null
           id: string
           images: Json
           last_synced_at: string
@@ -335,6 +336,7 @@ export type Database = {
           cb_item_name?: string | null
           created_at?: string
           fitment_vehicles?: Json
+          handle?: string | null
           id?: string
           images?: Json
           last_synced_at?: string
@@ -353,6 +355,7 @@ export type Database = {
           cb_item_name?: string | null
           created_at?: string
           fitment_vehicles?: Json
+          handle?: string | null
           id?: string
           images?: Json
           last_synced_at?: string
