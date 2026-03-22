@@ -307,6 +307,11 @@ export default function ChatWidget() {
                           <div className="flex gap-1.5">
                             <button
                               onClick={() => {
+                                trackEvent("chat_product_clicked", {
+                                  item_id: product.id,
+                                  item_name: product.title,
+                                  source: "chat_widget",
+                                });
                                 navigate(`/products/${product.handle}`);
                                 setIsOpen(false);
                               }}
