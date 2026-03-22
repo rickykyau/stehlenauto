@@ -42,7 +42,11 @@ const SiteFooter = () => {
               { label: "Shipping Policy", to: "/shipping-policy" },
             ].map((link) => (
               <li key={link.label}>
-                <Link to={link.to} className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors">{link.label}</Link>
+                <Link
+                  to={link.to}
+                  className="font-body text-sm text-secondary-foreground hover:text-primary transition-colors"
+                  onClick={() => trackEvent("footer_link_clicked", { link_text: link.label, link_url: link.to })}
+                >{link.label}</Link>
               </li>
             ))}
           </ul>
