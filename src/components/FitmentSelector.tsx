@@ -48,33 +48,15 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
     };
   }, [year, make, model]);
 
-  // Build tag-based query for counting when year+make are set
-  const countQuery = useMemo(() => {
-    if (!year || !make) return undefined;
-    return buildYMMTagQuery({ year, make });
-  }, [year, make]);
+  // Build full YMM tag query when all three are selected for exact count
+  const fullYMMQuery = useMemo(() => {
+    if (!year || !make || !model) return undefined;
+    return buildYMMTagQuery({ year, make, model });
+  }, [year, make, model]);
 
-  // Fetch products matching year+make via tags for counting
-  const { data } = useShopifyProducts({ first: 250, query: countQuery });
-  const allProducts = data?.products || [];
-
-  // Compute model counts using tag matching
-  const modelCounts = useMemo(() => {
-    if (!year || !make || allProducts.length === 0) return new Map<string, number>();
-    const counts = new Map<string, number>();
-    const models = MODELS[make] || [];
-    for (const m of models) {
-      const modelLower = m.toLowerCase();
-      const modelNoHyphen = m.replace(/-/g, '').toLowerCase();
-      const count = allProducts.filter((p) => {
-        const tags = (p.node.tags || []).map(t => t.toLowerCase());
-        // Check if product has this model tag (with or without hyphen)
-        return tags.includes(modelLower) || tags.includes(modelNoHyphen);
-      }).length;
-      counts.set(m, count);
-    }
-    return counts;
-  }, [year, make, allProducts]);
+  // Fetch products matching full YMM for accurate count
+  const { data } = useShopifyProducts({ first: 250, query: fullYMMQuery });
+  const matchCount = data?.products?.length ?? 0;
 
   const handleSubmit = () => {
     if (year && make && model) {
@@ -145,8 +127,8 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       >
         <div className="flex items-center justify-center gap-2">
           <Shield className="w-4 h-4" />
-          {year && make && model && modelCounts.get(model) !== undefined
-            ? `FIND PARTS (${modelCounts.get(model)} part${modelCounts.get(model) !== 1 ? "s" : ""})`
+          {year && make && model && matchCount > 0
+            ? `FIND PARTS (${matchCount} part${matchCount !== 1 ? "s" : ""})`
             : "FIND PARTS"}
         </div>
       </button>

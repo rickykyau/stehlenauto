@@ -389,11 +389,17 @@ serve(async (req) => {
             return bQty - aQty;
           });
 
+          const totalMatched = vehicleMatched.length;
           const finalProducts = vehicleMatched.slice(0, 8);
 
           if (finalProducts.length > 0) {
             productsForResponse = finalProducts.map(buildProductCard);
-            productContext = `\n\nShowing ALL products matching ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model} (sorted by availability, top ${finalProducts.length}):\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Show these products immediately. Do NOT ask any more questions. After showing them, offer: "Want to see more in a specific category like bull guards or tonneau covers?"`;
+            const vehicleSlug = `${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}`.trim();
+            const viewAllLink = `/collections/all`;
+            const totalNote = totalMatched > finalProducts.length
+              ? `\n\nIMPORTANT: After showing the products, add this message: "Showing ${finalProducts.length} of ${totalMatched} parts for your ${vehicleSlug}. [View all ${totalMatched} parts →](${viewAllLink})"`
+              : "";
+            productContext = `\n\nShowing ALL products matching ${vehicleSlug} (sorted by availability, top ${finalProducts.length} of ${totalMatched} total):\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Show these products immediately. Do NOT ask any more questions. After showing them, offer: "Want to see more in a specific category like bull guards or tonneau covers?"${totalNote}`;
           } else {
             // Broaden: search by make+model only, ignoring year
             const broadMatched = products.filter((p: any) => {
@@ -470,10 +476,15 @@ serve(async (req) => {
 
           if (finalProducts.length > 0) {
             productsForResponse = finalProducts.map(buildProductCard);
+            const totalAvailable = parsedVehicle ? (isExactMatch ? vehicleMatched.length : categoryFiltered.length) : categoryFiltered.length;
+            const vehicleSlug = parsedVehicle ? `${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}`.trim() : "";
+            const totalNote = totalAvailable > finalProducts.length && parsedVehicle
+              ? `\n\nAfter showing products, add: "Showing ${finalProducts.length} of ${totalAvailable} ${detectedCategory.label} for your ${vehicleSlug}. [View all →](/collections/all)"`
+              : "";
             if (!isExactMatch && parsedVehicle) {
-              productContext = `\n\nNo exact ${detectedCategory.label} found for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. These are our ${detectedCategory.label} but may NOT fit this specific vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer "We don't currently have ${detectedCategory.label} that fits your ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. Would you like to see our full ${detectedCategory.label} selection or try a different part type?" and show the products with a clear note they may not fit.`;
+              productContext = `\n\nNo exact ${detectedCategory.label} found for ${vehicleSlug}. These are our ${detectedCategory.label} but may NOT fit this specific vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer "We don't currently have ${detectedCategory.label} that fits your ${vehicleSlug}. Would you like to see our full ${detectedCategory.label} selection or try a different part type?" and show the products with a clear note they may not fit.`;
             } else {
-              productContext = `\n\nProduct search results (matching${parsedVehicle ? ` ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model} +` : ""} ${detectedCategory.label}):\n${JSON.stringify(productsForResponse, null, 2)}`;
+              productContext = `\n\nProduct search results (matching${parsedVehicle ? ` ${vehicleSlug} +` : ""} ${detectedCategory.label}):\n${JSON.stringify(productsForResponse, null, 2)}${totalNote}`;
             }
           } else {
             productContext = `\n\nNo ${detectedCategory.label} products found${parsedVehicle ? ` for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}` : ""}. Tell the customer honestly and ask if they'd like to try a different category.`;
