@@ -220,7 +220,7 @@ const SiteHeader = () => {
             <p className="font-display text-[10px] tracking-widest text-muted-foreground">NO RESULTS FOUND</p>
           </div>
         ) : (
-          searchResults.map((product) => {
+          searchResults.map((product, index) => {
             const p = product.node;
             const image = p.images.edges[0]?.node?.url || "/placeholder.svg";
             const price = parseFloat(p.priceRange.minVariantPrice.amount);
@@ -229,7 +229,15 @@ const SiteHeader = () => {
                 key={p.id}
                 to={`/products/${p.handle}`}
                 className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors border-b border-border last:border-b-0"
-                onClick={() => setSearchDropdownOpen(false)}
+                onClick={() => {
+                  trackEvent("search_result_click", {
+                    search_term: searchQuery.trim().toLowerCase(),
+                    item_id: p.id,
+                    item_name: p.title,
+                    position: index + 1,
+                  });
+                  setSearchDropdownOpen(false);
+                }}
               >
                 <img src={image} alt={p.title} className="w-12 h-12 object-cover bg-muted shrink-0" loading="lazy" />
                 <div className="flex-1 min-w-0">
