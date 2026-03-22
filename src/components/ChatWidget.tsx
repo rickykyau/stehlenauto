@@ -276,7 +276,22 @@ export default function ChatWidget() {
                         : "bg-secondary text-secondary-foreground"
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                          ul: ({ children }) => <ul className="list-disc pl-4 mb-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-4 mb-1">{children}</ol>,
+                          li: ({ children }) => <li className="mb-0.5">{children}</li>,
+                          a: ({ href, children }) => <a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
 
