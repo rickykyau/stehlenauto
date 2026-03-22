@@ -21,7 +21,7 @@ interface ProductCardProps {
   crossSellSource?: CrossSellSource;
 }
 
-const ProductCard = ({ product, compact = false, listName, index }: ProductCardProps) => {
+const ProductCard = ({ product, compact = false, listName, index, crossSellSource }: ProductCardProps) => {
   const { addItem, isLoading } = useCartStore();
   const p = product.node;
   const universal = isUniversalProduct(product);
