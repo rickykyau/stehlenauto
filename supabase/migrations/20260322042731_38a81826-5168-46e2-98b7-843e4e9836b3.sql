@@ -1,0 +1,1 @@
+UPDATE homepage_content SET content = jsonb_set(content::jsonb, '{secondary_button_link}', '"/collections/all?sort_by=best-selling"'::jsonb) WHERE id = '1cdb232d-e1c0-408d-92c5-69855da95064';
