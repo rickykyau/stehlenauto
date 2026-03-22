@@ -198,7 +198,11 @@ export default function ChatWidget() {
       {/* Floating button */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true);
+            chatOpenedAtRef.current = Date.now();
+            trackEvent("chat_opened", { page_location: window.location.pathname });
+          }}
           className="fixed bottom-6 right-6 z-[60] w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg flex items-center justify-center hover:brightness-110 transition-all btn-press group"
           aria-label="Open chat"
         >
