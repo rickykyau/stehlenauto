@@ -8,11 +8,17 @@ import { trackEvent } from "@/lib/analytics";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 
+export interface CrossSellSource {
+  sourceItemId: string;
+  placement: "pdp" | "cart" | "post_add";
+}
+
 interface ProductCardProps {
   product: ShopifyProduct;
   compact?: boolean;
   listName?: string;
   index?: number;
+  crossSellSource?: CrossSellSource;
 }
 
 const ProductCard = ({ product, compact = false, listName, index }: ProductCardProps) => {
