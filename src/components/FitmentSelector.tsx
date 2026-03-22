@@ -179,6 +179,8 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       {(year || make || model || savedVehicle) && (
         <button
           onClick={() => {
+            trackEvent("ymm_cleared", { had_vehicle: !!(year && make && model) });
+            completedRef.current = true; // prevent abandonment fire on clear
             setYear("");
             setMake("");
             setModel("");
