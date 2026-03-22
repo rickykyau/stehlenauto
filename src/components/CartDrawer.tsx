@@ -168,7 +168,17 @@ const CartDrawer = () => {
                       <div className="flex items-center gap-3 mt-2">
                         <div className="flex items-center border border-border">
                           <button
-                            onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
+                            onClick={() => {
+                              const newQty = item.quantity - 1;
+                              trackEvent("cart_quantity_changed", {
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                old_quantity: item.quantity,
+                                new_quantity: newQty,
+                                direction: "decrease",
+                              });
+                              updateQuantity(item.variantId, newQty);
+                            }}
                             disabled={isLoading}
                             className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                             aria-label="Decrease quantity"
@@ -179,7 +189,17 @@ const CartDrawer = () => {
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
+                            onClick={() => {
+                              const newQty = item.quantity + 1;
+                              trackEvent("cart_quantity_changed", {
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                old_quantity: item.quantity,
+                                new_quantity: newQty,
+                                direction: "increase",
+                              });
+                              updateQuantity(item.variantId, newQty);
+                            }}
                             disabled={isLoading}
                             className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
                             aria-label="Increase quantity"
@@ -188,7 +208,19 @@ const CartDrawer = () => {
                           </button>
                         </div>
                         <button
-                          onClick={() => removeItem(item.variantId)}
+                          onClick={() => {
+                            trackEvent("remove_from_cart", {
+                              currency: "USD",
+                              value: parseFloat(item.price.amount) * item.quantity,
+                              items: [{
+                                item_id: item.product.node.id,
+                                item_name: item.product.node.title,
+                                price: parseFloat(item.price.amount),
+                                quantity: item.quantity,
+                              }],
+                            });
+                            removeItem(item.variantId);
+                          }}
                           disabled={isLoading}
                           className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
                           aria-label="Remove item"
