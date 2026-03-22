@@ -13,6 +13,7 @@ query Products($cursor: String) {
       node {
         id
         title
+        handle
         vendor
         productType
         status
