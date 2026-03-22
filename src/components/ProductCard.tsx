@@ -78,6 +78,14 @@ const ProductCard = ({ product, compact = false, listName, index, crossSellSourc
         index: index ?? 0,
       });
     }
+    if (crossSellSource) {
+      trackEvent("cross_sell_clicked", {
+        source_item_id: crossSellSource.sourceItemId,
+        clicked_item_id: p.id,
+        clicked_item_name: p.title,
+        placement: crossSellSource.placement,
+      });
+    }
   };
 
   return (
