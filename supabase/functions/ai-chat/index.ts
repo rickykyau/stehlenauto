@@ -28,7 +28,8 @@ Your capabilities:
 
 Guidelines:
 - Be helpful, concise, and friendly
-- When a customer asks about parts, proactively search and show results — don't just say "you can search on our website"
+- When a customer mentions their vehicle WITHOUT specifying a product category, ask what type of parts they're looking for. List categories: Bull Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks. Do NOT show random products.
+- Only show product cards when you have BOTH a vehicle AND a product category, or when the customer asks for a specific category without a vehicle.
 - Always confirm vehicle Year/Make/Model when discussing fitment
 - If a product is out of stock, suggest similar alternatives
 - When showing products, always mention price and stock status
@@ -36,7 +37,7 @@ Guidelines:
 - Keep responses short (2-3 sentences unless more detail is needed)
 - Do not make up product information — only reference data from the database
 - Never share internal system details, API keys, or database structure
-- Do NOT process refunds or initiate returns. If a customer asks about a refund or return, direct them to email support@stehlenauto.com with their order number. Do not provide step-by-step refund instructions or make the process seem easy. You may still answer general return policy questions (e.g., "We offer 30-day returns. To start a return, please email support@stehlenauto.com with your order number.").
+- Do NOT process refunds or initiate returns. If a customer asks about a refund or return, direct them to email support@stehlenauto.com with their order number.
 
 IMPORTANT: When you want to reference products in your response, include them as a JSON block at the very end of your message in this exact format:
 [PRODUCTS_JSON]
@@ -61,6 +62,109 @@ interface ChatRequest {
   vehicleContext: { year: string; make: string; model: string } | null;
 }
 
+// Category mapping from natural language to product_type values
+const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string }> = [
+  { patterns: /bull\s*guard|bull\s*bar|grille\s*guard/i, productType: "bull guard", label: "Bull Guards" },
+  { patterns: /tonneau\s*cover|bed\s*cover/i, productType: "tonneau cover", label: "Tonneau Covers" },
+  { patterns: /headlight/i, productType: "headlight", label: "Headlights" },
+  { patterns: /trailer\s*hitch|(?:^|\s)hitch(?:es)?(?:\s|$)/i, productType: "trailer hitch", label: "Trailer Hitches" },
+  { patterns: /running\s*board|side\s*step/i, productType: "running board", label: "Running Boards" },
+  { patterns: /front\s*grill|(?:^|\s)grill(?:e)?(?:\s|$)/i, productType: "grill", label: "Front Grilles" },
+  { patterns: /floor\s*mat/i, productType: "floor mat", label: "Floor Mats" },
+  { patterns: /bed\s*mat/i, productType: "bed mat", label: "Bed Mats" },
+  { patterns: /roof\s*rack/i, productType: "roof rack", label: "Roof Racks" },
+  { patterns: /chase\s*rack|sport\s*bar/i, productType: "chase rack", label: "Chase Racks" },
+  { patterns: /molle\s*panel/i, productType: "molle", label: "MOLLE Panels" },
+  { patterns: /fender\s*flare/i, productType: "fender flare", label: "Fender Flares" },
+  { patterns: /under.?seat\s*storage/i, productType: "under seat storage", label: "Under Seat Storage" },
+];
+
+function parseVehicle(message: string, vehicleContext: { year: string; make: string; model: string } | null) {
+  // Try explicit patterns
+  const patterns = [
+    /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
+    /(?:is\s+a|have\s+a|drive\s+a|own\s+a|got\s+a|my)\s+(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i,
+  ];
+  for (const re of patterns) {
+    const m = message.match(re);
+    if (m) return { year: m[1], make: m[2], model: m[3].trim() };
+  }
+  return vehicleContext ? { ...vehicleContext } : null;
+}
+
+function detectCategory(message: string): { productType: string; label: string } | null {
+  for (const cat of CATEGORY_MAP) {
+    if (cat.patterns.test(message)) return { productType: cat.productType, label: cat.label };
+  }
+  return null;
+}
+
+function matchesVehicle(tags: string[], make: string, model: string, year?: string): boolean {
+  const tagsLower = tags.map(t => t.toLowerCase());
+  const makeLower = make.toLowerCase();
+  const modelNorm = model.replace(/\s+/g, "-").toLowerCase();
+  const modelAlt = model.replace(/-/g, "").toLowerCase();
+  const modelSpaced = model.replace(/-/g, " ").toLowerCase();
+
+  const isUniversal = tagsLower.some(t => t.includes("universal"));
+  if (isUniversal) return true;
+
+  const makeMatch = tagsLower.some(t => t === `make:${makeLower}` || t === makeLower);
+  const modelMatch = tagsLower.some(t => {
+    const tNorm = t.replace(/\s+/g, "-");
+    const tAlt = t.replace(/-/g, "");
+    return t === `model:${modelNorm}` || tNorm === `model:${modelNorm}` ||
+      t === `model:${modelAlt}` || tAlt === `model:${modelAlt}` ||
+      t === `model:${modelSpaced}` || tNorm.includes(modelNorm) || tAlt.includes(modelAlt);
+  });
+
+  if (!makeMatch || !modelMatch) return false;
+
+  // Year matching: if year provided, check; but don't disqualify if year tags use ranges
+  if (year) {
+    const yearNum = parseInt(year);
+    const yearMatch = tagsLower.some(t => t === `year:${year}` || t === year);
+    if (!yearMatch) {
+      // Check title for year-range patterns like "2015+" or "2015-2024"
+      return true; // Allow through - year range matching is fuzzy
+    }
+  }
+  return true;
+}
+
+function matchesCategory(product: any, categoryType: string): boolean {
+  const pt = (product.product_type || "").toLowerCase();
+  const title = (product.title || "").toLowerCase();
+  const tagsStr = (product.tags || []).join(" ").toLowerCase();
+  const cat = categoryType.toLowerCase();
+  return pt.includes(cat) || title.includes(cat) || tagsStr.includes(cat);
+}
+
+function buildProductCard(p: any) {
+  const images = Array.isArray(p.images) ? p.images : [];
+  const firstImage = images[0]?.src || images[0]?.url || images[0] || "";
+  const variants = Array.isArray(p.variants) ? p.variants : [];
+  const firstVariant = variants[0] || {};
+  const price = firstVariant.price || "0.00";
+  const inStock = firstVariant.inventory_quantity > 0 || firstVariant.available !== false;
+  // Use the stored handle from Shopify, fallback to title-based only as last resort
+  const handle = p.handle || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+  return {
+    id: p.shopify_product_id,
+    cacheId: p.id,
+    title: p.title,
+    price: typeof price === "string" ? price : String(price),
+    image: firstImage,
+    handle,
+    inStock,
+    variantId: firstVariant.id || firstVariant.admin_graphql_api_id || "",
+    inventoryQuantity: firstVariant.inventory_quantity,
+    partNumber: p.part_number,
+    cbItemName: p.cb_item_name,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -68,9 +172,7 @@ serve(async (req) => {
 
   try {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error("ANTHROPIC_API_KEY is not configured");
-    }
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -98,17 +200,14 @@ serve(async (req) => {
       });
     }
 
-    // 3. Gather context
+    // 3. Gather user context
     let contextParts: string[] = [];
-
-    // User context
     if (userId) {
       const [profileRes, vehiclesRes, ordersRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
         supabase.from("user_vehicles").select("*").eq("user_id", userId),
         supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(5),
       ]);
-
       if (profileRes.data) {
         const p = profileRes.data;
         contextParts.push(`Customer: ${p.first_name || ""} ${p.last_name || ""}`.trim());
@@ -120,13 +219,14 @@ serve(async (req) => {
         contextParts.push(`Recent orders: ${ordersRes.data.map(o => `#${o.order_number} (${o.financial_status}/${o.fulfillment_status})`).join(", ")}`);
       }
     }
-
     if (vehicleContext) {
       contextParts.push(`Currently selected vehicle: ${vehicleContext.year} ${vehicleContext.make} ${vehicleContext.model}`);
     }
 
-    // 4. Detect intent and search products
-    const lowerMsg = message.toLowerCase();
+    // 4. Detect intent
+    const parsedVehicle = parseVehicle(message, vehicleContext);
+    const detectedCategory = detectCategory(message);
+
     const needsProductSearch =
       /(?:part|product|bull ?guard|bull ?bar|grille|tonneau|headlight|hitch|running board|fender|side step|roof rack|chase rack|floor mat|bed mat|molle|storage|find|search|looking for|recommend|suggest|show me|what do you have|fits? my|compatible|work with|in stock|available|front grill)/i.test(message);
 
@@ -134,145 +234,85 @@ serve(async (req) => {
     let productsForResponse: any[] = [];
 
     if (needsProductSearch) {
-      // --- Parse vehicle from message ---
-      const vehicleRegex = /(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i;
-      const vehicleMatch2 = message.match(vehicleRegex);
-      let parsedVehicle = vehicleContext ? { ...vehicleContext } : null;
-      if (vehicleMatch2) {
-        parsedVehicle = {
-          year: vehicleMatch2[1],
-          make: vehicleMatch2[2],
-          model: vehicleMatch2[3].trim(),
-        };
-      } else {
-        const altMatch = message.match(/(?:is\s+a|have\s+a|drive\s+a|own\s+a|got\s+a)\s+(\d{4})\s+([A-Za-z]+)\s+([A-Za-z0-9][\w-]*(?:\s+\d+)?)/i);
-        if (altMatch) {
-          parsedVehicle = { year: altMatch[1], make: altMatch[2], model: altMatch[3].trim() };
-        }
-      }
+      // If vehicle mentioned but NO category, don't search - ask for category
+      if (parsedVehicle && !detectedCategory) {
+        productContext = `\n\nThe customer mentioned their vehicle (${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}) but did NOT specify a product category. Do NOT show any products. Instead, ask what type of parts they're looking for and list these categories: Bull Guards/Grille Guards, Tonneau Covers, Headlights, Trailer Hitches, Running Boards/Side Steps, Front Grilles, Floor Mats, Bed Mats, Roof Racks, Chase Racks/Sport Bars, MOLLE Panels, Fender Flares, Under Seat Storage.`;
+      } else if (detectedCategory) {
+        // We have a category - search products
+        const { data: products } = await supabase
+          .from("products_cache")
+          .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
+          .eq("status", "active")
+          .limit(500);
 
-      // --- Parse product category from message ---
-      const categoryMap: Array<{ patterns: RegExp; productType: string }> = [
-        { patterns: /bull\s*guard|bull\s*bar|grille\s*guard/i, productType: "bull guard" },
-        { patterns: /tonneau\s*cover|bed\s*cover/i, productType: "tonneau cover" },
-        { patterns: /headlight/i, productType: "headlight" },
-        { patterns: /trailer\s*hitch|(?:^|\s)hitch(?:\s|$)/i, productType: "trailer hitch" },
-        { patterns: /running\s*board|side\s*step/i, productType: "running board" },
-        { patterns: /front\s*grill|(?:^|\s)grill(?:e)?(?:\s|$)/i, productType: "grill" },
-        { patterns: /floor\s*mat/i, productType: "floor mat" },
-        { patterns: /bed\s*mat/i, productType: "bed mat" },
-        { patterns: /roof\s*rack/i, productType: "roof rack" },
-        { patterns: /chase\s*rack|sport\s*bar/i, productType: "chase rack" },
-        { patterns: /molle\s*panel/i, productType: "molle" },
-        { patterns: /fender\s*flare/i, productType: "fender flare" },
-        { patterns: /under.?seat\s*storage/i, productType: "under seat storage" },
-      ];
+        if (products?.length) {
+          // Step 1: Filter by category
+          const categoryFiltered = products.filter((p: any) => matchesCategory(p, detectedCategory.productType));
 
-      let detectedCategory: string | null = null;
-      for (const cat of categoryMap) {
-        if (cat.patterns.test(message)) {
-          detectedCategory = cat.productType;
-          break;
-        }
-      }
+          // Step 2: If vehicle, filter by vehicle
+          let finalProducts: any[] = [];
+          let isExactMatch = true;
 
-      // --- Query products_cache ---
-      const { data: products } = await supabase
-        .from("products_cache")
-        .select("id, title, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status")
-        .eq("status", "active")
-        .limit(200);
-
-      if (products?.length) {
-        // Filter by category (product_type)
-        let categoryFiltered = products;
-        if (detectedCategory) {
-          categoryFiltered = products.filter((p: any) => {
-            const pt = (p.product_type || "").toLowerCase();
-            const title = (p.title || "").toLowerCase();
-            const tagsStr = (p.tags || []).join(" ").toLowerCase();
-            return pt.includes(detectedCategory!.toLowerCase()) || title.includes(detectedCategory!.toLowerCase()) || tagsStr.includes(detectedCategory!.toLowerCase());
-          });
-        }
-
-        // Filter by vehicle (tags)
-        const veh = parsedVehicle;
-        let vehicleAndCategoryFiltered: any[] = [];
-
-        if (veh) {
-          const makeLower = veh.make.toLowerCase();
-          const modelNorm = veh.model.replace(/\s+/g, "-").toLowerCase();
-          const modelAlt = modelNorm.replace(/-/g, "");
-
-          vehicleAndCategoryFiltered = categoryFiltered.filter((p: any) => {
-            const tags = (p.tags || []).map((t: string) => t.toLowerCase());
-            const isUniversal = tags.some((t: string) => t.includes("universal"));
-            const makeMatch = tags.some((t: string) => t === `make:${makeLower}` || t === makeLower);
-            const modelMatch = tags.some((t: string) => {
-              const tNorm = t.replace(/\s+/g, "-");
-              return t === `model:${modelNorm}` || tNorm === `model:${modelNorm}` || t === `model:${modelAlt}` || tNorm.includes(modelNorm) || t.includes(modelAlt);
+          if (parsedVehicle) {
+            const vehicleMatched = categoryFiltered.filter((p: any) => {
+              const tags = p.tags || [];
+              return matchesVehicle(tags, parsedVehicle.make, parsedVehicle.model, parsedVehicle.year);
             });
-            const yearMatch = !veh.year || tags.some((t: string) => t === `year:${veh.year}` || t === veh.year);
-            return isUniversal || (makeMatch && modelMatch && yearMatch);
-          });
-        }
 
-        let filtered: any[];
-        let isExactMatch = true;
-
-        if (veh && vehicleAndCategoryFiltered.length > 0) {
-          filtered = vehicleAndCategoryFiltered;
-        } else if (veh && detectedCategory && vehicleAndCategoryFiltered.length === 0 && categoryFiltered.length > 0) {
-          filtered = categoryFiltered.slice(0, 10);
-          isExactMatch = false;
-        } else if (detectedCategory && categoryFiltered.length > 0) {
-          filtered = categoryFiltered;
-        } else {
-          const keywords = lowerMsg.split(/\s+/).filter(
-            (w: string) => w.length > 2 && !["the", "for", "and", "you", "have", "any", "can", "get", "what", "does", "this", "that", "with", "fit", "fits", "will", "need", "want", "like", "are", "there", "show"].includes(w)
-          );
-          filtered = keywords.length > 0
-            ? products.filter((p: any) => {
-                const searchable = `${p.title} ${p.product_type || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
-                return keywords.some((kw: string) => searchable.includes(kw));
-              })
-            : [];
-        }
-
-        filtered = filtered.slice(0, 10);
-
-        if (filtered.length > 0) {
-          productsForResponse = filtered.map((p: any) => {
-            const images = Array.isArray(p.images) ? p.images : [];
-            const firstImage = images[0]?.src || images[0]?.url || images[0] || "";
-            const variants = Array.isArray(p.variants) ? p.variants : [];
-            const firstVariant = variants[0] || {};
-            const price = firstVariant.price || "0.00";
-            const inStock = firstVariant.inventory_quantity > 0 || firstVariant.available !== false;
-            const handle = (p.metafields?.handle) || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-            return {
-              id: p.shopify_product_id,
-              cacheId: p.id,
-              title: p.title,
-              price: typeof price === "string" ? price : String(price),
-              image: firstImage,
-              handle,
-              inStock,
-              variantId: firstVariant.id || firstVariant.admin_graphql_api_id || "",
-              inventoryQuantity: firstVariant.inventory_quantity,
-              partNumber: p.part_number,
-              cbItemName: p.cb_item_name,
-            };
-          });
-
-          if (!isExactMatch && veh) {
-            productContext = `\n\nNo exact products found for ${veh.year || ""} ${veh.make} ${veh.model} in the "${detectedCategory}" category. These products match the category but may NOT fit this vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer we don't have exact matches for their vehicle and clearly note these may not fit.`;
+            if (vehicleMatched.length > 0) {
+              // Sort: exact year match first
+              if (parsedVehicle.year) {
+                vehicleMatched.sort((a: any, b: any) => {
+                  const aYear = (a.tags || []).some((t: string) => t.toLowerCase() === `year:${parsedVehicle.year}` || t === parsedVehicle.year);
+                  const bYear = (b.tags || []).some((t: string) => t.toLowerCase() === `year:${parsedVehicle.year}` || t === parsedVehicle.year);
+                  return (bYear ? 1 : 0) - (aYear ? 1 : 0);
+                });
+              }
+              finalProducts = vehicleMatched.slice(0, 4);
+            } else {
+              // No exact match - show category results with disclaimer
+              isExactMatch = false;
+              finalProducts = categoryFiltered.slice(0, 4);
+            }
           } else {
-            productContext = `\n\nProduct search results from database:\n${JSON.stringify(productsForResponse, null, 2)}`;
+            // Category only, no vehicle
+            finalProducts = categoryFiltered.slice(0, 4);
           }
-        } else {
-          productContext = `\n\nNo products found${veh ? ` for ${veh.year || ""} ${veh.make} ${veh.model}` : ""}${detectedCategory ? ` in "${detectedCategory}" category` : ""}. Tell the customer honestly.`;
+
+          if (finalProducts.length > 0) {
+            productsForResponse = finalProducts.map(buildProductCard);
+
+            if (!isExactMatch && parsedVehicle) {
+              productContext = `\n\nNo exact ${detectedCategory.label} found for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. These are our ${detectedCategory.label} but may NOT fit this specific vehicle:\n${JSON.stringify(productsForResponse, null, 2)}\n\nIMPORTANT: Tell the customer "We don't currently have ${detectedCategory.label} that fits your ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}. Would you like to see our full ${detectedCategory.label} selection or try a different part type?" and show the products with a clear note they may not fit.`;
+            } else {
+              productContext = `\n\nProduct search results (matching${parsedVehicle ? ` ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model} +` : ""} ${detectedCategory.label}):\n${JSON.stringify(productsForResponse, null, 2)}`;
+            }
+          } else {
+            productContext = `\n\nNo ${detectedCategory.label} products found${parsedVehicle ? ` for ${parsedVehicle.year || ""} ${parsedVehicle.make} ${parsedVehicle.model}` : ""}. Tell the customer honestly and ask if they'd like to try a different category.`;
+          }
+        }
+      } else {
+        // Generic search without vehicle or category - use keyword matching
+        const keywords = message.toLowerCase().split(/\s+/).filter(
+          (w: string) => w.length > 2 && !["the", "for", "and", "you", "have", "any", "can", "get", "what", "does", "this", "that", "with", "fit", "fits", "will", "need", "want", "like", "are", "there", "show", "find", "parts", "part", "looking"].includes(w)
+        );
+        if (keywords.length > 0) {
+          const { data: products } = await supabase
+            .from("products_cache")
+            .select("id, title, handle, shopify_product_id, images, variants, tags, product_type, cb_item_name, part_number, status")
+            .eq("status", "active")
+            .limit(200);
+
+          if (products?.length) {
+            const matched = products.filter((p: any) => {
+              const searchable = `${p.title} ${p.product_type || ""} ${(p.tags || []).join(" ")}`.toLowerCase();
+              return keywords.some((kw: string) => searchable.includes(kw));
+            }).slice(0, 4);
+            if (matched.length > 0) {
+              productsForResponse = matched.map(buildProductCard);
+              productContext = `\n\nKeyword search results:\n${JSON.stringify(productsForResponse, null, 2)}`;
+            }
+          }
         }
       }
     }
@@ -303,7 +343,7 @@ serve(async (req) => {
 
     // Order lookup intent
     let orderContext = "";
-    if (/order|track|shipping|where.*(my|is)|status/i.test(lowerMsg) && userId) {
+    if (/order|track|shipping|where.*(my|is)|status/i.test(message.toLowerCase()) && userId) {
       const { data: orders } = await supabase
         .from("orders")
         .select("*")
@@ -323,9 +363,7 @@ serve(async (req) => {
       (contextParts.length ? `\n\nCustomer context:\n${contextParts.join("\n")}` : "") +
       productContext + promoContext + orderContext;
 
-    // Limit history to last 10 messages
     const recentHistory = (conversationHistory || []).slice(-10);
-
     const claudeMessages = [
       ...recentHistory.map((m: any) => ({
         role: m.role === "assistant" ? "assistant" : "user",
@@ -365,21 +403,19 @@ serve(async (req) => {
     let responseProducts: any[] = [];
     let responseAction: any = null;
 
-    // Extract products JSON
     const productsMatch = aiResponse.match(/\[PRODUCTS_JSON\]\s*([\s\S]*?)\s*\[\/PRODUCTS_JSON\]/);
     if (productsMatch) {
       try {
         responseProducts = JSON.parse(productsMatch[1]);
         cleanResponse = cleanResponse.replace(/\[PRODUCTS_JSON\][\s\S]*?\[\/PRODUCTS_JSON\]/, "").trim();
-      } catch { /* ignore parse errors */ }
+      } catch { /* ignore */ }
     }
 
     // If Claude didn't include products but we found some, include them
-    if (responseProducts.length === 0 && productsForResponse.length > 0 && needsProductSearch) {
-      responseProducts = productsForResponse.slice(0, 5);
+    if (responseProducts.length === 0 && productsForResponse.length > 0 && detectedCategory) {
+      responseProducts = productsForResponse.slice(0, 4);
     }
 
-    // Extract action JSON
     const actionMatch = aiResponse.match(/\[ACTION_JSON\]\s*([\s\S]*?)\s*\[\/ACTION_JSON\]/);
     if (actionMatch) {
       try {
@@ -388,7 +424,7 @@ serve(async (req) => {
       } catch { /* ignore */ }
     }
 
-    // Handle escalation action
+    // Handle escalation
     if (responseAction?.type === "escalate" && convId) {
       await supabase.from("support_tickets").insert({
         user_id: userId,
@@ -398,11 +434,7 @@ serve(async (req) => {
         status: "open",
         priority: "medium",
       });
-
-      await supabase
-        .from("chat_conversations")
-        .update({ status: "escalated" })
-        .eq("id", convId);
+      await supabase.from("chat_conversations").update({ status: "escalated" }).eq("id", convId);
     }
 
     // 8. Store assistant message
@@ -416,15 +448,11 @@ serve(async (req) => {
         products_referenced: responseProducts.length > 0 ? responseProducts : null,
       });
 
-      // Update conversation stats
-      const msgCount = (conversationHistory?.length || 0) + 2; // +user +assistant
-      await supabase
-        .from("chat_conversations")
-        .update({
-          message_count: msgCount,
-          total_tokens: tokensUsed,
-        })
-        .eq("id", convId);
+      const msgCount = (conversationHistory?.length || 0) + 2;
+      await supabase.from("chat_conversations").update({
+        message_count: msgCount,
+        total_tokens: tokensUsed,
+      }).eq("id", convId);
     }
 
     return new Response(

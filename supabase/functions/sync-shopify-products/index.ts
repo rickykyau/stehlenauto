@@ -13,6 +13,7 @@ query Products($cursor: String) {
       node {
         id
         title
+        handle
         vendor
         productType
         status
@@ -207,6 +208,7 @@ serve(async (req) => {
       return {
         shopify_product_id: extractGid(product.id),
         title: product.title,
+        handle: product.handle || null,
         vendor: product.vendor,
         product_type: product.productType,
         status: product.status?.toLowerCase() || "active",
