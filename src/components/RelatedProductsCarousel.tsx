@@ -113,16 +113,43 @@ const RelatedProductsCarousel = ({ currentProductId, currentProductHandle, curre
     fetchRelated();
   }, [currentProductId, currentProductHandle, currentProductType, make, model, isUniversal]);
 
+  // IntersectionObserver for cross_sell_viewed
+  useEffect(() => {
+    if (viewedRef.current || products.length === 0 || !sectionRef.current) return;
+    const el = sectionRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !viewedRef.current) {
+          viewedRef.current = true;
+          trackEvent("cross_sell_viewed", {
+            source_item_id: currentProductId,
+            recommended_items: products.slice(0, 4).map(p => p.node.id),
+            placement: "pdp",
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [products, currentProductId]);
+
   if (loading || products.length === 0) return null;
 
   return (
-    <section className="border-b border-border">
+    <section ref={sectionRef} className="border-b border-border">
       <div className="px-4 lg:px-8 py-4 border-b border-border">
         <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">YOU MAY ALSO LIKE</h2>
       </div>
       <HorizontalCarousel>
         {products.map((p) => (
-          <ProductCard key={p.node.id} product={p} compact />
+          <ProductCard
+            key={p.node.id}
+            product={p}
+            compact
+            crossSellSource={{ sourceItemId: currentProductId, placement: "pdp" }}
+          />
         ))}
       </HorizontalCarousel>
     </section>
