@@ -279,21 +279,21 @@ export function checkProductFitment(tags: string[], title: string, vehicle: Vehi
   }
 
   if (entries.length === 0) {
-    return fallbackFromTitle(title, vehicle);
+    return fallbackFromTitle(title, normalizedVehicle);
   }
 
-  const makeMatches = entries.filter((entry) => makesMatch(entry.make, vehicle.make));
+  const makeMatches = entries.filter((entry) => makesMatch(entry.make, normalizedVehicle.make));
   if (makeMatches.length === 0) {
     const altMakeMatches = entries.filter((entry) => {
       const combined = `${entry.make} ${entry.model}`.toLowerCase();
-      return combined.includes(vehicle.make.toLowerCase()) || makesMatch(entry.make, vehicle.make);
+      return combined.includes(normalizedVehicle.make.toLowerCase()) || makesMatch(entry.make, normalizedVehicle.make);
     });
 
     if (altMakeMatches.length === 0) return { status: "does_not_fit" };
-    return checkEntriesAgainstVehicle(altMakeMatches, vehicle);
+    return checkEntriesAgainstVehicle(altMakeMatches, normalizedVehicle);
   }
 
-  return checkEntriesAgainstVehicle(makeMatches, vehicle);
+  return checkEntriesAgainstVehicle(makeMatches, normalizedVehicle);
 }
 
 function checkEntriesAgainstVehicle(entries: FitmentEntry[], vehicle: VehicleSelection): FitmentResult {
