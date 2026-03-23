@@ -5,6 +5,8 @@ import { CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { trackEvent } from "@/lib/analytics";
 import { useYMMConfig } from "@/hooks/useYMMConfig";
+import { SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
+import type { ShopifyProduct } from "@/lib/shopify";
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
 
@@ -19,6 +21,7 @@ export interface RefineFilters {
   make: string | null;
   model: string | null;
   category: string | null;
+  subAttribute: string | null;
 }
 
 interface RefineSidebarProps {
