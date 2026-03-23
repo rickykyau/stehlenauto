@@ -66,8 +66,29 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions,
   };
 
   const clearAll = () => {
-    onFilterChange({ year: null, make: null, model: null, category: null });
+    onFilterChange({ year: null, make: null, model: null, category: null, subAttribute: null });
   };
+
+  // Compute sub-attribute filter options from products
+  const subAttrConfig = filters.category ? SUB_ATTRIBUTE_CATEGORIES[filters.category] : null;
+  const subAttributeOptions = (() => {
+    if (!subAttrConfig || !products) return [];
+    const field = subAttrConfig.field;
+    const values = new Map<string, number>();
+    for (const p of products) {
+      const raw = (p.node as any)?.fitmentSubattributes?.value || (p.node as any)?.fitmentSubAttributes?.value;
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        const val = parsed[field];
+        if (val && String(val).trim()) {
+          const v = String(val).trim();
+          values.set(v, (values.get(v) || 0) + 1);
+        }
+      } catch { /* ignore */ }
+    }
+    return Array.from(values.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  })();
 
   const hasOptions = !!availableOptions;
   const currentModels = filters.make ? (MODELS_BY_MAKE[filters.make] || []) : [];
