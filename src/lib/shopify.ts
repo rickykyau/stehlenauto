@@ -75,6 +75,34 @@ export interface ShopifyProduct {
   };
 }
 
+// ── Fitment Sub-Attributes Parser ──────────────────────
+
+export function parseFitmentSubAttributes(product: any): FitmentSubAttributes | null {
+  // Handle Storefront API metafield response
+  const raw = product?.fitmentSubattributes?.value || product?.fitmentSubAttributes?.value || product?.node?.fitmentSubattributes?.value;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    // Only return if at least one non-empty value
+    const hasValue = Object.values(parsed).some((v: any) => v && String(v).trim().length > 0);
+    return hasValue ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseFitmentNotes(product: any): string | null {
+  return product?.fitmentNotes?.value || product?.fitmentNotes || product?.node?.fitmentNotes?.value || null;
+}
+
+/** Categories that need sub-attribute filters */
+export const SUB_ATTRIBUTE_CATEGORIES: Record<string, { field: keyof FitmentSubAttributes; label: string }> = {
+  "tonneau-covers": { field: "bed_length", label: "BED LENGTH" },
+  "truck-bed-mats": { field: "bed_length", label: "BED LENGTH" },
+  "running-boards-side-steps": { field: "cab_size", label: "CAB TYPE" },
+  "floor-mats": { field: "cab_size", label: "CAB TYPE" },
+};
+
 // ── Universal Product Detection ────────────────────────
 
 export function isUniversalProduct(product: ShopifyProduct): boolean {
