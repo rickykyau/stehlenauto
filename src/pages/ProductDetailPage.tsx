@@ -319,18 +319,21 @@ const ProductTemplate = () => {
           .select("handle, title, fitment_subattributes")
           .eq("status", "active")
           .ilike("product_type", `%${product.productType}%`)
-          .ilike("title", `%${vehicle.make}%`)
+          .ilike("title", `%${vehicle.make}%${vehicle.model}%`)
           .neq("handle", product.handle)
           .not("fitment_subattributes", "is", null)
           .limit(10);
 
         if (data) {
+          const seen = new Set<string>();
           const siblings = data
             .filter((p: any) => {
               if (!p.fitment_subattributes) return false;
               const subAttr = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
-              const val = subAttr[relevantSubAttr.field];
-              return val && String(val).trim() && String(val).trim() !== relevantSubAttr.value;
+              const val = String(subAttr[relevantSubAttr.field] || "").trim();
+              if (!val || val === relevantSubAttr.value || seen.has(val)) return false;
+              seen.add(val);
+              return true;
             })
             .map((p: any) => ({
               handle: p.handle,
@@ -562,7 +565,7 @@ const ProductTemplate = () => {
                           attribute_value: sibVal,
                           source: "pdp_configurator",
                         });
-                        navigate(`/product/${sib.handle}`);
+                        navigate(`/products/${sib.handle}`);
                       }}
                       className="px-3 py-1.5 border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground font-display text-[10px] tracking-wider transition-colors"
                     >
