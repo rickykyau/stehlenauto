@@ -269,6 +269,12 @@ function buildProductCard(p: any) {
   // Use handle from DB, or generate from title as fallback
   const handle = p.handle || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+  // Parse fitment subattributes
+  let subAttrs: any = null;
+  if (p.fitment_subattributes) {
+    subAttrs = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
+  }
+
   return {
     id: p.shopify_product_id,
     cacheId: p.id,
@@ -281,6 +287,9 @@ function buildProductCard(p: any) {
     inventoryQuantity: firstVariant.inventory_quantity ?? 0,
     partNumber: p.part_number,
     cbItemName: p.cb_item_name,
+    bedLength: subAttrs?.bed_length || null,
+    cabSize: subAttrs?.cab_size || null,
+    fitmentNotes: p.fitment_notes || null,
   };
 }
 
