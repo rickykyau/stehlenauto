@@ -29,6 +29,7 @@ interface RefineSidebarProps {
   onFilterChange: (filters: RefineFilters) => void;
   collections: Array<{ node: { id: string; handle: string; title: string } }>;
   availableOptions?: AvailableOptions;
+  products?: ShopifyProduct[];
 }
 
 type Section = "year" | "make" | "model" | "category";
