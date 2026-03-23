@@ -1,9 +1,7 @@
 /**
  * Fitment matching utility — handles year ranges, make normalization,
- * partial matches, and universal products.
+ * partial matches, universal products, and unknown fitment states.
  */
-
-// ── Types ──
 
 export interface VehicleSelection {
   year: number;
@@ -26,39 +24,17 @@ export type FitmentResult =
   | { status: "fits"; matchedEntries: FitmentEntry[] }
   | { status: "partial"; matchedEntries: FitmentEntry[]; warnings: string[] }
   | { status: "does_not_fit" }
-  | { status: "universal" };
-
-// ── Make Normalization ──
+  | { status: "universal" }
+  | { status: "unknown" };
 
 const MAKE_ALIASES: Record<string, string> = {
-  "chevy": "chevrolet",
-  "vw": "volkswagen",
+  chevy: "chevrolet",
+  vw: "volkswagen",
   "mercedes-benz": "mercedes",
   "mercedes benz": "mercedes",
 };
 
-// "Dodge Ram" → treat "Ram" as an alias of "Dodge" for make matching
-const MAKE_EQUIVALENTS: [string, string][] = [
-  ["dodge", "ram"],
-];
-
-function normalizeMake(make: string): string {
-  const lower = make.toLowerCase().trim();
-  return MAKE_ALIASES[lower] || lower;
-}
-
-function makesMatch(a: string, b: string): boolean {
-  const na = normalizeMake(a);
-  const nb = normalizeMake(b);
-  if (na === nb) return true;
-  // Check equivalents
-  for (const [x, y] of MAKE_EQUIVALENTS) {
-    if ((na === x && nb === y) || (na === y && nb === x)) return true;
-  }
-  return false;
-}
-
-// ── Sub-model / qualifier patterns ──
+const MAKE_EQUIVALENTS: [string, string][] = [["dodge", "ram"]];
 
 const SUB_MODEL_KEYWORDS = [
   "classic",
@@ -69,19 +45,78 @@ const SUB_MODEL_KEYWORDS = [
   "5th gen",
 ];
 
-const QUALIFIER_PATTERNS = [
-  /without\s+\w+/i,
-  /with\s+\w+/i,
-  /excluding\s+\w+/i,
-  /not\s+fit\s+.+/i,
-];
+const QUALIFIER_PATTERNS = [/without\s+\w+/i, /with\s+\w+/i, /excluding\s+\w+/i, /not\s+fit\s+.+/i];
 
-// ── Tag / Title Parsing ──
+function normalizeMake(make: string): string {
+  const lower = make.toLowerCase().trim();
+  return MAKE_ALIASES[lower] || lower;
+}
 
-/**
- * Parse a single fitment string (tag or title line) into a FitmentEntry.
- * Handles: "2019-2022 Ram 1500 Classic", "2020+ Ford F-150", "2010 Dodge Ram 2500"
- */
+function makesMatch(a: string, b: string): boolean {
+  const na = normalizeMake(a);
+  const nb = normalizeMake(b);
+  if (na === nb) return true;
+
+  for (const [x, y] of MAKE_EQUIVALENTS) {
+    if ((na === x && nb === y) || (na === y && nb === x)) return true;
+  }
+
+  return false;
+}
+
+function titleContainsMake(title: string, make: string): boolean {
+  const lowerTitle = title.toLowerCase();
+  const normalizedMake = normalizeMake(make);
+
+  if (lowerTitle.includes(normalizedMake)) return true;
+  if (make.toLowerCase() !== normalizedMake && lowerTitle.includes(make.toLowerCase())) return true;
+
+  if (makesMatch(make, "dodge") && lowerTitle.includes("ram")) return true;
+  if (makesMatch(make, "ram") && lowerTitle.includes("dodge")) return true;
+  if (makesMatch(make, "chevrolet") && lowerTitle.includes("chevy")) return true;
+  if (makesMatch(make, "volkswagen") && lowerTitle.includes("vw")) return true;
+
+  return false;
+}
+
+function fallbackFromTitle(title: string, vehicle: VehicleSelection): FitmentResult {
+  const titleLower = title.toLowerCase();
+  const yearStr = String(vehicle.year);
+
+  const yearRanges = titleLower.matchAll(/(\d{4})\s*[-–]\s*(\d{4})/g);
+  for (const match of yearRanges) {
+    const start = parseInt(match[1], 10);
+    const end = parseInt(match[2], 10);
+
+    if (vehicle.year >= start && vehicle.year <= end && titleContainsMake(titleLower, vehicle.make)) {
+      return {
+        status: "partial",
+        matchedEntries: [],
+        warnings: ["Fitment based on title match — please verify compatibility"],
+      };
+    }
+  }
+
+  const plusRanges = titleLower.matchAll(/(\d{4})\+/g);
+  for (const match of plusRanges) {
+    const start = parseInt(match[1], 10);
+
+    if (vehicle.year >= start && titleContainsMake(titleLower, vehicle.make)) {
+      return {
+        status: "partial",
+        matchedEntries: [],
+        warnings: ["Fitment based on title match — please verify compatibility"],
+      };
+    }
+  }
+
+  if (titleLower.includes(yearStr)) {
+    return { status: "unknown" };
+  }
+
+  return { status: "unknown" };
+}
+
 export function parseFitmentString(raw: string): FitmentEntry | null {
   const s = raw.trim();
   if (!s) return null;
@@ -90,73 +125,60 @@ export function parseFitmentString(raw: string): FitmentEntry | null {
   let yearEnd = 0;
   let rest = s;
 
-  // Year range: YYYY-YYYY or YYYY–YYYY
   const rangeMatch = s.match(/^(\d{4})\s*[-–]\s*(\d{4})\s*/);
   if (rangeMatch) {
-    yearStart = parseInt(rangeMatch[1]);
-    yearEnd = parseInt(rangeMatch[2]);
+    yearStart = parseInt(rangeMatch[1], 10);
+    yearEnd = parseInt(rangeMatch[2], 10);
     rest = s.slice(rangeMatch[0].length);
   } else {
-    // Year+: YYYY+
     const plusMatch = s.match(/^(\d{4})\+\s*/);
     if (plusMatch) {
-      yearStart = parseInt(plusMatch[1]);
+      yearStart = parseInt(plusMatch[1], 10);
       yearEnd = 2099;
       rest = s.slice(plusMatch[0].length);
     } else {
-      // Single year: YYYY
       const singleMatch = s.match(/^(\d{4})\s+/);
       if (singleMatch) {
-        yearStart = parseInt(singleMatch[1]);
+        yearStart = parseInt(singleMatch[1], 10);
         yearEnd = yearStart;
         rest = s.slice(singleMatch[0].length);
       } else {
-        return null; // No year found
+        return null;
       }
     }
   }
 
   if (yearStart < 1950 || yearStart > 2100) return null;
 
-  // Extract make and model from the remaining text
-  // Common pattern: "Make Model SubModel — qualifier"
   const dashSplit = rest.split(/\s*[—–]\s*/);
   const mainPart = dashSplit[0].trim();
   const qualifierPart = dashSplit.slice(1).join(" ").trim();
-
-  // Split into words
   const words = mainPart.split(/\s+/);
   if (words.length === 0) return null;
 
-  // First word (or first two words) is the make
   let make = "";
   let modelStart = 1;
-
-  // Handle two-word makes
   const twoWordMakes = ["land rover", "dodge ram"];
   const firstTwo = words.slice(0, 2).join(" ").toLowerCase();
+
   if (words.length >= 2 && twoWordMakes.includes(firstTwo)) {
     make = words.slice(0, 2).join(" ");
     modelStart = 2;
   } else {
     make = words[0];
-    modelStart = 1;
   }
 
-  // Remaining words are model + sub-model
   const modelWords = words.slice(modelStart);
   let model = "";
   let subModel = "";
 
-  // Check for sub-model keywords
   const lowerJoined = modelWords.join(" ").toLowerCase();
-  for (const kw of SUB_MODEL_KEYWORDS) {
-    const idx = lowerJoined.indexOf(kw);
-    if (idx >= 0) {
-      // Everything before the keyword is model, the keyword is sub-model
-      const beforeKw = modelWords.join(" ").slice(0, idx).trim();
-      subModel = kw;
-      model = beforeKw || modelWords.join(" ");
+  for (const keyword of SUB_MODEL_KEYWORDS) {
+    const index = lowerJoined.indexOf(keyword);
+    if (index >= 0) {
+      const beforeKeyword = modelWords.join(" ").slice(0, index).trim();
+      subModel = keyword;
+      model = beforeKeyword || modelWords.join(" ");
       break;
     }
   }
@@ -165,20 +187,18 @@ export function parseFitmentString(raw: string): FitmentEntry | null {
     model = modelWords.join(" ");
   }
 
-  // Extract bed length from qualifier or model
   let bedLength: string | undefined;
   const bedMatch = (qualifierPart || model).match(/(\d+\.?\d*)\s*ft/i);
   if (bedMatch) {
     bedLength = `${bedMatch[1]} ft`;
   }
 
-  // Qualifier patterns
   let qualifier = qualifierPart || undefined;
   if (!qualifier) {
-    for (const pat of QUALIFIER_PATTERNS) {
-      const qm = rest.match(pat);
-      if (qm) {
-        qualifier = qm[0];
+    for (const pattern of QUALIFIER_PATTERNS) {
+      const qualifierMatch = rest.match(pattern);
+      if (qualifierMatch) {
+        qualifier = qualifierMatch[0];
         break;
       }
     }
@@ -196,77 +216,54 @@ export function parseFitmentString(raw: string): FitmentEntry | null {
   };
 }
 
-// ── Model Matching ──
-
 function modelsMatch(selectionModel: string, entryModel: string): boolean {
-  if (!selectionModel || !entryModel) return true; // No model filter = any model matches
+  if (!selectionModel || !entryModel) return true;
 
-  const sel = selectionModel.toLowerCase().replace(/[-\s]/g, "");
-  const ent = entryModel.toLowerCase().replace(/[-\s]/g, "");
+  const selected = selectionModel.toLowerCase().replace(/[-\s]/g, "");
+  const entry = entryModel.toLowerCase().replace(/[-\s]/g, "");
 
-  // Exact match after normalization
-  if (sel === ent) return true;
-
-  // Partial: "1500" matches "ram 1500" or "1500 classic"
-  if (ent.includes(sel) || sel.includes(ent)) return true;
+  if (selected === entry) return true;
+  if (entry.includes(selected) || selected.includes(entry)) return true;
 
   return false;
 }
 
-// ── Main Matching Function ──
-
-/**
- * Check if a product fits the selected vehicle.
- * 
- * @param tags - Product tags array
- * @param title - Product title
- * @param vehicle - Selected vehicle { year, make, model }
- * @returns FitmentResult
- */
-export function checkProductFitment(
-  tags: string[],
-  title: string,
-  vehicle: VehicleSelection
-): FitmentResult {
-  // Check universal
-  if (tags.some((t) => t.toLowerCase() === "universal fit")) {
+export function checkProductFitment(tags: string[], title: string, vehicle: VehicleSelection): FitmentResult {
+  if (tags.some((tag) => tag.toLowerCase() === "universal fit")) {
     return { status: "universal" };
   }
 
-  // Parse fitment entries from tags and title
   const entries: FitmentEntry[] = [];
 
-  // Parse from tags first
   for (const tag of tags) {
     const entry = parseFitmentString(tag);
     if (entry) entries.push(entry);
   }
 
-  // Also parse from title as fallback
   const titleEntry = parseFitmentString(title);
   if (titleEntry) {
-    // Only add if we don't already have a matching entry
-    const isDupe = entries.some(
-      (e) => e.yearStart === titleEntry.yearStart && e.yearEnd === titleEntry.yearEnd && e.make === titleEntry.make
+    const isDuplicate = entries.some(
+      (entry) =>
+        entry.yearStart === titleEntry.yearStart &&
+        entry.yearEnd === titleEntry.yearEnd &&
+        entry.make === titleEntry.make &&
+        entry.model === titleEntry.model,
     );
-    if (!isDupe) entries.push(titleEntry);
+
+    if (!isDuplicate) entries.push(titleEntry);
   }
 
   if (entries.length === 0) {
-    // No parseable fitment data — can't determine fit
-    return { status: "does_not_fit" };
+    return fallbackFromTitle(title, vehicle);
   }
 
-  // Find entries that match make
-  const makeMatches = entries.filter((e) => makesMatch(e.make, vehicle.make));
+  const makeMatches = entries.filter((entry) => makesMatch(entry.make, vehicle.make));
   if (makeMatches.length === 0) {
-    // Also check if "Dodge Ram" in tags matches vehicle make "Ram" or "Dodge"
-    // by checking combined make+model in entry against vehicle make
-    const altMakeMatches = entries.filter((e) => {
-      const combined = `${e.make} ${e.model}`.toLowerCase();
-      return combined.includes(vehicle.make.toLowerCase()) ||
-        makesMatch(e.make, vehicle.make);
+    const altMakeMatches = entries.filter((entry) => {
+      const combined = `${entry.make} ${entry.model}`.toLowerCase();
+      return combined.includes(vehicle.make.toLowerCase()) || makesMatch(entry.make, vehicle.make);
     });
+
     if (altMakeMatches.length === 0) return { status: "does_not_fit" };
     return checkEntriesAgainstVehicle(altMakeMatches, vehicle);
   }
@@ -274,62 +271,38 @@ export function checkProductFitment(
   return checkEntriesAgainstVehicle(makeMatches, vehicle);
 }
 
-function checkEntriesAgainstVehicle(
-  makeMatches: FitmentEntry[],
-  vehicle: VehicleSelection
-): FitmentResult {
-  // Find entries that match model
-  const modelMatches = makeMatches.filter((e) => modelsMatch(vehicle.model, e.model));
-
+function checkEntriesAgainstVehicle(entries: FitmentEntry[], vehicle: VehicleSelection): FitmentResult {
+  const modelMatches = entries.filter((entry) => modelsMatch(vehicle.model, entry.model));
   if (modelMatches.length === 0) {
-    // Make matches but model doesn't
     return { status: "does_not_fit" };
   }
 
-  // Find entries where year is in range
-  const yearMatches = modelMatches.filter(
-    (e) => vehicle.year >= e.yearStart && vehicle.year <= e.yearEnd
-  );
-
+  const yearMatches = modelMatches.filter((entry) => vehicle.year >= entry.yearStart && vehicle.year <= entry.yearEnd);
   if (yearMatches.length === 0) {
     return { status: "does_not_fit" };
   }
 
-  // Check for sub-model qualifiers that indicate partial match
-  const withQualifiers = yearMatches.filter((e) => e.subModel || e.qualifier);
-  const withoutQualifiers = yearMatches.filter((e) => !e.subModel && !e.qualifier);
+  const withQualifiers = yearMatches.filter((entry) => entry.subModel || entry.qualifier);
+  const withoutQualifiers = yearMatches.filter((entry) => !entry.subModel && !entry.qualifier);
 
   if (withoutQualifiers.length > 0) {
-    // At least one clean match with no qualifiers
     return { status: "fits", matchedEntries: yearMatches };
   }
 
   if (withQualifiers.length > 0) {
-    // All matches have qualifiers — partial match
-    const warnings = withQualifiers.map((e) => {
+    const warnings = withQualifiers.map((entry) => {
       const parts: string[] = [];
-      if (e.subModel) {
-        parts.push(`Fits ${e.make} ${e.model} ${e.subModel} only`);
-      }
-      if (e.qualifier) {
-        parts.push(e.qualifier);
-      }
-      return parts.join(". ") || `Check fitment details for ${e.raw}`;
+      if (entry.subModel) parts.push(`Fits ${entry.make} ${entry.model} ${entry.subModel} only`);
+      if (entry.qualifier) parts.push(entry.qualifier);
+      return parts.join(". ") || `Check fitment details for ${entry.raw}`;
     });
+
     return { status: "partial", matchedEntries: withQualifiers, warnings };
   }
 
-  return { status: "fits", matchedEntries: yearMatches };
+  return { status: "unknown" };
 }
 
-/**
- * Quick boolean check — does product fit or partially fit?
- * Used for filtering on browse pages.
- */
-export function productFitsVehicle(
-  tags: string[],
-  title: string,
-  vehicle: VehicleSelection
-): FitmentResult {
+export function productFitsVehicle(tags: string[], title: string, vehicle: VehicleSelection): FitmentResult {
   return checkProductFitment(tags, title, vehicle);
 }
