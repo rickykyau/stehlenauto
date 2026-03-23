@@ -4,7 +4,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail, AlertTriangle } from "lucide-react";
+import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
@@ -348,26 +349,12 @@ const CollectionTemplate = () => {
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
   // Client-side filtering: minimal when using tag-based query
-  const { vehicleProducts, universalProducts } = useMemo(() => {
+  const { vehicleProducts, universalProducts, partialProducts } = useMemo(() => {
     let filtered = rawDisplayProducts;
 
     // If we fetched from make collection but also have a category filter, apply category client-side
     if (!hasFullYMM && filters.make && MAKE_COLLECTION_MAP[filters.make] && filters.category) {
       filtered = filtered.filter((p) => matchesCategory(p, filters.category!));
-    }
-
-    // When using collection (make-only, no full YMM), apply year/model client-side
-    if (!hasFullYMM) {
-      if (filters.year) {
-        filtered = filtered.filter((p) =>
-          isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
-        );
-      }
-      if (filters.model) {
-        filtered = filtered.filter((p) =>
-          isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
-        );
-      }
     }
 
     // Apply sub-attribute filter (bed_length / cab_size)
@@ -388,16 +375,49 @@ const CollectionTemplate = () => {
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
-      const vehicleSpecific = filtered.filter((p) => !isUniversalProduct(p));
-      const universal = filtered.filter((p) => isUniversalProduct(p));
-      return { vehicleProducts: vehicleSpecific, universalProducts: universal };
+      const vehicleSelection = (filters.year && filters.make) ? {
+        year: parseInt(filters.year),
+        make: filters.make,
+        model: filters.model || "",
+      } : null;
+
+      const vehicleSpecific: ShopifyProduct[] = [];
+      const partial: ShopifyProduct[] = [];
+      const universal: ShopifyProduct[] = [];
+
+      for (const p of filtered) {
+        if (isUniversalProduct(p)) {
+          universal.push(p);
+          continue;
+        }
+
+        if (vehicleSelection) {
+          const result = checkProductFitment(p.node.tags || [], p.node.title, vehicleSelection);
+          if (result.status === "fits" || result.status === "universal") {
+            vehicleSpecific.push(p);
+          } else if (result.status === "partial") {
+            partial.push(p);
+          }
+          // "does_not_fit" products are excluded entirely
+        } else {
+          // Only make filter without year — use old title-based matching
+          if (!hasFullYMM) {
+            if (filters.year && !matchesYear(p.node.title, filters.year)) continue;
+            if (filters.model && !p.node.title.toLowerCase().includes(filters.model.toLowerCase())) continue;
+          }
+          vehicleSpecific.push(p);
+        }
+      }
+
+      return { vehicleProducts: vehicleSpecific, universalProducts: universal, partialProducts: partial };
     }
-    return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
+    return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[], partialProducts: [] as ShopifyProduct[] };
   }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
 
   const displayProducts = includeUniversal
-    ? [...vehicleProducts, ...universalProducts]
-    : vehicleProducts;
+    ? [...vehicleProducts, ...partialProducts, ...universalProducts]
+    : [...vehicleProducts, ...partialProducts];
+  const partialProductIds = new Set(partialProducts.map((p) => p.node.id));
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
@@ -706,7 +726,7 @@ const CollectionTemplate = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          ) : vehicleProducts.length === 0 && (filters.year || filters.make || filters.model) && filters.make !== "Universal" ? (
+          ) : vehicleProducts.length === 0 && partialProducts.length === 0 && (filters.year || filters.make || filters.model) && filters.make !== "Universal" ? (
             <EmptyVehicleState
               filters={filters}
               activeCategoryLabel={activeCategoryLabel}
@@ -726,17 +746,39 @@ const CollectionTemplate = () => {
                 {vehicleProducts.map((product, index) => (
                   <ProductCard key={product.node.id} product={product} listName={listName} index={index} />
                 ))}
-                {includeUniversal && universalProducts.length > 0 && (
+                {/* Partial match products with badge */}
+                {partialProducts.length > 0 && (
                   <>
                     {vehicleProducts.length > 0 && (
                       <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
+                        <span className="font-display text-[10px] tracking-widest text-yellow-500 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3 h-3" />
+                          CHECK FITMENT — MAY FIT YOUR VEHICLE
+                        </span>
+                      </div>
+                    )}
+                    {partialProducts.map((product, pIdx) => (
+                      <div key={product.node.id} className="relative">
+                        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-yellow-600/90 text-white px-1.5 py-0.5 font-display text-[8px] tracking-widest">
+                          <AlertTriangle className="w-2.5 h-2.5" />
+                          CHECK FITMENT
+                        </div>
+                        <ProductCard product={product} listName={listName} index={vehicleProducts.length + pIdx} />
+                      </div>
+                    ))}
+                  </>
+                )}
+                {includeUniversal && universalProducts.length > 0 && (
+                  <>
+                    {(vehicleProducts.length > 0 || partialProducts.length > 0) && (
+                      <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
                         <span className="font-display text-[10px] tracking-widest text-muted-foreground">
-                          {vehicleProducts.length < 5 ? "MORE PRODUCTS THAT MAY INTEREST YOU" : "UNIVERSAL FIT"}
+                          {vehicleProducts.length + partialProducts.length < 5 ? "MORE PRODUCTS THAT MAY INTEREST YOU" : "UNIVERSAL FIT"}
                         </span>
                       </div>
                     )}
                     {universalProducts.map((product, uIdx) => (
-                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + uIdx} />
+                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + partialProducts.length + uIdx} />
                     ))}
                   </>
                 )}

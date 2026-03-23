@@ -3,6 +3,7 @@
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
@@ -124,26 +125,7 @@ function extractKeyValues(html: string): Record<string, string> {
 }
 
 /* ─── Year/Fitment Matching ─── */
-
-function parseYearRange(title: string): [number, number] | null {
-  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
-  const plusMatch = title.match(/(\d{4})\+/);
-  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
-  const singleMatch = title.match(/^(\d{4})\s/);
-  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
-  return null;
-}
-
-function checkFitment(title: string, year: string, make: string, model: string): boolean {
-  const y = parseInt(year);
-  const range = parseYearRange(title);
-  if (!range) return false;
-  const yearFits = y >= range[0] && y <= range[1];
-  const makeFits = title.toLowerCase().includes(make.toLowerCase());
-  const modelFits = title.toLowerCase().includes(model.toLowerCase());
-  return yearFits && makeFits && modelFits;
-}
+// Moved to src/utils/fitmentMatcher.ts
 
 /* ─── Lightbox Component ─── */
 
@@ -241,11 +223,14 @@ const ProductTemplate = () => {
     return (product.tags || []).some((t: string) => t.toLowerCase() === 'universal fit');
   }, [product]);
 
-  const fitmentStatus = useMemo(() => {
+  const fitmentResult: FitmentResult | null = useMemo(() => {
     if (!vehicle || !product) return null;
-    if (isUniversal) return 'universal';
-    return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
-  }, [vehicle, product, isUniversal]);
+    return checkProductFitment(
+      product.tags || [],
+      product.title,
+      { year: parseInt(vehicle.year), make: vehicle.make, model: vehicle.model }
+    );
+  }, [vehicle, product]);
 
   // Parse fitment sub-attributes (with fallback to products_cache via Admin API)
   const [cacheSubAttrs, setCacheSubAttrs] = useState<FitmentSubAttributes | null>(null);
@@ -501,25 +486,41 @@ const ProductTemplate = () => {
             )}
           </div>
 
-          {/* Fitment Badge */}
-          {vehicle && fitmentStatus !== null && (
-            <div className={`flex items-center gap-2 px-3 py-2 mb-3 border ${
-              fitmentStatus === 'universal' || fitmentStatus === true
+          {/* Fitment Badge — 3-state: fits, partial, does_not_fit */}
+          {vehicle && fitmentResult && (
+            <div className={`flex items-start gap-2 px-3 py-2 mb-3 border ${
+              fitmentResult.status === "universal" || fitmentResult.status === "fits"
                 ? "border-green-600/40 bg-green-600/10 text-green-400"
-                : "border-red-600/40 bg-red-600/10 text-red-400"
+                : fitmentResult.status === "partial"
+                  ? "border-yellow-600/40 bg-yellow-600/10 text-yellow-500"
+                  : "border-red-600/40 bg-red-600/10 text-red-400"
             }`}>
-              {fitmentStatus === 'universal' || fitmentStatus === true ? (
-                <Check className="w-4 h-4 shrink-0" />
+              {fitmentResult.status === "universal" || fitmentResult.status === "fits" ? (
+                <Check className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : fitmentResult.status === "partial" ? (
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               ) : (
-                <XIcon className="w-4 h-4 shrink-0" />
+                <XIcon className="w-4 h-4 shrink-0 mt-0.5" />
               )}
-              <span className="font-display text-[10px] tracking-widest">
-                {fitmentStatus === 'universal'
-                  ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
-                  : fitmentStatus === true
-                    ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
-                    : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
-              </span>
+              <div>
+                <span className="font-display text-[10px] tracking-widest block">
+                  {fitmentResult.status === "universal"
+                    ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
+                    : fitmentResult.status === "fits"
+                      ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
+                      : fitmentResult.status === "partial"
+                        ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
+                        : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                </span>
+                {fitmentResult.status === "partial" && fitmentResult.warnings.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {fitmentResult.warnings.map((w, i) => (
+                      <p key={i} className="font-body text-[10px] text-yellow-500/80">{w}</p>
+                    ))}
+                    <p className="font-body text-[10px] text-yellow-500/80 italic">Please confirm your trim before ordering.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -730,15 +731,25 @@ const ProductTemplate = () => {
 
               {activeTab === "fitment" && (
                 <div>
-                  {vehicle && (
+                  {vehicle && fitmentResult && (
                     <div className={`flex items-center gap-2 px-3 py-2 mb-4 border ${
-                      fitmentStatus
+                      fitmentResult.status === "fits" || fitmentResult.status === "universal"
                         ? "border-green-600/40 bg-green-600/10 text-green-400"
-                        : "border-red-600/40 bg-red-600/10 text-red-400"
+                        : fitmentResult.status === "partial"
+                          ? "border-yellow-600/40 bg-yellow-600/10 text-yellow-500"
+                          : "border-red-600/40 bg-red-600/10 text-red-400"
                     }`}>
-                      {fitmentStatus ? <Check className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                      {fitmentResult.status === "fits" || fitmentResult.status === "universal"
+                        ? <Check className="w-4 h-4" />
+                        : fitmentResult.status === "partial"
+                          ? <AlertTriangle className="w-4 h-4" />
+                          : <XIcon className="w-4 h-4" />}
                       <span className="font-display text-[10px] tracking-widest">
-                        {fitmentStatus ? `FITS YOUR ${vehicleLabel.toUpperCase()}` : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                        {fitmentResult.status === "fits" || fitmentResult.status === "universal"
+                          ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
+                          : fitmentResult.status === "partial"
+                            ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
+                            : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
                       </span>
                     </div>
                   )}
