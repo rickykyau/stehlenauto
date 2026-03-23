@@ -83,7 +83,7 @@ const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string
   { patterns: /under.?seat\s*storage/i, productType: "under seat storage", label: "Under Seat Storage" },
 ];
 
-const PRODUCT_CACHE_SELECT = "id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status";
+const PRODUCT_CACHE_SELECT = "id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status, fitment_subattributes, fitment_notes";
 
 function parseVehicle(message: string, vehicleContext: { year: string; make: string; model: string } | null) {
   const patterns = [
