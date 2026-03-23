@@ -3,10 +3,10 @@
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -14,6 +14,8 @@ import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
 import { useShopifyProduct } from "@/hooks/useShopifyProducts";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { parseFitmentSubAttributes, parseFitmentNotes, SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ─── Description Parser ─── */
 
