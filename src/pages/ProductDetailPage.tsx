@@ -739,7 +739,7 @@ const ProductTemplate = () => {
 
               {activeTab === "fitment" && (
                 <div>
-                  {vehicle && fitmentResult && (
+                  {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
                     <div className={`flex items-center gap-2 px-3 py-2 mb-4 border ${
                       fitmentResult.status === "fits" || fitmentResult.status === "universal"
                         ? "border-green-600/40 bg-green-600/10 text-green-400"
@@ -758,6 +758,14 @@ const ProductTemplate = () => {
                           : fitmentResult.status === "partial"
                             ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
                             : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                      </span>
+                    </div>
+                  )}
+                  {vehicle && fitmentResult?.status === "unknown" && (
+                    <div className="flex items-center gap-2 px-3 py-2 mb-4 border border-border bg-muted/40 text-muted-foreground">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span className="font-display text-[10px] tracking-widest">
+                        FITMENT NOT CONFIRMED — PLEASE VERIFY COMPATIBILITY
                       </span>
                     </div>
                   )}
