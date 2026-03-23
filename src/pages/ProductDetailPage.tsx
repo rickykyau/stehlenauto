@@ -490,7 +490,72 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Variant selector */}
+          {/* Sub-Attribute Badge */}
+          {relevantSubAttr && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-primary/30 bg-primary/5">
+              <Truck className="w-4 h-4 text-primary shrink-0" />
+              <span className="font-display text-[10px] tracking-widest text-primary">
+                {relevantSubAttr.label.toUpperCase()}: {relevantSubAttr.value.toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          {/* Fitment Notes */}
+          {fitmentNotes && (
+            <p className="font-body text-xs text-muted-foreground italic mb-3 px-1">
+              {fitmentNotes}
+            </p>
+          )}
+
+          {/* Sub-Attribute Configurator (sibling products) */}
+          {relevantSubAttr && siblingProducts.length > 0 && (
+            <div className="mb-3">
+              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
+                SELECT YOUR {relevantSubAttr.label.toUpperCase()}:
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {/* Current product option - highlighted */}
+                <button className="px-3 py-1.5 border-2 border-primary bg-primary/10 text-primary font-display text-[10px] tracking-wider">
+                  {relevantSubAttr.value.toUpperCase()}
+                </button>
+                {/* Sibling options */}
+                {siblingProducts.map((sib) => {
+                  const sibVal = sib.subAttr[relevantSubAttr.field];
+                  if (!sibVal) return null;
+                  return (
+                    <button
+                      key={sib.handle}
+                      onClick={() => {
+                        trackEvent("fitment_subattribute_selected", {
+                          item_id: product.id,
+                          attribute_type: relevantSubAttr.field,
+                          attribute_value: sibVal,
+                          source: "pdp_configurator",
+                        });
+                        navigate(`/product/${sib.handle}`);
+                      }}
+                      className="px-3 py-1.5 border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground font-display text-[10px] tracking-wider transition-colors"
+                    >
+                      {String(sibVal).toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sub-Attribute Warning */}
+          {vehicle && relevantSubAttr && (
+            <div className="flex items-start gap-2 px-3 py-2 mb-3 border border-yellow-600/40 bg-yellow-600/10">
+              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+              <span className="font-display text-[10px] tracking-widest text-yellow-500">
+                {relevantSubAttr.field === "bed_length"
+                  ? "THIS PRODUCT IS BED-LENGTH SPECIFIC. PLEASE CONFIRM YOUR BED LENGTH BEFORE ORDERING."
+                  : "THIS PRODUCT IS CAB-SIZE SPECIFIC. PLEASE CONFIRM YOUR CAB CONFIGURATION BEFORE ORDERING."}
+              </span>
+            </div>
+          )}
+
           {variants.length > 1 && product.options?.some((o: { name: string }) => o.name !== "Title") && (
             <div className="mb-3">
               {product.options
