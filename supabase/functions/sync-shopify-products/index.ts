@@ -112,24 +112,49 @@ serve(async (req) => {
       page++;
       console.log(`Fetching products page ${page}... (${allProducts.length} so far)`);
 
-      const res = await fetch(graphqlUrl, {
-        method: "POST",
-        headers: {
-          "X-Shopify-Access-Token": shopifyToken,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: PRODUCTS_QUERY,
-          variables: { cursor },
-        }),
-      });
+      let json: any = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await fetch(graphqlUrl, {
+          method: "POST",
+          headers: {
+            "X-Shopify-Access-Token": shopifyToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: PRODUCTS_QUERY,
+            variables: { cursor },
+          }),
+        });
 
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`Shopify GraphQL error ${res.status}: ${body}`);
+        if (res.status === 429) {
+          const retryAfter = parseInt(res.headers.get("Retry-After") || "0") * 1000 || (2000 * Math.pow(2, attempt));
+          console.log(`Throttled (429), retrying in ${retryAfter}ms (attempt ${attempt + 1}/5)`);
+          await res.text();
+          await new Promise((r) => setTimeout(r, retryAfter));
+          continue;
+        }
+
+        if (!res.ok) {
+          const body = await res.text();
+          throw new Error(`Shopify GraphQL error ${res.status}: ${body}`);
+        }
+
+        json = await res.json();
+
+        const isThrottled = json.errors?.some((e: any) => /throttl/i.test(e.message));
+        if (isThrottled) {
+          const delay = 2000 * Math.pow(2, attempt);
+          console.log(`Throttled (GraphQL), retrying in ${delay}ms (attempt ${attempt + 1}/5)`);
+          await new Promise((r) => setTimeout(r, delay));
+          json = null;
+          continue;
+        }
+
+        break;
       }
 
-      const json = await res.json();
+      if (!json) throw new Error("Shopify API throttled after 5 retries");
+
       if (json.errors) {
         throw new Error(`GraphQL errors: ${json.errors.map((e: any) => e.message).join(", ")}`);
       }
@@ -141,11 +166,10 @@ serve(async (req) => {
       hasNext = pageInfo?.hasNextPage || false;
       cursor = pageInfo?.endCursor || null;
 
-      // Update progress after each page
       await updateSyncStatus({ progress: allProducts.length, total: hasNext ? allProducts.length + 50 : allProducts.length });
 
       if (allProducts.length >= 5000) break;
-      if (hasNext) await new Promise((r) => setTimeout(r, 250));
+      if (hasNext) await new Promise((r) => setTimeout(r, 500));
     }
 
     console.log(`Fetched ${allProducts.length} products total, transforming...`);
