@@ -146,7 +146,7 @@ function EmptyVehicleState({
           {CATEGORIES.map((cat) => (
             <button
               key={cat.handle}
-              onClick={() => onFilterChange({ year: null, make: null, model: null, category: cat.handle })}
+              onClick={() => onFilterChange({ year: null, make: null, model: null, category: cat.handle, subAttribute: null })}
               className="border border-border p-3 text-left transition-colors hover:border-primary/40 group"
             >
               <span className="font-display text-[10px] tracking-widest text-foreground group-hover:text-primary transition-colors block">
