@@ -394,6 +394,12 @@ export const COLLECTION_PRODUCTS_QUERY = `
               name
               values
             }
+            fitmentSubattributes: metafield(namespace: "custom", key: "fitment_subattributes") {
+              value
+            }
+            fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+              value
+            }
           }
         }
       }
