@@ -4,7 +4,8 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { useParams, Link, useSearchParams } from "react-router-dom";
-import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, SlidersHorizontal, Truck, X, Mail, AlertTriangle } from "lucide-react";
+import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import SiteHeader from "@/components/SiteHeader";
 import ProductCard from "@/components/ProductCard";
 import SiteFooter from "@/components/SiteFooter";
