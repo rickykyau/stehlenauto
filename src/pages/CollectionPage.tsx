@@ -415,8 +415,9 @@ const CollectionTemplate = () => {
   }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
 
   const displayProducts = includeUniversal
-    ? [...vehicleProducts, ...universalProducts]
-    : vehicleProducts;
+    ? [...vehicleProducts, ...partialProducts, ...universalProducts]
+    : [...vehicleProducts, ...partialProducts];
+  const partialProductIds = new Set(partialProducts.map((p) => p.node.id));
   const currentHasMore = allProducts.length > 0 ? hasMore : (pageInfo?.hasNextPage || false);
   const currentCursor = allProducts.length > 0 ? nextCursor : (pageInfo?.endCursor || null);
 
