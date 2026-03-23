@@ -565,7 +565,7 @@ const ProductTemplate = () => {
                           attribute_value: sibVal,
                           source: "pdp_configurator",
                         });
-                        navigate(`/product/${sib.handle}`);
+                        navigate(`/products/${sib.handle}`);
                       }}
                       className="px-3 py-1.5 border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground font-display text-[10px] tracking-wider transition-colors"
                     >
