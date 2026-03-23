@@ -247,16 +247,46 @@ const ProductTemplate = () => {
     return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
   }, [vehicle, product, isUniversal]);
 
-  // Parse fitment sub-attributes
+  // Parse fitment sub-attributes (with fallback to products_cache via Admin API)
+  const [cacheSubAttrs, setCacheSubAttrs] = useState<FitmentSubAttributes | null>(null);
+  const [cacheNotes, setCacheNotes] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!product) return;
+    // If Storefront API returned the metafields, no need to fallback
+    const storefrontSub = parseFitmentSubAttributes(product);
+    if (storefrontSub) return;
+    // Fallback: fetch from products_cache (synced via Admin API)
+    const handle = product.handle;
+    if (!handle) return;
+    supabase
+      .from("products_cache")
+      .select("fitment_subattributes, fitment_notes")
+      .eq("handle", handle)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.fitment_subattributes) {
+          const parsed = typeof data.fitment_subattributes === 'string'
+            ? JSON.parse(data.fitment_subattributes)
+            : data.fitment_subattributes;
+          const hasValue = Object.values(parsed).some((v: any) => v && String(v).trim().length > 0);
+          if (hasValue) setCacheSubAttrs(parsed);
+        }
+        if (data?.fitment_notes) {
+          setCacheNotes(data.fitment_notes);
+        }
+      });
+  }, [product]);
+
   const fitmentSubAttrs = useMemo(() => {
     if (!product) return null;
-    return parseFitmentSubAttributes(product);
-  }, [product]);
+    return parseFitmentSubAttributes(product) || cacheSubAttrs;
+  }, [product, cacheSubAttrs]);
 
   const fitmentNotes = useMemo(() => {
     if (!product) return null;
-    return parseFitmentNotes(product);
-  }, [product]);
+    return parseFitmentNotes(product) || cacheNotes;
+  }, [product, cacheNotes]);
 
   // Determine which sub-attribute is relevant for this product type
   const relevantSubAttr = useMemo(() => {
