@@ -319,7 +319,7 @@ const ProductTemplate = () => {
           .select("handle, title, fitment_subattributes")
           .eq("status", "active")
           .ilike("product_type", `%${product.productType}%`)
-          .ilike("title", `%${vehicle.make}%`)
+          .ilike("title", `%${vehicle.make}%${vehicle.model}%`)
           .neq("handle", product.handle)
           .not("fitment_subattributes", "is", null)
           .limit(10);
