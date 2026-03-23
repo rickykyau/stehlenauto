@@ -3,6 +3,7 @@
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
