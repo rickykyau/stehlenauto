@@ -124,26 +124,7 @@ function extractKeyValues(html: string): Record<string, string> {
 }
 
 /* ─── Year/Fitment Matching ─── */
-
-function parseYearRange(title: string): [number, number] | null {
-  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
-  const plusMatch = title.match(/(\d{4})\+/);
-  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
-  const singleMatch = title.match(/^(\d{4})\s/);
-  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
-  return null;
-}
-
-function checkFitment(title: string, year: string, make: string, model: string): boolean {
-  const y = parseInt(year);
-  const range = parseYearRange(title);
-  if (!range) return false;
-  const yearFits = y >= range[0] && y <= range[1];
-  const makeFits = title.toLowerCase().includes(make.toLowerCase());
-  const modelFits = title.toLowerCase().includes(model.toLowerCase());
-  return yearFits && makeFits && modelFits;
-}
+// Moved to src/utils/fitmentMatcher.ts
 
 /* ─── Lightbox Component ─── */
 
