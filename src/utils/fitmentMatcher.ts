@@ -65,6 +65,11 @@ function makesMatch(a: string, b: string): boolean {
     if ((na === x && nb === y) || (na === y && nb === x)) return true;
   }
 
+  if (na === "dodge ram" || nb === "dodge ram") {
+    const other = na === "dodge ram" ? nb : na;
+    if (other === "dodge" || other === "ram") return true;
+  }
+
   return false;
 }
 
