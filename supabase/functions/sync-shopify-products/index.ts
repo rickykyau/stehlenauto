@@ -229,6 +229,8 @@ serve(async (req) => {
         cb_item_name: cbItemName,
         part_number: partNumber,
         metafields: metafieldsClean,
+        fitment_subattributes: fitmentSubattributes,
+        fitment_notes: fitmentNotesVal,
         updated_at: product.updatedAt || now,
         last_synced_at: now,
       };
