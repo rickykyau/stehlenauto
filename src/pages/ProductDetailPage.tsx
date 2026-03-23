@@ -486,25 +486,41 @@ const ProductTemplate = () => {
             )}
           </div>
 
-          {/* Fitment Badge */}
-          {vehicle && fitmentStatus !== null && (
-            <div className={`flex items-center gap-2 px-3 py-2 mb-3 border ${
-              fitmentStatus === 'universal' || fitmentStatus === true
+          {/* Fitment Badge — 3-state: fits, partial, does_not_fit */}
+          {vehicle && fitmentResult && (
+            <div className={`flex items-start gap-2 px-3 py-2 mb-3 border ${
+              fitmentResult.status === "universal" || fitmentResult.status === "fits"
                 ? "border-green-600/40 bg-green-600/10 text-green-400"
-                : "border-red-600/40 bg-red-600/10 text-red-400"
+                : fitmentResult.status === "partial"
+                  ? "border-yellow-600/40 bg-yellow-600/10 text-yellow-500"
+                  : "border-red-600/40 bg-red-600/10 text-red-400"
             }`}>
-              {fitmentStatus === 'universal' || fitmentStatus === true ? (
-                <Check className="w-4 h-4 shrink-0" />
+              {fitmentResult.status === "universal" || fitmentResult.status === "fits" ? (
+                <Check className="w-4 h-4 shrink-0 mt-0.5" />
+              ) : fitmentResult.status === "partial" ? (
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               ) : (
-                <XIcon className="w-4 h-4 shrink-0" />
+                <XIcon className="w-4 h-4 shrink-0 mt-0.5" />
               )}
-              <span className="font-display text-[10px] tracking-widest">
-                {fitmentStatus === 'universal'
-                  ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
-                  : fitmentStatus === true
-                    ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
-                    : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
-              </span>
+              <div>
+                <span className="font-display text-[10px] tracking-widest block">
+                  {fitmentResult.status === "universal"
+                    ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
+                    : fitmentResult.status === "fits"
+                      ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
+                      : fitmentResult.status === "partial"
+                        ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
+                        : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                </span>
+                {fitmentResult.status === "partial" && fitmentResult.warnings.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {fitmentResult.warnings.map((w, i) => (
+                      <p key={i} className="font-body text-[10px] text-yellow-500/80">{w}</p>
+                    ))}
+                    <p className="font-body text-[10px] text-yellow-500/80 italic">Please confirm your trim before ordering.</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
