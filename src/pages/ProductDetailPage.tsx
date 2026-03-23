@@ -325,12 +325,15 @@ const ProductTemplate = () => {
           .limit(10);
 
         if (data) {
+          const seen = new Set<string>();
           const siblings = data
             .filter((p: any) => {
               if (!p.fitment_subattributes) return false;
               const subAttr = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
-              const val = subAttr[relevantSubAttr.field];
-              return val && String(val).trim() && String(val).trim() !== relevantSubAttr.value;
+              const val = String(subAttr[relevantSubAttr.field] || "").trim();
+              if (!val || val === relevantSubAttr.value || seen.has(val)) return false;
+              seen.add(val);
+              return true;
             })
             .map((p: any) => ({
               handle: p.handle,
