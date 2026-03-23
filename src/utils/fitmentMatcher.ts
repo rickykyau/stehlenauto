@@ -30,11 +30,15 @@ export type FitmentResult =
 const MAKE_ALIASES: Record<string, string> = {
   chevy: "chevrolet",
   vw: "volkswagen",
-  "mercedes-benz": "mercedes",
-  "mercedes benz": "mercedes",
+  mercedes: "mercedes-benz",
+  "mercedes benz": "mercedes-benz",
 };
 
-const MAKE_EQUIVALENTS: [string, string][] = [["dodge", "ram"]];
+const MAKE_EQUIVALENTS: [string, string][] = [
+  ["dodge", "ram"],
+  ["dodge", "dodge ram"],
+  ["ram", "dodge ram"],
+];
 
 const SUB_MODEL_KEYWORDS = [
   "classic",
