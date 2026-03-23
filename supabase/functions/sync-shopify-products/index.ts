@@ -168,12 +168,22 @@ serve(async (req) => {
       // Extract CB Item Name from cb_integration.item_name ONLY
       let cbItemName: string | null = null;
       let partNumber: string | null = null;
+      let fitmentSubattributes: any = null;
+      let fitmentNotesVal: string | null = null;
       for (const mf of metafields) {
         if (mf.namespace === "cb_integration" && mf.key === "item_name") {
           cbItemName = mf.value;
         }
         if (mf.namespace === "custom" && mf.key === "part_number") {
           partNumber = mf.value;
+        }
+        if (mf.namespace === "custom" && mf.key === "fitment_subattributes") {
+          try {
+            fitmentSubattributes = JSON.parse(mf.value);
+          } catch { fitmentSubattributes = null; }
+        }
+        if (mf.namespace === "custom" && mf.key === "fitment_notes") {
+          fitmentNotesVal = mf.value;
         }
       }
 
