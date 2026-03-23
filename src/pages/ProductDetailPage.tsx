@@ -223,11 +223,14 @@ const ProductTemplate = () => {
     return (product.tags || []).some((t: string) => t.toLowerCase() === 'universal fit');
   }, [product]);
 
-  const fitmentStatus = useMemo(() => {
+  const fitmentResult: FitmentResult | null = useMemo(() => {
     if (!vehicle || !product) return null;
-    if (isUniversal) return 'universal';
-    return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
-  }, [vehicle, product, isUniversal]);
+    return checkProductFitment(
+      product.tags || [],
+      product.title,
+      { year: parseInt(vehicle.year), make: vehicle.make, model: vehicle.model }
+    );
+  }, [vehicle, product]);
 
   // Parse fitment sub-attributes (with fallback to products_cache via Admin API)
   const [cacheSubAttrs, setCacheSubAttrs] = useState<FitmentSubAttributes | null>(null);
