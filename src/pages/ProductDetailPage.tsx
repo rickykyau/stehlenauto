@@ -731,15 +731,25 @@ const ProductTemplate = () => {
 
               {activeTab === "fitment" && (
                 <div>
-                  {vehicle && (
+                  {vehicle && fitmentResult && (
                     <div className={`flex items-center gap-2 px-3 py-2 mb-4 border ${
-                      fitmentStatus
+                      fitmentResult.status === "fits" || fitmentResult.status === "universal"
                         ? "border-green-600/40 bg-green-600/10 text-green-400"
-                        : "border-red-600/40 bg-red-600/10 text-red-400"
+                        : fitmentResult.status === "partial"
+                          ? "border-yellow-600/40 bg-yellow-600/10 text-yellow-500"
+                          : "border-red-600/40 bg-red-600/10 text-red-400"
                     }`}>
-                      {fitmentStatus ? <Check className="w-4 h-4" /> : <XIcon className="w-4 h-4" />}
+                      {fitmentResult.status === "fits" || fitmentResult.status === "universal"
+                        ? <Check className="w-4 h-4" />
+                        : fitmentResult.status === "partial"
+                          ? <AlertTriangle className="w-4 h-4" />
+                          : <XIcon className="w-4 h-4" />}
                       <span className="font-display text-[10px] tracking-widest">
-                        {fitmentStatus ? `FITS YOUR ${vehicleLabel.toUpperCase()}` : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
+                        {fitmentResult.status === "fits" || fitmentResult.status === "universal"
+                          ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
+                          : fitmentResult.status === "partial"
+                            ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
+                            : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
                       </span>
                     </div>
                   )}
