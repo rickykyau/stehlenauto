@@ -349,26 +349,12 @@ const CollectionTemplate = () => {
   const rawDisplayProducts = allProducts.length > 0 ? allProducts : initialProducts;
 
   // Client-side filtering: minimal when using tag-based query
-  const { vehicleProducts, universalProducts } = useMemo(() => {
+  const { vehicleProducts, universalProducts, partialProducts } = useMemo(() => {
     let filtered = rawDisplayProducts;
 
     // If we fetched from make collection but also have a category filter, apply category client-side
     if (!hasFullYMM && filters.make && MAKE_COLLECTION_MAP[filters.make] && filters.category) {
       filtered = filtered.filter((p) => matchesCategory(p, filters.category!));
-    }
-
-    // When using collection (make-only, no full YMM), apply year/model client-side
-    if (!hasFullYMM) {
-      if (filters.year) {
-        filtered = filtered.filter((p) =>
-          isUniversalProduct(p) || matchesYear(p.node.title, filters.year!)
-        );
-      }
-      if (filters.model) {
-        filtered = filtered.filter((p) =>
-          isUniversalProduct(p) || p.node.title.toLowerCase().includes(filters.model!.toLowerCase())
-        );
-      }
     }
 
     // Apply sub-attribute filter (bed_length / cab_size)
@@ -389,11 +375,43 @@ const CollectionTemplate = () => {
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
-      const vehicleSpecific = filtered.filter((p) => !isUniversalProduct(p));
-      const universal = filtered.filter((p) => isUniversalProduct(p));
-      return { vehicleProducts: vehicleSpecific, universalProducts: universal };
+      const vehicleSelection = (filters.year && filters.make) ? {
+        year: parseInt(filters.year),
+        make: filters.make,
+        model: filters.model || "",
+      } : null;
+
+      const vehicleSpecific: ShopifyProduct[] = [];
+      const partial: ShopifyProduct[] = [];
+      const universal: ShopifyProduct[] = [];
+
+      for (const p of filtered) {
+        if (isUniversalProduct(p)) {
+          universal.push(p);
+          continue;
+        }
+
+        if (vehicleSelection) {
+          const result = checkProductFitment(p.node.tags || [], p.node.title, vehicleSelection);
+          if (result.status === "fits" || result.status === "universal") {
+            vehicleSpecific.push(p);
+          } else if (result.status === "partial") {
+            partial.push(p);
+          }
+          // "does_not_fit" products are excluded entirely
+        } else {
+          // Only make filter without year — use old title-based matching
+          if (!hasFullYMM) {
+            if (filters.year && !matchesYear(p.node.title, filters.year)) continue;
+            if (filters.model && !p.node.title.toLowerCase().includes(filters.model.toLowerCase())) continue;
+          }
+          vehicleSpecific.push(p);
+        }
+      }
+
+      return { vehicleProducts: vehicleSpecific, universalProducts: universal, partialProducts: partial };
     }
-    return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
+    return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[], partialProducts: [] as ShopifyProduct[] };
   }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
 
   const displayProducts = includeUniversal
