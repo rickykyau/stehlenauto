@@ -726,7 +726,7 @@ const CollectionTemplate = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
-          ) : vehicleProducts.length === 0 && (filters.year || filters.make || filters.model) && filters.make !== "Universal" ? (
+          ) : vehicleProducts.length === 0 && partialProducts.length === 0 && (filters.year || filters.make || filters.model) && filters.make !== "Universal" ? (
             <EmptyVehicleState
               filters={filters}
               activeCategoryLabel={activeCategoryLabel}
