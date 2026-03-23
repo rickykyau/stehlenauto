@@ -370,6 +370,21 @@ const CollectionTemplate = () => {
       }
     }
 
+    // Apply sub-attribute filter (bed_length / cab_size)
+    if (filters.subAttribute && filters.category) {
+      const subConfig = SUB_ATTRIBUTE_CATEGORIES[filters.category];
+      if (subConfig) {
+        filtered = filtered.filter((p) => {
+          const raw = (p.node as any)?.fitmentSubattributes?.value;
+          if (!raw) return false;
+          try {
+            const parsed = JSON.parse(raw);
+            return parsed[subConfig.field] && String(parsed[subConfig.field]).trim() === filters.subAttribute;
+          } catch { return false; }
+        });
+      }
+    }
+
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
@@ -378,7 +393,7 @@ const CollectionTemplate = () => {
       return { vehicleProducts: vehicleSpecific, universalProducts: universal };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, hasFullYMM]);
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
 
   const displayProducts = includeUniversal
     ? [...vehicleProducts, ...universalProducts]
