@@ -27,6 +27,7 @@ Your capabilities:
 - Escalate to human support when needed
 
 Guidelines:
+- When a customer asks about a category that is bed-length or cab-type specific (tonneau covers, bed mats → ask bed length; running boards, floor mats → ask cab type), ask for that detail AFTER they provide YMM: "What bed length is your F-150? Options: 5.5 ft (Short), 6.5 ft (Standard), or 8 ft (Long)" or "What cab type is your F-150? Options: Regular Cab, Extended Cab, Crew Cab, SuperCrew"
 - Be helpful, concise, and friendly
 - CRITICAL RULE — SHOW PRODUCTS FIRST, ASK QUESTIONS LATER:
   * When the customer says "all", "show me all", "everything", "show me everything", "what do you have", or any variation — STOP asking questions and IMMEDIATELY show the products provided in the context. Action beats clarification.
@@ -82,7 +83,7 @@ const CATEGORY_MAP: Array<{ patterns: RegExp; productType: string; label: string
   { patterns: /under.?seat\s*storage/i, productType: "under seat storage", label: "Under Seat Storage" },
 ];
 
-const PRODUCT_CACHE_SELECT = "id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status";
+const PRODUCT_CACHE_SELECT = "id, title, handle, shopify_product_id, images, variants, tags, product_type, fitment_vehicles, metafields, cb_item_name, part_number, status, fitment_subattributes, fitment_notes";
 
 function parseVehicle(message: string, vehicleContext: { year: string; make: string; model: string } | null) {
   const patterns = [
@@ -268,6 +269,12 @@ function buildProductCard(p: any) {
   // Use handle from DB, or generate from title as fallback
   const handle = p.handle || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+  // Parse fitment subattributes
+  let subAttrs: any = null;
+  if (p.fitment_subattributes) {
+    subAttrs = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
+  }
+
   return {
     id: p.shopify_product_id,
     cacheId: p.id,
@@ -280,6 +287,9 @@ function buildProductCard(p: any) {
     inventoryQuantity: firstVariant.inventory_quantity ?? 0,
     partNumber: p.part_number,
     cbItemName: p.cb_item_name,
+    bedLength: subAttrs?.bed_length || null,
+    cabSize: subAttrs?.cab_size || null,
+    fitmentNotes: p.fitment_notes || null,
   };
 }
 

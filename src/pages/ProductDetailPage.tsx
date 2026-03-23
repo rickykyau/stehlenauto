@@ -3,10 +3,10 @@
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle,
 } from "lucide-react";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
@@ -14,6 +14,8 @@ import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
 import { useShopifyProduct } from "@/hooks/useShopifyProducts";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { parseFitmentSubAttributes, parseFitmentNotes, SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ─── Description Parser ─── */
 
@@ -199,6 +201,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 const ProductTemplate = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { data: product, isLoading: productLoading } = useShopifyProduct(slug || "");
   const { addItem, isLoading: cartLoading } = useCartStore();
   const { vehicle, vehicleLabel } = useVehicle();
@@ -207,6 +210,7 @@ const ProductTemplate = () => {
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [siblingProducts, setSiblingProducts] = useState<Array<{ handle: string; title: string; subAttr: FitmentSubAttributes }>>([]);
 
   // Track product view (GA4 standard)
   useEffect(() => {
@@ -242,6 +246,80 @@ const ProductTemplate = () => {
     if (isUniversal) return 'universal';
     return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
   }, [vehicle, product, isUniversal]);
+
+  // Parse fitment sub-attributes
+  const fitmentSubAttrs = useMemo(() => {
+    if (!product) return null;
+    return parseFitmentSubAttributes(product);
+  }, [product]);
+
+  const fitmentNotes = useMemo(() => {
+    if (!product) return null;
+    return parseFitmentNotes(product);
+  }, [product]);
+
+  // Determine which sub-attribute is relevant for this product type
+  const relevantSubAttr = useMemo(() => {
+    if (!product || !fitmentSubAttrs) return null;
+    const pt = (product.productType || "").toLowerCase();
+    if (pt.includes("tonneau") || pt.includes("bed mat")) {
+      const val = fitmentSubAttrs.bed_length;
+      return val ? { field: "bed_length" as const, label: "Bed Length", value: val } : null;
+    }
+    if (pt.includes("running board") || pt.includes("floor mat")) {
+      const val = fitmentSubAttrs.cab_size;
+      return val ? { field: "cab_size" as const, label: "Cab Type", value: val } : null;
+    }
+    // Check if any value is present
+    if (fitmentSubAttrs.bed_length) return { field: "bed_length" as const, label: "Bed Length", value: fitmentSubAttrs.bed_length };
+    if (fitmentSubAttrs.cab_size) return { field: "cab_size" as const, label: "Cab Type", value: fitmentSubAttrs.cab_size };
+    return null;
+  }, [product, fitmentSubAttrs]);
+
+  // Fetch sibling products with different sub-attributes
+  useEffect(() => {
+    if (!product || !relevantSubAttr || !vehicle) {
+      setSiblingProducts([]);
+      return;
+    }
+    const fetchSiblings = async () => {
+      try {
+        const { data } = await supabase
+          .from("products_cache")
+          .select("handle, title, fitment_subattributes")
+          .eq("status", "active")
+          .ilike("product_type", `%${product.productType}%`)
+          .ilike("title", `%${vehicle.make}%`)
+          .neq("handle", product.handle)
+          .not("fitment_subattributes", "is", null)
+          .limit(10);
+
+        if (data) {
+          const siblings = data
+            .filter((p: any) => {
+              if (!p.fitment_subattributes) return false;
+              const subAttr = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
+              const val = subAttr[relevantSubAttr.field];
+              return val && String(val).trim() && String(val).trim() !== relevantSubAttr.value;
+            })
+            .map((p: any) => ({
+              handle: p.handle,
+              title: p.title,
+              subAttr: typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes,
+            }));
+          setSiblingProducts(siblings);
+        }
+      } catch { /* silent */ }
+    };
+    fetchSiblings();
+  }, [product?.handle, relevantSubAttr?.field, relevantSubAttr?.value, vehicle?.make, product?.productType]);
+
+  // Determine if customer needs sub-attribute warning
+  const showSubAttrWarning = useMemo(() => {
+    if (!vehicle || !relevantSubAttr) return false;
+    // Show warning if product has sub-attribute but user hasn't confirmed
+    return true; // Product is sub-attribute specific
+  }, [vehicle, relevantSubAttr]);
 
   if (productLoading) {
     return (
@@ -412,7 +490,72 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Variant selector */}
+          {/* Sub-Attribute Badge */}
+          {relevantSubAttr && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-primary/30 bg-primary/5">
+              <Truck className="w-4 h-4 text-primary shrink-0" />
+              <span className="font-display text-[10px] tracking-widest text-primary">
+                {relevantSubAttr.label.toUpperCase()}: {relevantSubAttr.value.toUpperCase()}
+              </span>
+            </div>
+          )}
+
+          {/* Fitment Notes */}
+          {fitmentNotes && (
+            <p className="font-body text-xs text-muted-foreground italic mb-3 px-1">
+              {fitmentNotes}
+            </p>
+          )}
+
+          {/* Sub-Attribute Configurator (sibling products) */}
+          {relevantSubAttr && siblingProducts.length > 0 && (
+            <div className="mb-3">
+              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
+                SELECT YOUR {relevantSubAttr.label.toUpperCase()}:
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {/* Current product option - highlighted */}
+                <button className="px-3 py-1.5 border-2 border-primary bg-primary/10 text-primary font-display text-[10px] tracking-wider">
+                  {relevantSubAttr.value.toUpperCase()}
+                </button>
+                {/* Sibling options */}
+                {siblingProducts.map((sib) => {
+                  const sibVal = sib.subAttr[relevantSubAttr.field];
+                  if (!sibVal) return null;
+                  return (
+                    <button
+                      key={sib.handle}
+                      onClick={() => {
+                        trackEvent("fitment_subattribute_selected", {
+                          item_id: product.id,
+                          attribute_type: relevantSubAttr.field,
+                          attribute_value: sibVal,
+                          source: "pdp_configurator",
+                        });
+                        navigate(`/product/${sib.handle}`);
+                      }}
+                      className="px-3 py-1.5 border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground font-display text-[10px] tracking-wider transition-colors"
+                    >
+                      {String(sibVal).toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sub-Attribute Warning */}
+          {vehicle && relevantSubAttr && (
+            <div className="flex items-start gap-2 px-3 py-2 mb-3 border border-yellow-600/40 bg-yellow-600/10">
+              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+              <span className="font-display text-[10px] tracking-widest text-yellow-500">
+                {relevantSubAttr.field === "bed_length"
+                  ? "THIS PRODUCT IS BED-LENGTH SPECIFIC. PLEASE CONFIRM YOUR BED LENGTH BEFORE ORDERING."
+                  : "THIS PRODUCT IS CAB-SIZE SPECIFIC. PLEASE CONFIRM YOUR CAB CONFIGURATION BEFORE ORDERING."}
+              </span>
+            </div>
+          )}
+
           {variants.length > 1 && product.options?.some((o: { name: string }) => o.name !== "Title") && (
             <div className="mb-3">
               {product.options

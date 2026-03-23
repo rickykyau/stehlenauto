@@ -15,7 +15,7 @@ import { useVehicle } from "@/contexts/VehicleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAvailableFilterOptions, CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import type { ShopifyProduct } from "@/lib/shopify";
-import { isUniversalProduct, MAKE_COLLECTION_MAP, COLLECTION_PRODUCTS_QUERY, storefrontApiRequest, buildYMMTagQuery } from "@/lib/shopify";
+import { isUniversalProduct, MAKE_COLLECTION_MAP, COLLECTION_PRODUCTS_QUERY, storefrontApiRequest, buildYMMTagQuery, SUB_ATTRIBUTE_CATEGORIES } from "@/lib/shopify";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
@@ -146,7 +146,7 @@ function EmptyVehicleState({
           {CATEGORIES.map((cat) => (
             <button
               key={cat.handle}
-              onClick={() => onFilterChange({ year: null, make: null, model: null, category: cat.handle })}
+              onClick={() => onFilterChange({ year: null, make: null, model: null, category: cat.handle, subAttribute: null })}
               className="border border-border p-3 text-left transition-colors hover:border-primary/40 group"
             >
               <span className="font-display text-[10px] tracking-widest text-foreground group-hover:text-primary transition-colors block">
@@ -205,6 +205,7 @@ const CollectionTemplate = () => {
     make: null,
     model: null,
     category: null,
+    subAttribute: null,
   });
   const vehicleSyncedRef = useRef(false);
   const viewItemListFiredRef = useRef<string | null>(null);
@@ -369,6 +370,21 @@ const CollectionTemplate = () => {
       }
     }
 
+    // Apply sub-attribute filter (bed_length / cab_size)
+    if (filters.subAttribute && filters.category) {
+      const subConfig = SUB_ATTRIBUTE_CATEGORIES[filters.category];
+      if (subConfig) {
+        filtered = filtered.filter((p) => {
+          const raw = (p.node as any)?.fitmentSubattributes?.value;
+          if (!raw) return false;
+          try {
+            const parsed = JSON.parse(raw);
+            return parsed[subConfig.field] && String(parsed[subConfig.field]).trim() === filters.subAttribute;
+          } catch { return false; }
+        });
+      }
+    }
+
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
@@ -377,7 +393,7 @@ const CollectionTemplate = () => {
       return { vehicleProducts: vehicleSpecific, universalProducts: universal };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[] };
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, hasFullYMM]);
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
 
   const displayProducts = includeUniversal
     ? [...vehicleProducts, ...universalProducts]
@@ -517,7 +533,8 @@ const CollectionTemplate = () => {
     (filters.year ? 1 : 0) +
     (filters.make ? 1 : 0) +
     (filters.model ? 1 : 0) +
-    (filters.category ? 1 : 0);
+    (filters.category ? 1 : 0) +
+    (filters.subAttribute ? 1 : 0);
 
   // Compute available filter options from loaded products
   const availableOptions = useAvailableFilterOptions(rawDisplayProducts, filters);
@@ -528,6 +545,7 @@ const CollectionTemplate = () => {
       onFilterChange={handleFilterChange}
       collections={shopifyCollections || []}
       availableOptions={availableOptions}
+      products={rawDisplayProducts}
     />
   );
 
@@ -644,7 +662,13 @@ const CollectionTemplate = () => {
           {filters.category && (
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 font-display text-[10px] tracking-widest">
               {CATEGORIES.find((c) => c.handle === filters.category)?.label.toUpperCase() || filters.category.replace(/-/g, " ").toUpperCase()}
-              <button onClick={() => handleFilterChange({ ...filters, category: null })}><X className="w-3 h-3" /></button>
+              <button onClick={() => handleFilterChange({ ...filters, category: null, subAttribute: null })}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.subAttribute && (
+            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 font-display text-[10px] tracking-widest">
+              {filters.subAttribute.toUpperCase()}
+              <button onClick={() => handleFilterChange({ ...filters, subAttribute: null })}><X className="w-3 h-3" /></button>
             </span>
           )}
         </div>

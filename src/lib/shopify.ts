@@ -8,6 +8,15 @@ const SHOPIFY_STOREFRONT_TOKEN = '361b5e3e94ab0cf75496641e0168aed0';
 
 // ── Types ──────────────────────────────────────────────
 
+export interface FitmentSubAttributes {
+  bed_length?: string;
+  cab_size?: string;
+  body_style?: string;
+  trim?: string;
+  seat_config?: string;
+  bed_style?: string;
+}
+
 export interface ShopifyProduct {
   node: {
     id: string;
@@ -61,8 +70,38 @@ export interface ShopifyProduct {
       name: string;
       values: string[];
     }>;
+    fitmentSubAttributes?: FitmentSubAttributes | null;
+    fitmentNotes?: string | null;
   };
 }
+
+// ── Fitment Sub-Attributes Parser ──────────────────────
+
+export function parseFitmentSubAttributes(product: any): FitmentSubAttributes | null {
+  // Handle Storefront API metafield response
+  const raw = product?.fitmentSubattributes?.value || product?.fitmentSubAttributes?.value || product?.node?.fitmentSubattributes?.value;
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    // Only return if at least one non-empty value
+    const hasValue = Object.values(parsed).some((v: any) => v && String(v).trim().length > 0);
+    return hasValue ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function parseFitmentNotes(product: any): string | null {
+  return product?.fitmentNotes?.value || product?.fitmentNotes || product?.node?.fitmentNotes?.value || null;
+}
+
+/** Categories that need sub-attribute filters */
+export const SUB_ATTRIBUTE_CATEGORIES: Record<string, { field: keyof FitmentSubAttributes; label: string }> = {
+  "tonneau-covers": { field: "bed_length", label: "BED LENGTH" },
+  "truck-bed-mats": { field: "bed_length", label: "BED LENGTH" },
+  "running-boards-side-steps": { field: "cab_size", label: "CAB TYPE" },
+  "floor-mats": { field: "cab_size", label: "CAB TYPE" },
+};
 
 // ── Universal Product Detection ────────────────────────
 
@@ -206,6 +245,12 @@ export const PRODUCTS_QUERY = `
             name
             values
           }
+          fitmentSubattributes: metafield(namespace: "custom", key: "fitment_subattributes") {
+            value
+          }
+          fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+            value
+          }
         }
       }
     }
@@ -266,6 +311,12 @@ export const PRODUCT_BY_HANDLE_QUERY = `
       options {
         name
         values
+      }
+      fitmentSubattributes: metafield(namespace: "custom", key: "fitment_subattributes") {
+        value
+      }
+      fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+        value
       }
     }
   }
@@ -370,6 +421,12 @@ export const COLLECTION_PRODUCTS_QUERY = `
             options {
               name
               values
+            }
+            fitmentSubattributes: metafield(namespace: "custom", key: "fitment_subattributes") {
+              value
+            }
+            fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+              value
             }
           }
         }

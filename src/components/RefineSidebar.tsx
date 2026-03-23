@@ -5,6 +5,8 @@ import { CATEGORIES } from "@/hooks/useAvailableFilterOptions";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { trackEvent } from "@/lib/analytics";
 import { useYMMConfig } from "@/hooks/useYMMConfig";
+import { SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
+import type { ShopifyProduct } from "@/lib/shopify";
 
 const DECADES = ["2020s", "2010s", "2000s", "1990s", "1980s"] as const;
 
@@ -19,6 +21,7 @@ export interface RefineFilters {
   make: string | null;
   model: string | null;
   category: string | null;
+  subAttribute: string | null;
 }
 
 interface RefineSidebarProps {
@@ -26,11 +29,12 @@ interface RefineSidebarProps {
   onFilterChange: (filters: RefineFilters) => void;
   collections: Array<{ node: { id: string; handle: string; title: string } }>;
   availableOptions?: AvailableOptions;
+  products?: ShopifyProduct[];
 }
 
 type Section = "year" | "make" | "model" | "category";
 
-const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions }: RefineSidebarProps) => {
+const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions, products }: RefineSidebarProps) => {
   const { makes: MAKES, models: MODELS_BY_MAKE } = useYMMConfig();
   const [expanded, setExpanded] = useState<Record<Section, boolean>>({
     year: true,
@@ -62,8 +66,29 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
   };
 
   const clearAll = () => {
-    onFilterChange({ year: null, make: null, model: null, category: null });
+    onFilterChange({ year: null, make: null, model: null, category: null, subAttribute: null });
   };
+
+  // Compute sub-attribute filter options from products
+  const subAttrConfig = filters.category ? SUB_ATTRIBUTE_CATEGORIES[filters.category] : null;
+  const subAttributeOptions = (() => {
+    if (!subAttrConfig || !products) return [];
+    const field = subAttrConfig.field;
+    const values = new Map<string, number>();
+    for (const p of products) {
+      const raw = (p.node as any)?.fitmentSubattributes?.value || (p.node as any)?.fitmentSubAttributes?.value;
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        const val = parsed[field];
+        if (val && String(val).trim()) {
+          const v = String(val).trim();
+          values.set(v, (values.get(v) || 0) + 1);
+        }
+      } catch { /* ignore */ }
+    }
+    return Array.from(values.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  })();
 
   const hasOptions = !!availableOptions;
   const currentModels = filters.make ? (MODELS_BY_MAKE[filters.make] || []) : [];
@@ -282,18 +307,57 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions 
           </div>
         )}
 
+        {/* ── SUB-ATTRIBUTE (Bed Length / Cab Type) ── */}
+        {subAttrConfig && subAttributeOptions.length > 0 && (
+          <>
+            <button
+              onClick={() => toggle("category")} // reuse toggle for visual consistency
+              className="w-full flex items-center justify-between py-2"
+            >
+              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">
+                {subAttrConfig.label}
+                {filters.subAttribute ? `: ${filters.subAttribute.toUpperCase()}` : ""}
+              </h3>
+            </button>
+            <div className="pb-3">
+              <FilterButton
+                active={!filters.subAttribute}
+                onClick={() => {
+                  trackEvent("filter_applied", { filter_type: subAttrConfig.field, filter_value: "all" });
+                  update({ subAttribute: null });
+                }}
+              >
+                ALL {subAttrConfig.label}S
+              </FilterButton>
+              {subAttributeOptions.map(([value, count]) => (
+                <FilterButton
+                  key={value}
+                  active={filters.subAttribute === value}
+                  count={count}
+                  onClick={() => {
+                    trackEvent("filter_applied", { filter_type: subAttrConfig.field, filter_value: value });
+                    update({ subAttribute: filters.subAttribute === value ? null : value });
+                  }}
+                >
+                  {value.toUpperCase()}
+                </FilterButton>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* ── CATEGORY ── */}
         <SectionHeader section="category" label="CATEGORY" />
         {expanded.category && (
           <div className="pb-3">
-            <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
+            <FilterButton active={!filters.category} onClick={() => update({ category: null, subAttribute: null })}>
               ALL CATEGORIES
             </FilterButton>
             {CATEGORIES.map((cat) => (
               <FilterButton
                 key={cat.handle}
                 active={filters.category === cat.handle}
-                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle, subAttribute: null })}
               >
                 {cat.label.toUpperCase()}
               </FilterButton>
