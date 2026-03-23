@@ -316,6 +316,8 @@ export type Database = {
         Row: {
           cb_item_name: string | null
           created_at: string
+          fitment_notes: string | null
+          fitment_subattributes: Json | null
           fitment_vehicles: Json
           handle: string | null
           id: string
@@ -335,6 +337,8 @@ export type Database = {
         Insert: {
           cb_item_name?: string | null
           created_at?: string
+          fitment_notes?: string | null
+          fitment_subattributes?: Json | null
           fitment_vehicles?: Json
           handle?: string | null
           id?: string
@@ -354,6 +358,8 @@ export type Database = {
         Update: {
           cb_item_name?: string | null
           created_at?: string
+          fitment_notes?: string | null
+          fitment_subattributes?: Json | null
           fitment_vehicles?: Json
           handle?: string | null
           id?: string
