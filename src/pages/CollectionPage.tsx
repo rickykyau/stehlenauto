@@ -662,7 +662,13 @@ const CollectionTemplate = () => {
           {filters.category && (
             <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 font-display text-[10px] tracking-widest">
               {CATEGORIES.find((c) => c.handle === filters.category)?.label.toUpperCase() || filters.category.replace(/-/g, " ").toUpperCase()}
-              <button onClick={() => handleFilterChange({ ...filters, category: null })}><X className="w-3 h-3" /></button>
+              <button onClick={() => handleFilterChange({ ...filters, category: null, subAttribute: null })}><X className="w-3 h-3" /></button>
+            </span>
+          )}
+          {filters.subAttribute && (
+            <span className="inline-flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 font-display text-[10px] tracking-widest">
+              {filters.subAttribute.toUpperCase()}
+              <button onClick={() => handleFilterChange({ ...filters, subAttribute: null })}><X className="w-3 h-3" /></button>
             </span>
           )}
         </div>
