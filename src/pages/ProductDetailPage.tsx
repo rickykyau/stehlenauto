@@ -247,6 +247,80 @@ const ProductTemplate = () => {
     return checkFitment(product.title, vehicle.year, vehicle.make, vehicle.model);
   }, [vehicle, product, isUniversal]);
 
+  // Parse fitment sub-attributes
+  const fitmentSubAttrs = useMemo(() => {
+    if (!product) return null;
+    return parseFitmentSubAttributes(product);
+  }, [product]);
+
+  const fitmentNotes = useMemo(() => {
+    if (!product) return null;
+    return parseFitmentNotes(product);
+  }, [product]);
+
+  // Determine which sub-attribute is relevant for this product type
+  const relevantSubAttr = useMemo(() => {
+    if (!product || !fitmentSubAttrs) return null;
+    const pt = (product.productType || "").toLowerCase();
+    if (pt.includes("tonneau") || pt.includes("bed mat")) {
+      const val = fitmentSubAttrs.bed_length;
+      return val ? { field: "bed_length" as const, label: "Bed Length", value: val } : null;
+    }
+    if (pt.includes("running board") || pt.includes("floor mat")) {
+      const val = fitmentSubAttrs.cab_size;
+      return val ? { field: "cab_size" as const, label: "Cab Type", value: val } : null;
+    }
+    // Check if any value is present
+    if (fitmentSubAttrs.bed_length) return { field: "bed_length" as const, label: "Bed Length", value: fitmentSubAttrs.bed_length };
+    if (fitmentSubAttrs.cab_size) return { field: "cab_size" as const, label: "Cab Type", value: fitmentSubAttrs.cab_size };
+    return null;
+  }, [product, fitmentSubAttrs]);
+
+  // Fetch sibling products with different sub-attributes
+  useEffect(() => {
+    if (!product || !relevantSubAttr || !vehicle) {
+      setSiblingProducts([]);
+      return;
+    }
+    const fetchSiblings = async () => {
+      try {
+        const { data } = await supabase
+          .from("products_cache")
+          .select("handle, title, fitment_subattributes")
+          .eq("status", "active")
+          .ilike("product_type", `%${product.productType}%`)
+          .ilike("title", `%${vehicle.make}%`)
+          .neq("handle", product.handle)
+          .not("fitment_subattributes", "is", null)
+          .limit(10);
+
+        if (data) {
+          const siblings = data
+            .filter((p: any) => {
+              if (!p.fitment_subattributes) return false;
+              const subAttr = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
+              const val = subAttr[relevantSubAttr.field];
+              return val && String(val).trim() && String(val).trim() !== relevantSubAttr.value;
+            })
+            .map((p: any) => ({
+              handle: p.handle,
+              title: p.title,
+              subAttr: typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes,
+            }));
+          setSiblingProducts(siblings);
+        }
+      } catch { /* silent */ }
+    };
+    fetchSiblings();
+  }, [product?.handle, relevantSubAttr?.field, relevantSubAttr?.value, vehicle?.make, product?.productType]);
+
+  // Determine if customer needs sub-attribute warning
+  const showSubAttrWarning = useMemo(() => {
+    if (!vehicle || !relevantSubAttr) return false;
+    // Show warning if product has sub-attribute but user hasn't confirmed
+    return true; // Product is sub-attribute specific
+  }, [vehicle, relevantSubAttr]);
+
   if (productLoading) {
     return (
       <div className="min-h-screen bg-background">
