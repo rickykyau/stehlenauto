@@ -8,6 +8,15 @@ const SHOPIFY_STOREFRONT_TOKEN = '361b5e3e94ab0cf75496641e0168aed0';
 
 // ── Types ──────────────────────────────────────────────
 
+export interface FitmentSubAttributes {
+  bed_length?: string;
+  cab_size?: string;
+  body_style?: string;
+  trim?: string;
+  seat_config?: string;
+  bed_style?: string;
+}
+
 export interface ShopifyProduct {
   node: {
     id: string;
@@ -61,6 +70,8 @@ export interface ShopifyProduct {
       name: string;
       values: string[];
     }>;
+    fitmentSubAttributes?: FitmentSubAttributes | null;
+    fitmentNotes?: string | null;
   };
 }
 
