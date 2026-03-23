@@ -116,9 +116,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       >
         <div className="flex items-center justify-center gap-2">
           <Shield className="w-4 h-4" />
-          {year && make && model && matchCount > 0
-            ? `FIND PARTS (${matchCount} part${matchCount !== 1 ? "s" : ""})`
-            : "FIND PARTS"}
+          FIND PARTS
         </div>
       </button>
 
