@@ -30,11 +30,15 @@ export type FitmentResult =
 const MAKE_ALIASES: Record<string, string> = {
   chevy: "chevrolet",
   vw: "volkswagen",
-  "mercedes-benz": "mercedes",
-  "mercedes benz": "mercedes",
+  mercedes: "mercedes-benz",
+  "mercedes benz": "mercedes-benz",
 };
 
-const MAKE_EQUIVALENTS: [string, string][] = [["dodge", "ram"]];
+const MAKE_EQUIVALENTS: [string, string][] = [
+  ["dodge", "ram"],
+  ["dodge", "dodge ram"],
+  ["ram", "dodge ram"],
+];
 
 const SUB_MODEL_KEYWORDS = [
   "classic",
@@ -59,6 +63,11 @@ function makesMatch(a: string, b: string): boolean {
 
   for (const [x, y] of MAKE_EQUIVALENTS) {
     if ((na === x && nb === y) || (na === y && nb === x)) return true;
+  }
+
+  if (na === "dodge ram" || nb === "dodge ram") {
+    const other = na === "dodge ram" ? nb : na;
+    if (other === "dodge" || other === "ram") return true;
   }
 
   return false;
@@ -228,7 +237,23 @@ function modelsMatch(selectionModel: string, entryModel: string): boolean {
   return false;
 }
 
+function normalizeVehicleSelection(vehicle: VehicleSelection): VehicleSelection {
+  const make = vehicle.make.toLowerCase().trim();
+  const model = vehicle.model.toLowerCase().trim();
+
+  if (make === "dodge" && model === "ram") {
+    return { year: vehicle.year, make: "Dodge Ram", model: "" };
+  }
+
+  if (make === "ram") {
+    return { year: vehicle.year, make: "Dodge Ram", model: vehicle.model };
+  }
+
+  return vehicle;
+}
+
 export function checkProductFitment(tags: string[], title: string, vehicle: VehicleSelection): FitmentResult {
+  const normalizedVehicle = normalizeVehicleSelection(vehicle);
   if (tags.some((tag) => tag.toLowerCase() === "universal fit")) {
     return { status: "universal" };
   }
@@ -254,21 +279,21 @@ export function checkProductFitment(tags: string[], title: string, vehicle: Vehi
   }
 
   if (entries.length === 0) {
-    return fallbackFromTitle(title, vehicle);
+    return fallbackFromTitle(title, normalizedVehicle);
   }
 
-  const makeMatches = entries.filter((entry) => makesMatch(entry.make, vehicle.make));
+  const makeMatches = entries.filter((entry) => makesMatch(entry.make, normalizedVehicle.make));
   if (makeMatches.length === 0) {
     const altMakeMatches = entries.filter((entry) => {
       const combined = `${entry.make} ${entry.model}`.toLowerCase();
-      return combined.includes(vehicle.make.toLowerCase()) || makesMatch(entry.make, vehicle.make);
+      return combined.includes(normalizedVehicle.make.toLowerCase()) || makesMatch(entry.make, normalizedVehicle.make);
     });
 
     if (altMakeMatches.length === 0) return { status: "does_not_fit" };
-    return checkEntriesAgainstVehicle(altMakeMatches, vehicle);
+    return checkEntriesAgainstVehicle(altMakeMatches, normalizedVehicle);
   }
 
-  return checkEntriesAgainstVehicle(makeMatches, vehicle);
+  return checkEntriesAgainstVehicle(makeMatches, normalizedVehicle);
 }
 
 function checkEntriesAgainstVehicle(entries: FitmentEntry[], vehicle: VehicleSelection): FitmentResult {
