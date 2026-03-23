@@ -237,7 +237,23 @@ function modelsMatch(selectionModel: string, entryModel: string): boolean {
   return false;
 }
 
+function normalizeVehicleSelection(vehicle: VehicleSelection): VehicleSelection {
+  const make = vehicle.make.toLowerCase().trim();
+  const model = vehicle.model.toLowerCase().trim();
+
+  if (make === "dodge" && model === "ram") {
+    return { year: vehicle.year, make: "Dodge Ram", model: "" };
+  }
+
+  if (make === "ram") {
+    return { year: vehicle.year, make: "Dodge Ram", model: vehicle.model };
+  }
+
+  return vehicle;
+}
+
 export function checkProductFitment(tags: string[], title: string, vehicle: VehicleSelection): FitmentResult {
+  const normalizedVehicle = normalizeVehicleSelection(vehicle);
   if (tags.some((tag) => tag.toLowerCase() === "universal fit")) {
     return { status: "universal" };
   }
