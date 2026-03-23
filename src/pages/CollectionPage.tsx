@@ -205,6 +205,7 @@ const CollectionTemplate = () => {
     make: null,
     model: null,
     category: null,
+    subAttribute: null,
   });
   const vehicleSyncedRef = useRef(false);
   const viewItemListFiredRef = useRef<string | null>(null);

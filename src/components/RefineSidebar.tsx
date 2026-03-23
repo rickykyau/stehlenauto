@@ -307,18 +307,57 @@ const RefineSidebar = ({ filters, onFilterChange, collections, availableOptions,
           </div>
         )}
 
+        {/* ── SUB-ATTRIBUTE (Bed Length / Cab Type) ── */}
+        {subAttrConfig && subAttributeOptions.length > 0 && (
+          <>
+            <button
+              onClick={() => toggle("category")} // reuse toggle for visual consistency
+              className="w-full flex items-center justify-between py-2"
+            >
+              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground">
+                {subAttrConfig.label}
+                {filters.subAttribute ? `: ${filters.subAttribute.toUpperCase()}` : ""}
+              </h3>
+            </button>
+            <div className="pb-3">
+              <FilterButton
+                active={!filters.subAttribute}
+                onClick={() => {
+                  trackEvent("filter_applied", { filter_type: subAttrConfig.field, filter_value: "all" });
+                  update({ subAttribute: null });
+                }}
+              >
+                ALL {subAttrConfig.label}S
+              </FilterButton>
+              {subAttributeOptions.map(([value, count]) => (
+                <FilterButton
+                  key={value}
+                  active={filters.subAttribute === value}
+                  count={count}
+                  onClick={() => {
+                    trackEvent("filter_applied", { filter_type: subAttrConfig.field, filter_value: value });
+                    update({ subAttribute: filters.subAttribute === value ? null : value });
+                  }}
+                >
+                  {value.toUpperCase()}
+                </FilterButton>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* ── CATEGORY ── */}
         <SectionHeader section="category" label="CATEGORY" />
         {expanded.category && (
           <div className="pb-3">
-            <FilterButton active={!filters.category} onClick={() => update({ category: null })}>
+            <FilterButton active={!filters.category} onClick={() => update({ category: null, subAttribute: null })}>
               ALL CATEGORIES
             </FilterButton>
             {CATEGORIES.map((cat) => (
               <FilterButton
                 key={cat.handle}
                 active={filters.category === cat.handle}
-                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle })}
+                onClick={() => update({ category: filters.category === cat.handle ? null : cat.handle, subAttribute: null })}
               >
                 {cat.label.toUpperCase()}
               </FilterButton>
