@@ -397,6 +397,8 @@ const CollectionTemplate = () => {
             vehicleSpecific.push(p);
           } else if (result.status === "partial") {
             partial.push(p);
+          } else if (result.status === "unknown") {
+            vehicleSpecific.push(p);
           }
           // "does_not_fit" products are excluded entirely
         } else {
