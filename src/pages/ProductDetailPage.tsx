@@ -201,6 +201,7 @@ const TAB_LABELS: Record<TabKey, string> = {
 
 const ProductTemplate = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const { data: product, isLoading: productLoading } = useShopifyProduct(slug || "");
   const { addItem, isLoading: cartLoading } = useCartStore();
   const { vehicle, vehicleLabel } = useVehicle();
@@ -209,6 +210,7 @@ const ProductTemplate = () => {
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [siblingProducts, setSiblingProducts] = useState<Array<{ handle: string; title: string; subAttr: FitmentSubAttributes }>>([]);
 
   // Track product view (GA4 standard)
   useEffect(() => {
