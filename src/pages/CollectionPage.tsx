@@ -533,7 +533,8 @@ const CollectionTemplate = () => {
     (filters.year ? 1 : 0) +
     (filters.make ? 1 : 0) +
     (filters.model ? 1 : 0) +
-    (filters.category ? 1 : 0);
+    (filters.category ? 1 : 0) +
+    (filters.subAttribute ? 1 : 0);
 
   // Compute available filter options from loaded products
   const availableOptions = useAvailableFilterOptions(rawDisplayProducts, filters);
@@ -544,6 +545,7 @@ const CollectionTemplate = () => {
       onFilterChange={handleFilterChange}
       collections={shopifyCollections || []}
       availableOptions={availableOptions}
+      products={rawDisplayProducts}
     />
   );
 
