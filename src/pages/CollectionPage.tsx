@@ -746,17 +746,39 @@ const CollectionTemplate = () => {
                 {vehicleProducts.map((product, index) => (
                   <ProductCard key={product.node.id} product={product} listName={listName} index={index} />
                 ))}
-                {includeUniversal && universalProducts.length > 0 && (
+                {/* Partial match products with badge */}
+                {partialProducts.length > 0 && (
                   <>
                     {vehicleProducts.length > 0 && (
                       <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
+                        <span className="font-display text-[10px] tracking-widest text-yellow-500 flex items-center gap-1.5">
+                          <AlertTriangle className="w-3 h-3" />
+                          CHECK FITMENT — MAY FIT YOUR VEHICLE
+                        </span>
+                      </div>
+                    )}
+                    {partialProducts.map((product, pIdx) => (
+                      <div key={product.node.id} className="relative">
+                        <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-yellow-600/90 text-white px-1.5 py-0.5 font-display text-[8px] tracking-widest">
+                          <AlertTriangle className="w-2.5 h-2.5" />
+                          CHECK FITMENT
+                        </div>
+                        <ProductCard product={product} listName={listName} index={vehicleProducts.length + pIdx} />
+                      </div>
+                    ))}
+                  </>
+                )}
+                {includeUniversal && universalProducts.length > 0 && (
+                  <>
+                    {(vehicleProducts.length > 0 || partialProducts.length > 0) && (
+                      <div className="col-span-full border-t border-border pt-4 mt-2 mb-2">
                         <span className="font-display text-[10px] tracking-widest text-muted-foreground">
-                          {vehicleProducts.length < 5 ? "MORE PRODUCTS THAT MAY INTEREST YOU" : "UNIVERSAL FIT"}
+                          {vehicleProducts.length + partialProducts.length < 5 ? "MORE PRODUCTS THAT MAY INTEREST YOU" : "UNIVERSAL FIT"}
                         </span>
                       </div>
                     )}
                     {universalProducts.map((product, uIdx) => (
-                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + uIdx} />
+                      <ProductCard key={product.node.id} product={product} listName={listName} index={vehicleProducts.length + partialProducts.length + uIdx} />
                     ))}
                   </>
                 )}
