@@ -258,6 +258,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          currency_code: string
           customer_name: string | null
           discount_amount: number
           email: string | null
@@ -270,12 +271,14 @@ export type Database = {
           shipping_address: Json | null
           shopify_order_id: string
           subtotal_price: number
+          synced_at: string
           total_price: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          currency_code?: string
           customer_name?: string | null
           discount_amount?: number
           email?: string | null
@@ -288,12 +291,14 @@ export type Database = {
           shipping_address?: Json | null
           shopify_order_id: string
           subtotal_price?: number
+          synced_at?: string
           total_price?: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          currency_code?: string
           customer_name?: string | null
           discount_amount?: number
           email?: string | null
@@ -306,6 +311,7 @@ export type Database = {
           shipping_address?: Json | null
           shopify_order_id?: string
           subtotal_price?: number
+          synced_at?: string
           total_price?: number
           updated_at?: string
           user_id?: string | null
