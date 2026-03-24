@@ -45,6 +45,7 @@ const LoginPage = () => {
         : error.message);
     } else {
       trackEvent("login", { method: "email" });
+      identifyKlaviyo({ $email: email });
     }
     setLoading(false);
   };
