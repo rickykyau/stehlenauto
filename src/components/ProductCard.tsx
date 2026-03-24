@@ -4,7 +4,7 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Plus, Loader2, Truck } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 
