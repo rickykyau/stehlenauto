@@ -98,9 +98,8 @@ const CartDrawer = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
-        const sep = url.includes("?") ? "&" : "?";
-        const params = new URLSearchParams();
-        params.set("checkout[email]", user.email);
+        const parts: string[] = [];
+        parts.push(`checkout[email]=${encodeURIComponent(user.email)}`);
 
         // Fetch profile
         const { data: profile } = await supabase
@@ -109,8 +108,8 @@ const CartDrawer = () => {
           .eq("user_id", user.id)
           .maybeSingle();
 
-        if (profile?.first_name) params.set("checkout[shipping_address][first_name]", profile.first_name);
-        if (profile?.last_name) params.set("checkout[shipping_address][last_name]", profile.last_name);
+        if (profile?.first_name) parts.push(`checkout[shipping_address][first_name]=${encodeURIComponent(profile.first_name)}`);
+        if (profile?.last_name) parts.push(`checkout[shipping_address][last_name]=${encodeURIComponent(profile.last_name)}`);
 
         // Fetch default address (or most recent)
         const { data: address } = await supabase
@@ -123,24 +122,23 @@ const CartDrawer = () => {
           .maybeSingle();
 
         if (address) {
-          params.set("checkout[shipping_address][address1]", address.address_line_1);
-          if (address.address_line_2) params.set("checkout[shipping_address][address2]", address.address_line_2);
-          params.set("checkout[shipping_address][city]", address.city);
-          params.set("checkout[shipping_address][province]", address.state);
-          params.set("checkout[shipping_address][zip]", address.zip_code);
-          params.set("checkout[shipping_address][country]", address.country);
+          parts.push(`checkout[shipping_address][address1]=${encodeURIComponent(address.address_line_1)}`);
+          if (address.address_line_2) parts.push(`checkout[shipping_address][address2]=${encodeURIComponent(address.address_line_2)}`);
+          parts.push(`checkout[shipping_address][city]=${encodeURIComponent(address.city)}`);
+          parts.push(`checkout[shipping_address][province]=${encodeURIComponent(address.state)}`);
+          parts.push(`checkout[shipping_address][zip]=${encodeURIComponent(address.zip_code)}`);
+          parts.push(`checkout[shipping_address][country]=${encodeURIComponent(address.country)}`);
           if (address.full_name && !profile?.first_name) {
             const [fn, ...rest] = address.full_name.split(" ");
-            params.set("checkout[shipping_address][first_name]", fn);
-            if (rest.length) params.set("checkout[shipping_address][last_name]", rest.join(" "));
+            parts.push(`checkout[shipping_address][first_name]=${encodeURIComponent(fn)}`);
+            if (rest.length) parts.push(`checkout[shipping_address][last_name]=${encodeURIComponent(rest.join(" "))}`);
           }
         }
 
-        url += sep + params.toString();
+        url += (url.includes("?") ? "&" : "?") + parts.join("&");
       }
     } catch (e) {
       console.error("Failed to pre-fill checkout info:", e);
-      // Continue with checkout without pre-fill
     }
 
     window.open(url, "_blank");
