@@ -551,6 +551,34 @@ const CART_LINES_REMOVE_MUTATION = `
   }
 `;
 
+const CART_BUYER_IDENTITY_UPDATE_MUTATION = `
+  mutation cartBuyerIdentityUpdate($cartId: ID!, $buyerIdentity: CartBuyerIdentityInput!) {
+    cartBuyerIdentityUpdate(cartId: $cartId, buyerIdentity: $buyerIdentity) {
+      cart { checkoutUrl }
+      userErrors { field message }
+    }
+  }
+`;
+
+export async function updateCartBuyerIdentity(cartId: string, email: string): Promise<string | null> {
+  try {
+    const data = await storefrontApiRequest(CART_BUYER_IDENTITY_UPDATE_MUTATION, {
+      cartId,
+      buyerIdentity: { email },
+    });
+    const userErrors = data?.data?.cartBuyerIdentityUpdate?.userErrors || [];
+    if (userErrors.length > 0) {
+      console.error('Buyer identity update failed:', userErrors);
+      return null;
+    }
+    const newCheckoutUrl = data?.data?.cartBuyerIdentityUpdate?.cart?.checkoutUrl;
+    return newCheckoutUrl ? formatCheckoutUrl(newCheckoutUrl) : null;
+  } catch (e) {
+    console.error('Failed to update buyer identity:', e);
+    return null;
+  }
+}
+
 // ── Cart Helpers ───────────────────────────────────────
 
 interface CartItem {

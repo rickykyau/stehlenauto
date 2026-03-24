@@ -98,8 +98,19 @@ const CartDrawer = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
+        // Set email via Storefront API buyer identity (query params don't work for email on /checkouts/cn/ URLs)
+        const cartId = useCartStore.getState().cartId;
+        if (cartId) {
+          const { updateCartBuyerIdentity } = await import("@/lib/shopify");
+          const updatedUrl = await updateCartBuyerIdentity(cartId, user.email);
+          if (updatedUrl) url = updatedUrl;
+          // Re-append promo code if it was on the original URL
+          if (appliedPromo && !url.includes("discount=")) {
+            url += `${url.includes("?") ? "&" : "?"}discount=${encodeURIComponent(appliedPromo.code)}`;
+          }
+        }
+
         const parts: string[] = [];
-        parts.push(`checkout[email]=${encodeURIComponent(user.email)}`);
 
         // Fetch profile
         const { data: profile } = await supabase
