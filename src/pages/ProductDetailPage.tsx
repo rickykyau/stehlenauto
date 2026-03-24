@@ -2,7 +2,7 @@
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
 import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
@@ -210,6 +210,15 @@ const ProductTemplate = () => {
           item_category: product.productType || undefined,
         }],
       });
+      trackKlaviyoEvent("Viewed Product", {
+        ProductName: product.title,
+        ProductID: product.id,
+        SKU: product.variants?.edges?.[0]?.node?.sku || "",
+        ImageURL: product.images?.edges?.[0]?.node?.url || "",
+        URL: window.location.href,
+        Brand: product.vendor || "Stehlen",
+        Price: viewPrice,
+      });
     }
   }, [product?.id]);
 
@@ -385,6 +394,14 @@ const ProductTemplate = () => {
         item_category: product.productType || undefined,
         variant: selectedVariant.title,
       }],
+    });
+    trackKlaviyoEvent("Added to Cart", {
+      $value: cartPrice * qty,
+      AddedItemProductName: product.title,
+      AddedItemProductID: product.id,
+      AddedItemSKU: selectedVariant.sku || "",
+      AddedItemPrice: cartPrice,
+      AddedItemQuantity: qty,
     });
     await addItem({
       product: { node: product },

@@ -4,7 +4,7 @@
 import { Link } from "react-router-dom";
 import { ShoppingCart, Plus, Loader2, Truck } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
 import type { ShopifyProduct } from "@/lib/shopify";
 import { isUniversalProduct } from "@/lib/shopify";
 
@@ -49,6 +49,14 @@ const ProductCard = ({ product, compact = false, listName, index, crossSellSourc
         quantity: 1,
         item_category: p.productType || undefined,
       }],
+    });
+    trackKlaviyoEvent("Added to Cart", {
+      $value: price,
+      AddedItemProductName: p.title,
+      AddedItemProductID: p.id,
+      AddedItemSKU: "",
+      AddedItemPrice: price,
+      AddedItemQuantity: 1,
     });
     if (crossSellSource) {
       trackEvent("cross_sell_added", {

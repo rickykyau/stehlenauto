@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, identifyKlaviyo } from "@/lib/analytics";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/stehlen-logo.png";
 
@@ -45,6 +45,7 @@ const LoginPage = () => {
         : error.message);
     } else {
       trackEvent("login", { method: "email" });
+      identifyKlaviyo({ $email: email });
     }
     setLoading(false);
   };
@@ -70,6 +71,7 @@ const LoginPage = () => {
       setError(error.message);
     } else {
       trackEvent("sign_up", { method: "email" });
+      identifyKlaviyo({ $email: email });
       setSignupSuccess(true);
     }
     setLoading(false);

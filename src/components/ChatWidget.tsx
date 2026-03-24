@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useNavigate } from "react-router-dom";
 import { useCartStore } from "@/stores/cartStore";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
 
 interface ChatMessage {
   id: string;
@@ -360,6 +360,14 @@ export default function ChatWidget() {
                                       price: cartPrice,
                                       quantity: 1,
                                     }],
+                                  });
+                                  trackKlaviyoEvent("Added to Cart", {
+                                    $value: cartPrice,
+                                    AddedItemProductName: product.title,
+                                    AddedItemProductID: product.id,
+                                    AddedItemSKU: "",
+                                    AddedItemPrice: cartPrice,
+                                    AddedItemQuantity: 1,
                                   });
                                    const fullVariantId = product.variantId!.startsWith("gid://") ? product.variantId! : `gid://shopify/ProductVariant/${product.variantId}`;
                                   await addItem({

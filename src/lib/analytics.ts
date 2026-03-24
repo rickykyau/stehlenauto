@@ -8,6 +8,21 @@ declare global {
   interface Window {
     gtag: (...args: unknown[]) => void;
     dataLayer: unknown[];
+    _learnq?: any[];
+  }
+}
+
+/* ─── Klaviyo ─── */
+
+export function trackKlaviyoEvent(name: string, data: Record<string, unknown>) {
+  if (window._learnq) {
+    window._learnq.push(["track", name, data]);
+  }
+}
+
+export function identifyKlaviyo(props: { $email: string; $first_name?: string; $last_name?: string }) {
+  if (window._learnq) {
+    window._learnq.push(["identify", props]);
   }
 }
 
