@@ -71,6 +71,7 @@ const LoginPage = () => {
       setError(error.message);
     } else {
       trackEvent("sign_up", { method: "email" });
+      identifyKlaviyo({ $email: email });
       setSignupSuccess(true);
     }
     setLoading(false);
