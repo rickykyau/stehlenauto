@@ -54,7 +54,7 @@ const ProductCard = ({ product, compact = false, listName, index, crossSellSourc
       $value: price,
       AddedItemProductName: p.title,
       AddedItemProductID: p.id,
-      AddedItemSKU: firstVariant?.sku || "",
+      AddedItemSKU: "",
       AddedItemPrice: price,
       AddedItemQuantity: 1,
     });
