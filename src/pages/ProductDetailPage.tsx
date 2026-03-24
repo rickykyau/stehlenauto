@@ -210,6 +210,15 @@ const ProductTemplate = () => {
           item_category: product.productType || undefined,
         }],
       });
+      trackKlaviyoEvent("Viewed Product", {
+        ProductName: product.title,
+        ProductID: product.id,
+        SKU: product.variants?.edges?.[0]?.node?.sku || "",
+        ImageURL: product.images?.edges?.[0]?.node?.url || "",
+        URL: window.location.href,
+        Brand: product.vendor || "Stehlen",
+        Price: viewPrice,
+      });
     }
   }, [product?.id]);
 
