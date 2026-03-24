@@ -361,6 +361,14 @@ export default function ChatWidget() {
                                       quantity: 1,
                                     }],
                                   });
+                                  trackKlaviyoEvent("Added to Cart", {
+                                    $value: cartPrice,
+                                    AddedItemProductName: product.title,
+                                    AddedItemProductID: product.id,
+                                    AddedItemSKU: "",
+                                    AddedItemPrice: cartPrice,
+                                    AddedItemQuantity: 1,
+                                  });
                                    const fullVariantId = product.variantId!.startsWith("gid://") ? product.variantId! : `gid://shopify/ProductVariant/${product.variantId}`;
                                   await addItem({
                                     product: { node: { id: product.id, title: product.title, handle: product.handle, description: "", priceRange: { minVariantPrice: { amount: product.price, currencyCode: "USD" } }, images: { edges: product.image ? [{ node: { url: product.image, altText: null } }] : [] }, variants: { edges: [{ node: { id: fullVariantId, title: "Default", price: { amount: product.price, currencyCode: "USD" }, availableForSale: true, selectedOptions: [] } }] }, productType: "", tags: [], options: [] } },

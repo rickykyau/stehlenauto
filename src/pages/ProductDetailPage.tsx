@@ -395,6 +395,14 @@ const ProductTemplate = () => {
         variant: selectedVariant.title,
       }],
     });
+    trackKlaviyoEvent("Added to Cart", {
+      $value: cartPrice * qty,
+      AddedItemProductName: product.title,
+      AddedItemProductID: product.id,
+      AddedItemSKU: selectedVariant.sku || "",
+      AddedItemPrice: cartPrice,
+      AddedItemQuantity: qty,
+    });
     await addItem({
       product: { node: product },
       variantId: selectedVariant.id,

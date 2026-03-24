@@ -50,6 +50,14 @@ const ProductCard = ({ product, compact = false, listName, index, crossSellSourc
         item_category: p.productType || undefined,
       }],
     });
+    trackKlaviyoEvent("Added to Cart", {
+      $value: price,
+      AddedItemProductName: p.title,
+      AddedItemProductID: p.id,
+      AddedItemSKU: firstVariant?.sku || "",
+      AddedItemPrice: price,
+      AddedItemQuantity: 1,
+    });
     if (crossSellSource) {
       trackEvent("cross_sell_added", {
         source_item_id: crossSellSource.sourceItemId,
