@@ -133,6 +133,13 @@ const SiteHeader = () => {
     setSearchQuery("");
   }, [location.pathname, location.search]);
 
+  // Listen for external open-ymm-modal events
+  useEffect(() => {
+    const handler = () => setFitmentOpen(true);
+    window.addEventListener("open-ymm-modal", handler);
+    return () => window.removeEventListener("open-ymm-modal", handler);
+  }, []);
+
   // Prevent body scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
