@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Shield, Truck, RotateCcw } from "lucide-react";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { Link } from "react-router-dom";
