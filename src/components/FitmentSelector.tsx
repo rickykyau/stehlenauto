@@ -116,7 +116,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       >
         <div className="flex items-center justify-center gap-2">
           <Shield className="w-4 h-4" />
-          FIND PARTS
+          FIND MY PARTS
         </div>
       </button>
 

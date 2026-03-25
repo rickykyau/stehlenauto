@@ -489,7 +489,7 @@ const SiteHeader = () => {
               >
                 <Truck className="w-5 h-5 text-primary" />
                 <span className="font-body text-sm text-foreground">
-                  {vehicle ? `My Vehicle: ${vehicleLabel}` : "Select Your Vehicle"}
+                  {vehicle ? `My Truck: ${vehicleLabel}` : "Find Parts for Your Truck"}
                 </span>
               </button>
             </div>
