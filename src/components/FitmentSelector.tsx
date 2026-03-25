@@ -62,7 +62,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
     <div className="border border-border bg-card p-6">
       <div className="flex items-center gap-3 mb-4">
         <Truck className="w-5 h-5 text-primary" />
-        <h3 className="text-sm font-display tracking-widest">SELECT YOUR VEHICLE</h3>
+        <h3 className="text-sm font-display tracking-widest">SELECT YOUR TRUCK</h3>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border">
