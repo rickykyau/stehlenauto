@@ -331,7 +331,7 @@ const IndexTemplate = () => {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <HeroSection />
+      <HeroSection onOpenYMM={() => window.dispatchEvent(new CustomEvent("open-ymm-modal"))} />
 
       {/* Shop by Category Carousel */}
       <section className="border-b border-border">

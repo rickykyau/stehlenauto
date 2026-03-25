@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Shield, Truck, RotateCcw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useVehicle } from "@/contexts/VehicleContext";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
@@ -45,7 +46,10 @@ function useHeroContent() {
   });
 }
 
-const HeroSection = () => {
+const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
+  const { vehicle } = useVehicle();
+  const navigate = useNavigate();
+  const [showGate, setShowGate] = useState(false);
   const { data: slides } = useHeroContent();
   const slide = slides?.[0] ?? DEFAULT_SLIDE;
   const bgImage = slide.background_image || heroBg;
@@ -103,21 +107,46 @@ const HeroSection = () => {
         </h1>
 
         {slide.subheadline && (
-          <p className="font-body text-base text-muted-foreground max-w-lg mb-10 leading-relaxed">
+          <p className="font-body text-base text-muted-foreground max-w-lg mb-4 leading-relaxed">
             {slide.subheadline}
           </p>
         )}
 
+        {!vehicle && (
+          <p className="font-body text-sm text-muted-foreground/70 mb-10">
+            Select your truck above to see parts guaranteed to fit.
+          </p>
+        )}
+
+        {vehicle && <div className="mb-10" />}
+
         <div className="flex flex-wrap items-center gap-5 mb-12">
           {slide.primary_button_text && (
-            <Link
-              to={slide.primary_button_link || "/collections/all"}
-              className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
-              onClick={trackHeroClick}
-            >
-              {slide.primary_button_text}
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            vehicle ? (
+              <Link
+                to={slide.primary_button_link || "/collections/all"}
+                className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+                onClick={trackHeroClick}
+              >
+                {slide.primary_button_text}
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  trackHeroClick();
+                  if (onOpenYMM) {
+                    onOpenYMM();
+                  } else {
+                    navigate(slide.primary_button_link || "/collections/all");
+                  }
+                }}
+                className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+              >
+                {slide.primary_button_text}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            )
           )}
           {slide.secondary_button_text && (
             <Link

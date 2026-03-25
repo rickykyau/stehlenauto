@@ -8,6 +8,8 @@ import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
+import YMMBanner from "./YMMBanner";
+import MobileYMMStickyBar from "./MobileYMMStickyBar";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -130,6 +132,13 @@ const SiteHeader = () => {
     setSearchDropdownOpen(false);
     setSearchQuery("");
   }, [location.pathname, location.search]);
+
+  // Listen for external open-ymm-modal events
+  useEffect(() => {
+    const handler = () => setFitmentOpen(true);
+    window.addEventListener("open-ymm-modal", handler);
+    return () => window.removeEventListener("open-ymm-modal", handler);
+  }, []);
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -297,13 +306,25 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
-            {/* Mobile-only: small truck icon for vehicle selector */}
+            {/* Mobile-only: labeled truck pill */}
             <button
               onClick={() => setFitmentOpen(!fitmentOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center text-primary hover:brightness-110 transition-colors btn-press"
-              aria-label="Select your vehicle"
+              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 font-display text-[9px] tracking-widest btn-press transition-colors"
+              style={vehicle
+                ? { color: "hsl(var(--primary))" }
+                : { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
+              }
+              aria-label="Select your truck"
             >
-              <Truck className="w-5 h-5" />
+              <Truck className="w-3.5 h-3.5" />
+              {vehicle ? (
+                <span className="relative">
+                  <span>{vehicleLabel.split(" ").slice(0, 2).join(" ").toUpperCase()}</span>
+                  <span className="absolute -top-1 -right-2 w-2 h-2 bg-green-500 rounded-full" />
+                </span>
+              ) : (
+                "MY TRUCK"
+              )}
             </button>
             {/* Tablet: compact vehicle button */}
             <button
@@ -399,12 +420,18 @@ const SiteHeader = () => {
             <div ref={fitmentRef} className="md:hidden fixed inset-0 top-16 z-50 bg-background overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="font-display text-xs tracking-widest text-muted-foreground">SELECT YOUR VEHICLE</span>
+                  <span className="font-display text-xs tracking-widest text-muted-foreground">SELECT YOUR TRUCK</span>
                   <button onClick={() => setFitmentOpen(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+                <button
+                  onClick={() => { setFitmentOpen(false); }}
+                  className="mt-3 w-full text-center font-body text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                >
+                  Skip and browse all
+                </button>
               </div>
             </div>
             {/* Tablet/Desktop: dropdown */}
@@ -420,7 +447,9 @@ const SiteHeader = () => {
         <div className="fixed inset-0 z-40" onClick={() => setFitmentOpen(false)} />
       )}
 
+      <YMMBanner onOpenModal={() => setFitmentOpen(true)} />
       <VehicleBar />
+      <MobileYMMStickyBar onOpenModal={() => setFitmentOpen(true)} />
 
       {/* Overlay */}
       {menuOpen && (
@@ -460,7 +489,7 @@ const SiteHeader = () => {
               >
                 <Truck className="w-5 h-5 text-primary" />
                 <span className="font-body text-sm text-foreground">
-                  {vehicle ? `My Vehicle: ${vehicleLabel}` : "Select Your Vehicle"}
+                  {vehicle ? `My Truck: ${vehicleLabel}` : "Find Parts for Your Truck"}
                 </span>
               </button>
             </div>
