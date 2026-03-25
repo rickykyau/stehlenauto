@@ -440,7 +440,9 @@ const SiteHeader = () => {
         <div className="fixed inset-0 z-40" onClick={() => setFitmentOpen(false)} />
       )}
 
+      <YMMBanner onOpenModal={() => setFitmentOpen(true)} />
       <VehicleBar />
+      <MobileYMMStickyBar onOpenModal={() => setFitmentOpen(true)} />
 
       {/* Overlay */}
       {menuOpen && (

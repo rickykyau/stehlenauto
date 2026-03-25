@@ -105,10 +105,18 @@ const HeroSection = () => {
         </h1>
 
         {slide.subheadline && (
-          <p className="font-body text-base text-muted-foreground max-w-lg mb-10 leading-relaxed">
+          <p className="font-body text-base text-muted-foreground max-w-lg mb-4 leading-relaxed">
             {slide.subheadline}
           </p>
         )}
+
+        {!vehicle && (
+          <p className="font-body text-sm text-muted-foreground/70 mb-10">
+            Select your truck above to see parts guaranteed to fit.
+          </p>
+        )}
+
+        {vehicle && <div className="mb-10" />}
 
         <div className="flex flex-wrap items-center gap-5 mb-12">
           {slide.primary_button_text && (
