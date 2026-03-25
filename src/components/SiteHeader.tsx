@@ -299,13 +299,25 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
-            {/* Mobile-only: small truck icon for vehicle selector */}
+            {/* Mobile-only: labeled truck pill */}
             <button
               onClick={() => setFitmentOpen(!fitmentOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center text-primary hover:brightness-110 transition-colors btn-press"
-              aria-label="Select your vehicle"
+              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 font-display text-[9px] tracking-widest btn-press transition-colors"
+              style={vehicle
+                ? { color: "hsl(var(--primary))" }
+                : { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
+              }
+              aria-label="Select your truck"
             >
-              <Truck className="w-5 h-5" />
+              <Truck className="w-3.5 h-3.5" />
+              {vehicle ? (
+                <span className="relative">
+                  <span>{vehicleLabel.split(" ").slice(0, 2).join(" ").toUpperCase()}</span>
+                  <span className="absolute -top-1 -right-2 w-2 h-2 bg-green-500 rounded-full" />
+                </span>
+              ) : (
+                "MY TRUCK"
+              )}
             </button>
             {/* Tablet: compact vehicle button */}
             <button
