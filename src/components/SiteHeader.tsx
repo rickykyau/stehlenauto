@@ -8,6 +8,8 @@ import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
+import YMMBanner from "./YMMBanner";
+import MobileYMMStickyBar from "./MobileYMMStickyBar";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useCustomer } from "@/contexts/CustomerContext";
