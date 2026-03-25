@@ -122,14 +122,31 @@ const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
 
         <div className="flex flex-wrap items-center gap-5 mb-12">
           {slide.primary_button_text && (
-            <Link
-              to={slide.primary_button_link || "/collections/all"}
-              className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
-              onClick={trackHeroClick}
-            >
-              {slide.primary_button_text}
-              <ArrowRight className="w-5 h-5" />
-            </Link>
+            vehicle ? (
+              <Link
+                to={slide.primary_button_link || "/collections/all"}
+                className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+                onClick={trackHeroClick}
+              >
+                {slide.primary_button_text}
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            ) : (
+              <button
+                onClick={() => {
+                  trackHeroClick();
+                  if (onOpenYMM) {
+                    onOpenYMM();
+                  } else {
+                    navigate(slide.primary_button_link || "/collections/all");
+                  }
+                }}
+                className="inline-flex items-center gap-3 h-16 px-10 bg-primary text-primary-foreground font-display text-base font-bold uppercase tracking-widest btn-press hover:brightness-110 transition-all shadow-lg shadow-primary/30"
+              >
+                {slide.primary_button_text}
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            )
           )}
           {slide.secondary_button_text && (
             <Link
