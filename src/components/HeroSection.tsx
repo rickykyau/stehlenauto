@@ -47,6 +47,7 @@ function useHeroContent() {
 }
 
 const HeroSection = () => {
+  const { vehicle } = useVehicle();
   const { data: slides } = useHeroContent();
   const slide = slides?.[0] ?? DEFAULT_SLIDE;
   const bgImage = slide.background_image || heroBg;
