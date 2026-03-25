@@ -46,8 +46,10 @@ function useHeroContent() {
   });
 }
 
-const HeroSection = () => {
+const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
   const { vehicle } = useVehicle();
+  const navigate = useNavigate();
+  const [showGate, setShowGate] = useState(false);
   const { data: slides } = useHeroContent();
   const slide = slides?.[0] ?? DEFAULT_SLIDE;
   const bgImage = slide.background_image || heroBg;
