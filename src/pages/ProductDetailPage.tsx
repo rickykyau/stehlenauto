@@ -372,9 +372,50 @@ const ProductTemplate = () => {
   // Determine if customer needs sub-attribute warning
   const showSubAttrWarning = useMemo(() => {
     if (!vehicle || !relevantSubAttr) return false;
-    // Show warning if product has sub-attribute but user hasn't confirmed
-    return true; // Product is sub-attribute specific
+    return true;
   }, [vehicle, relevantSubAttr]);
+
+  // Bed length badge: fixed attribute (not a variant selector)
+  const bedLengthBadge = useMemo(() => {
+    if (!product) return null;
+    // Check sub-attributes first
+    if (fitmentSubAttrs?.bed_length) return fitmentSubAttrs.bed_length;
+    // Check tags
+    const fromTags = parseBedLengthFromTags(product.tags || []);
+    if (fromTags) return fromTags;
+    // Check title
+    return parseBedLengthFromTitle(product.title || "");
+  }, [product, fitmentSubAttrs]);
+
+  // Determine which options to show (only multi-value, non-Title)
+  const visibleOptions = useMemo(() => {
+    if (!product?.options) return [];
+    return product.options.filter((o: { name: string; values: string[] }) =>
+      o.name !== "Title" && o.values.length > 1
+    );
+  }, [product?.options]);
+
+  // Check if any visible option is a bed length selector
+  const bedLengthOption = useMemo(() => {
+    return visibleOptions.find((o: { name: string; values: string[] }) => isBedLengthOption(o)) || null;
+  }, [visibleOptions]);
+
+  // Step numbering: only when 2+ selectors visible
+  const showStepNumbers = visibleOptions.length >= 2;
+
+  // Fitment vehicle range from tags
+  const fitmentVehicleRange = useMemo(() => {
+    if (!product) return null;
+    const tags = product.tags || [];
+    const years = tags.filter((t: string) => /^\d{4}$/.test(t)).map(Number).sort();
+    const makes = tags.filter((t: string) => t.startsWith?.("make:"))?.map((t: string) => t.replace("make:", "")) || [];
+    const models = tags.filter((t: string) => t.startsWith?.("model:"))?.map((t: string) => t.replace("model:", "")) || [];
+    if (years.length === 0) return null;
+    const yearRange = years.length === 1 ? `${years[0]}` : `${years[0]}–${years[years.length - 1]}`;
+    const make = makes[0] || "";
+    const model = models[0] || "";
+    return `${yearRange} ${make} ${model}`.trim();
+  }, [product]);
 
   if (productLoading) {
     return (
