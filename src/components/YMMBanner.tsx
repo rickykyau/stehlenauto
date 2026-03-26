@@ -65,7 +65,7 @@ const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
         <div className="flex items-center gap-3 shrink-0">
           <Truck className="w-5 h-5 text-primary" />
           <span className="font-display text-xs tracking-widest text-foreground font-bold whitespace-nowrap">
-            FIND PARTS GUARANTEED TO FIT YOUR TRUCK
+            FIND PARTS GUARANTEED TO FIT YOUR VEHICLE
           </span>
         </div>
 

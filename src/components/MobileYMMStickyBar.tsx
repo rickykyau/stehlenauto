@@ -28,7 +28,7 @@ const MobileYMMStickyBar = ({ onOpenModal }: { onOpenModal: () => void }) => {
         <div className="flex items-center gap-3">
           <Truck className="w-5 h-5 text-primary-foreground" />
           <span className="font-display text-[11px] tracking-widest text-primary-foreground font-bold">
-            TAP TO FIND PARTS FOR YOUR TRUCK
+            TAP TO FIND PARTS FOR YOUR VEHICLE
           </span>
         </div>
         <button
