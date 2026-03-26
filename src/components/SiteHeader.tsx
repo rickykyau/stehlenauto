@@ -311,7 +311,7 @@ const SiteHeader = () => {
                 onChange={(e) => handleSearchInput(e.target.value)}
                 onKeyDown={handleSearchSubmit}
                 onFocus={() => { if (searchQuery.length >= 2) setSearchDropdownOpen(true); }}
-                placeholder="Search by Make Model Year, Product Type, or Part Number"
+                placeholder={windowWidth >= 1100 ? "Search by Make Model Year, Product Type, or Part Number" : "Search by vehicle, product, or part #"}
                 className="flex-1 h-10 bg-transparent text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
