@@ -126,6 +126,31 @@ function extractKeyValues(html: string): Record<string, string> {
   return result;
 }
 
+/* ─── Bed Length Parser ─── */
+
+function parseBedLengthFromTags(tags: string[]): string | null {
+  for (const tag of tags) {
+    const lower = tag.toLowerCase();
+    const match = lower.match(/^bed[-_]?length[-_]?([\d.]+)\s*(?:ft|'|foot)?$/);
+    if (match) return `${match[1]} ft`;
+  }
+  return null;
+}
+
+function parseBedLengthFromTitle(title: string): string | null {
+  const match = title.match(/([\d.]+)\s*(?:ft|'|foot|feet)/i);
+  if (match) {
+    const val = parseFloat(match[1]);
+    if (val >= 4 && val <= 9) return `${match[1]} ft`;
+  }
+  return null;
+}
+
+function isBedLengthOption(option: { name: string; values: string[] }): boolean {
+  const name = option.name.toLowerCase();
+  return name.includes("bed length") || name.includes("bed size") || name === "length";
+}
+
 /* ─── Year/Fitment Matching ─── */
 // Moved to src/utils/fitmentMatcher.ts
 
