@@ -114,7 +114,7 @@ const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
 
         {!vehicle && (
           <p className="font-body text-sm text-muted-foreground/70 mb-10">
-            Select your truck above to see parts guaranteed to fit.
+            Select your vehicle above to see parts guaranteed to fit.
           </p>
         )}
 

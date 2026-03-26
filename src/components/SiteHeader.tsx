@@ -314,7 +314,7 @@ const SiteHeader = () => {
                 ? { color: "hsl(var(--primary))" }
                 : { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
               }
-              aria-label="Select your truck"
+              aria-label="Select your vehicle"
             >
               <Truck className="w-3.5 h-3.5" />
               {vehicle ? (
@@ -323,7 +323,7 @@ const SiteHeader = () => {
                   <span className="absolute -top-1 -right-2 w-2 h-2 bg-green-500 rounded-full" />
                 </span>
               ) : (
-                "MY TRUCK"
+                "MY VEHICLE"
               )}
             </button>
             {/* Tablet: compact vehicle button */}
@@ -420,7 +420,7 @@ const SiteHeader = () => {
             <div ref={fitmentRef} className="md:hidden fixed inset-0 top-16 z-50 bg-background overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="font-display text-xs tracking-widest text-foreground">SELECT YOUR TRUCK</span>
+                  <span className="font-display text-xs tracking-widest text-foreground">SELECT YOUR VEHICLE</span>
                   <button onClick={() => setFitmentOpen(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
@@ -497,7 +497,7 @@ const SiteHeader = () => {
               >
                 <Truck className="w-5 h-5 text-primary" />
                 <span className="font-body text-sm text-foreground">
-                  {vehicle ? `My Truck: ${vehicleLabel}` : "Find Parts for Your Truck"}
+                  {vehicle ? `My Vehicle: ${vehicleLabel}` : "Find Parts for Your Vehicle"}
                 </span>
               </button>
             </div>
