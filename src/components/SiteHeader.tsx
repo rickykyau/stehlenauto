@@ -90,6 +90,7 @@ const SiteHeader = () => {
   const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
   const [supaUser, setSupaUser] = useState<SupabaseUser | null>(null);
   const [bannerVisible, setBannerVisible] = useState(true);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
@@ -100,6 +101,13 @@ const SiteHeader = () => {
   const bannerRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useAdmin();
   const isMobile = useIsMobile();
+
+  // Track window width for responsive placeholder
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // IntersectionObserver for YMM banner visibility (desktop only)
   useEffect(() => {
@@ -311,7 +319,7 @@ const SiteHeader = () => {
                 onChange={(e) => handleSearchInput(e.target.value)}
                 onKeyDown={handleSearchSubmit}
                 onFocus={() => { if (searchQuery.length >= 2) setSearchDropdownOpen(true); }}
-                placeholder="Search by Make Model Year, Product Type, or Part Number"
+                placeholder={windowWidth >= 1100 ? "Search by Make Model Year, Product Type, or Part Number" : "Search by vehicle, product, or part #"}
                 className="flex-1 h-10 bg-transparent text-sm font-body text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
             </div>
