@@ -803,6 +803,48 @@ const ProductTemplate = () => {
             ))}
           </div>
 
+          {/* Fitment Details Accordion */}
+          {(fitmentVehicleRange || bedLengthBadge || fitmentNotes || fitmentSubAttrs?.bed_style) && (
+            <Accordion type="single" collapsible defaultValue={typeof window !== 'undefined' && window.innerWidth >= 1024 ? "fitment-details" : undefined}>
+              <AccordionItem value="fitment-details" className="border border-border mb-4">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-display text-[10px] tracking-widest text-foreground">FITMENT DETAILS</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3">
+                  <div className="space-y-2 text-sm">
+                    {fitmentVehicleRange && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Vehicle Fitment:</span>
+                        <span className="text-foreground">{fitmentVehicleRange}</span>
+                      </div>
+                    )}
+                    {bedLengthBadge && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Bed Length:</span>
+                        <span className="text-foreground">{bedLengthBadge}</span>
+                      </div>
+                    )}
+                    {fitmentSubAttrs?.bed_style && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Bed Style:</span>
+                        <span className="text-foreground">{fitmentSubAttrs.bed_style}</span>
+                      </div>
+                    )}
+                    {fitmentNotes && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Notes:</span>
+                        <span className="text-foreground italic">{fitmentNotes}</span>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+
           {/* ── Tabbed Content (inside right column) ── */}
           <div className="border-t border-border pt-3">
             {/* Tab bar */}
