@@ -618,8 +618,19 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Sub-Attribute Badge */}
-          {relevantSubAttr && (
+          {/* Bed Length Badge (fixed attribute, not a selector) */}
+          {bedLengthBadge && !bedLengthOption && (
+            <div className="flex items-center gap-2 px-3 py-1.5 mb-3 border border-slate-300 bg-slate-100 rounded-full w-fit">
+              <Ruler className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <span className="font-semibold text-sm text-slate-700">
+                <span className="uppercase text-xs tracking-wider">BED LENGTH:</span>{" "}
+                {bedLengthBadge}
+              </span>
+            </div>
+          )}
+
+          {/* Sub-Attribute Badge (cab type etc.) */}
+          {relevantSubAttr && relevantSubAttr.field !== "bed_length" && (
             <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-primary/30 bg-primary/5">
               <Truck className="w-4 h-4 text-primary shrink-0" />
               <span className="font-display text-[10px] tracking-widest text-primary">
@@ -642,11 +653,9 @@ const ProductTemplate = () => {
                 SELECT YOUR {relevantSubAttr.label.toUpperCase()}:
               </h3>
               <div className="flex flex-wrap gap-2">
-                {/* Current product option - highlighted */}
                 <button className="px-3 py-1.5 border-2 border-primary bg-primary/10 text-primary font-display text-[10px] tracking-wider">
                   {relevantSubAttr.value.toUpperCase()}
                 </button>
-                {/* Sibling options */}
                 {siblingProducts.map((sib) => {
                   const sibVal = sib.subAttr[relevantSubAttr.field];
                   if (!sibVal) return null;
@@ -684,13 +693,24 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {variants.length > 1 && product.options?.some((o: { name: string }) => o.name !== "Title") && (
+          {/* Variant Selectors — only options with 2+ values */}
+          {visibleOptions.length > 0 && (
             <div className="mb-3">
-              {product.options
-                .filter((o: { name: string }) => o.name !== "Title")
-                .map((option: { name: string; values: string[] }) => (
+              {visibleOptions.map((option: { name: string; values: string[] }, optIdx: number) => {
+                const isBedLen = isBedLengthOption(option);
+                const stepLabel = showStepNumbers ? `Step ${optIdx + 1}: ` : "";
+                const label = isBedLen ? `${stepLabel}Select Bed Length` : `${stepLabel}${option.name}`;
+
+                return (
                   <div key={option.name} className="mb-3">
-                    <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">{option.name.toUpperCase()}</h3>
+                    <h3 className="font-semibold text-sm text-slate-700 mb-1">
+                      {label.toUpperCase()}
+                    </h3>
+                    {isBedLen && (
+                      <p className="font-body text-xs text-muted-foreground mb-2">
+                        Measure from the inside of the bulkhead to the inside of the tailgate.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {option.values.map((value: string) => {
                         const variantIdx = variants.findIndex((v) =>
@@ -708,9 +728,9 @@ const ProductTemplate = () => {
                                 trackEvent("product_variant_selected", { item_id: product.id, variant_type: option.name, variant_value: value });
                               }
                             }}
-                            className={`px-3 py-1.5 border font-display text-[10px] tracking-wider transition-colors ${
+                            className={`px-4 py-2 border rounded-full font-display text-xs tracking-wider transition-colors ${
                               isSelected
-                                ? "border-primary bg-primary/10 text-primary"
+                                ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border text-muted-foreground hover:border-primary/40"
                             }`}
                           >
@@ -720,7 +740,8 @@ const ProductTemplate = () => {
                       })}
                     </div>
                   </div>
-                ))}
+                );
+              })}
             </div>
           )}
 
