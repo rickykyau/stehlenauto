@@ -17,6 +17,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { parseFitmentSubAttributes, parseFitmentNotes, SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
 import { supabase } from "@/integrations/supabase/client";
+import PDPFitmentModal from "@/components/PDPFitmentModal";
 
 /* ─── Description Parser ─── */
 
@@ -193,6 +194,7 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [siblingProducts, setSiblingProducts] = useState<Array<{ handle: string; title: string; subAttr: FitmentSubAttributes }>>([]);
+  const imagesGalleryRef = useRef<HTMLDivElement>(null);
 
   // Track product view (GA4 standard)
   useEffect(() => {
@@ -446,7 +448,7 @@ const ProductTemplate = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 border-b border-border">
 
         {/* Left: Image Gallery */}
-        <div className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6 lg:sticky lg:top-0 lg:self-start">
+        <div ref={imagesGalleryRef} className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6 lg:sticky lg:top-0 lg:self-start">
           <div className="flex gap-3">
             {/* Vertical Thumbnails */}
             {images.length > 1 && (
@@ -816,6 +818,8 @@ const ProductTemplate = () => {
         currentProductType={product.productType || ""}
         tags={product.tags || []}
       />
+
+      <PDPFitmentModal imagesRef={imagesGalleryRef} />
 
       <SiteFooter />
     </div>

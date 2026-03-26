@@ -18,22 +18,12 @@ const MobileYMMBottomSheet = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  // Listen for explicit open triggers only — no auto-open on homepage
   useEffect(() => {
-    if (!isMobile || vehicle) return;
-
-    // Check if skipped this session
-    if (sessionStorage.getItem("ymm_modal_skipped_session") === "true") return;
-
-    // Check localStorage for existing vehicle
-    try {
-      const stored = localStorage.getItem("stehlen_vehicle");
-      if (stored) return;
-    } catch {}
-
-    // Small delay so page renders first
-    const timer = setTimeout(() => setOpen(true), 600);
-    return () => clearTimeout(timer);
-  }, [isMobile, vehicle]);
+    const handler = () => setOpen(true);
+    window.addEventListener("open-ymm-modal", handler);
+    return () => window.removeEventListener("open-ymm-modal", handler);
+  }, []);
 
   // Close when vehicle is set
   useEffect(() => {

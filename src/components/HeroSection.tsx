@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Shield, Truck, RotateCcw } from "lucide-react";
 import { useVehicle } from "@/contexts/VehicleContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import heroBg from "@/assets/hero-bullbar.jpg";
+import FitmentSelector from "./FitmentSelector";
 
 interface HeroSlide {
   headline: string;
@@ -48,6 +50,7 @@ function useHeroContent() {
 
 const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
   const { vehicle } = useVehicle();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [showGate, setShowGate] = useState(false);
   const { data: slides } = useHeroContent();
@@ -112,7 +115,17 @@ const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
           </p>
         )}
 
-        {!vehicle && (
+        {!vehicle && isMobile && (
+          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-5 mb-6">
+            <h3 className="font-display text-base tracking-widest text-center mb-1">WHAT DO YOU DRIVE?</h3>
+            <p className="font-body text-[13px] text-muted-foreground text-center mb-3">
+              Select your vehicle to see parts guaranteed to fit.
+            </p>
+            <FitmentSelector onVehicleSelect={() => {}} />
+          </div>
+        )}
+
+        {!vehicle && !isMobile && (
           <p className="font-body text-sm text-muted-foreground/70 mb-10">
             Select your vehicle above to see parts guaranteed to fit.
           </p>
