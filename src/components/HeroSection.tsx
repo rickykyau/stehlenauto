@@ -49,6 +49,7 @@ function useHeroContent() {
 
 const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
   const { vehicle } = useVehicle();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [showGate, setShowGate] = useState(false);
   const { data: slides } = useHeroContent();
