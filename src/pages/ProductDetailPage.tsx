@@ -788,7 +788,7 @@ const ProductTemplate = () => {
                 <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">
                   {variationGroup?.option_name?.toUpperCase() || "STYLE OPTIONS"}
                 </h3>
-                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory">
+                <div className="flex gap-3 overflow-x-auto md:overflow-x-visible md:flex-wrap scrollbar-none snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
                   {variationMembers.map(member => {
                     const isCurrent = member.shopify_product_id === currentShopifyId;
                     const styleLabel = member.option_label || member.product_title.split(" ").slice(0, 3).join(" ");
@@ -807,7 +807,7 @@ const ProductTemplate = () => {
                             navigate(`/products/${member.product_handle}`);
                           }
                         }}
-                        className={`relative flex flex-col items-center gap-1 p-2 border rounded shrink-0 snap-start transition-colors min-w-[80px] ${
+                        className={`relative flex flex-col items-center gap-1 p-2 border rounded flex-shrink-0 snap-start transition-colors min-w-[90px] w-[90px] md:min-w-[100px] md:w-auto ${
                           isCurrent
                             ? "border-primary bg-primary/5 shadow-sm"
                             : "border-border hover:border-primary/40"
@@ -820,7 +820,7 @@ const ProductTemplate = () => {
                             <ShoppingCart className="w-4 h-4 text-muted-foreground" />
                           </div>
                         )}
-                        <span className="font-display text-[9px] tracking-wider text-foreground text-center leading-tight max-w-[70px] truncate">
+                        <span className="font-display text-[11px] tracking-wider text-foreground text-center leading-tight">
                           {styleLabel}
                         </span>
                         {priceDiff !== 0 && (
