@@ -3,13 +3,13 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package, Shield } from "lucide-react";
+import { Search, ShoppingCart, Menu, X, MessageCircle, HelpCircle, User, Grid3X3, ChevronRight, ChevronLeft, Truck, Loader2, Car, Wrench, LogOut, Package, Shield, Pencil } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import logo from "@/assets/stehlen-logo.png";
 import VehicleBar from "./VehicleBar";
 import FitmentSelector from "./FitmentSelector";
 import YMMBanner from "./YMMBanner";
-import MobileYMMStickyBar from "./MobileYMMStickyBar";
+import MobileYMMBottomSheet from "./MobileYMMBottomSheet";
 import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -18,6 +18,7 @@ import { fuzzyMatch } from "@/lib/fuzzy-search";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,6 +89,7 @@ const SiteHeader = () => {
   const [fitmentOpen, setFitmentOpen] = useState(false);
   const [subMenu, setSubMenu] = useState<null | "category" | "vehicle">(null);
   const [supaUser, setSupaUser] = useState<SupabaseUser | null>(null);
+  const [bannerVisible, setBannerVisible] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const toggleCart = useCartStore((s) => s.toggleCart);
@@ -95,7 +97,22 @@ const SiteHeader = () => {
   const { vehicle, vehicleLabel } = useVehicle();
   const { customer } = useCustomer();
   const fitmentRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useAdmin();
+  const isMobile = useIsMobile();
+
+  // IntersectionObserver for YMM banner visibility (desktop only)
+  useEffect(() => {
+    if (isMobile) return;
+    const el = bannerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setBannerVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isMobile]);
 
   // Supabase auth listener
   useEffect(() => {
@@ -216,6 +233,9 @@ const SiteHeader = () => {
     }
   };
 
+  // Determine whether to show desktop header YMM pill
+  const showDesktopPill = !isMobile && (!bannerVisible || !!vehicle);
+
   const SearchDropdown = () => {
     if (!searchDropdownOpen) return null;
     return (
@@ -306,42 +326,41 @@ const SiteHeader = () => {
             >
               <Search className="w-5 h-5" />
             </button>
-            {/* Mobile-only: labeled truck pill */}
-            <button
-              onClick={() => setFitmentOpen(!fitmentOpen)}
-              className="md:hidden flex items-center gap-1.5 px-2.5 py-1.5 font-display text-[9px] tracking-widest btn-press transition-colors"
-              style={vehicle
-                ? { color: "hsl(var(--primary))" }
-                : { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
-              }
-              aria-label="Select your vehicle"
-            >
-              <Truck className="w-3.5 h-3.5" />
-              {vehicle ? (
-                <span className="relative">
-                  <span>{vehicleLabel.split(" ").slice(0, 2).join(" ").toUpperCase()}</span>
-                  <span className="absolute -top-1 -right-2 w-2 h-2 bg-green-500 rounded-full" />
+
+            {/* Mobile-only: vehicle indicator (only when vehicle IS set) */}
+            {isMobile && vehicle && (
+              <button
+                onClick={() => setFitmentOpen(!fitmentOpen)}
+                className="md:hidden flex items-center gap-1 px-2 py-1.5 text-primary btn-press"
+                aria-label="Change vehicle"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span className="font-display text-[9px] tracking-wider max-w-[60px] truncate">
+                  {vehicle.model.toUpperCase()}
                 </span>
-              ) : (
-                "MY VEHICLE"
-              )}
-            </button>
-            {/* Tablet: compact vehicle button */}
-            <button
-              onClick={() => setFitmentOpen(!fitmentOpen)}
-              className="hidden md:flex lg:hidden items-center gap-1.5 border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-primary font-display text-[9px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
-            >
-              <Truck className="w-3 h-3" />
-              {vehicle ? vehicleLabel.toUpperCase() : "SELECT VEHICLE"}
-            </button>
-            {/* Desktop: full vehicle button */}
-            <button
-              onClick={() => setFitmentOpen(!fitmentOpen)}
-              className="hidden lg:flex items-center gap-2 border border-primary/30 bg-primary/5 px-4 py-2 text-primary font-display text-[11px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
-            >
-              <Truck className="w-3.5 h-3.5" />
-              {vehicle ? vehicleLabel.toUpperCase() : "SELECT YOUR VEHICLE"}
-            </button>
+              </button>
+            )}
+
+            {/* Desktop: vehicle button — scroll-aware */}
+            {showDesktopPill && (
+              <button
+                onClick={() => setFitmentOpen(!fitmentOpen)}
+                className="hidden md:flex items-center gap-2 border border-primary/30 bg-primary/5 px-4 py-2 text-primary font-display text-[11px] tracking-widest hover:bg-primary/10 transition-colors btn-press"
+              >
+                {vehicle ? (
+                  <>
+                    <Pencil className="w-3 h-3" />
+                    <span>{vehicleLabel.toUpperCase()}</span>
+                  </>
+                ) : (
+                  <>
+                    <Truck className="w-3.5 h-3.5" />
+                    SELECT YOUR VEHICLE
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Desktop: Sign In / Account */}
             {isLoggedIn ? (
               <DropdownMenu>
@@ -455,9 +474,9 @@ const SiteHeader = () => {
         <div className="fixed inset-0 z-40" onClick={() => setFitmentOpen(false)} />
       )}
 
-      <YMMBanner onOpenModal={() => setFitmentOpen(true)} />
+      <YMMBanner ref={bannerRef} onOpenModal={() => setFitmentOpen(true)} />
       <VehicleBar />
-      <MobileYMMStickyBar onOpenModal={() => setFitmentOpen(true)} />
+      <MobileYMMBottomSheet />
 
       {/* Overlay */}
       {menuOpen && (

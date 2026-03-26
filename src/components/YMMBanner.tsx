@@ -1,13 +1,17 @@
-import { useState, useEffect } from "react";
-import { Truck, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useEffect, forwardRef } from "react";
+import { Truck, ChevronDown, ChevronRight, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { useYMMConfig } from "@/hooks/useYMMConfig";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
-  const { vehicle } = useVehicle();
+interface YMMBannerProps {
+  onOpenModal: () => void;
+}
+
+const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, ref) => {
+  const { vehicle, vehicleLabel } = useVehicle();
   const { makes, models, years } = useYMMConfig();
   const { setVehicle } = useVehicle();
   const navigate = useNavigate();
@@ -24,8 +28,6 @@ const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
     return () => clearTimeout(timer);
   }, [pulseCount]);
 
-  if (vehicle) return null;
-
   const handleSubmit = () => {
     if (year && make && model) {
       const v = { year, make, model };
@@ -37,29 +39,56 @@ const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
 
   const pulseClass = pulseCount < 2 ? "animate-pulse" : "";
 
-  // Mobile: single tap bar that opens modal
+  // Mobile: high-contrast yellow tappable bar
   if (isMobile) {
+    // Vehicle IS set: success state
+    if (vehicle) {
+      return (
+        <div
+          ref={ref}
+          onClick={onOpenModal}
+          className="w-full border-b border-border cursor-pointer"
+          style={{ background: "hsl(145, 60%, 20%)", minHeight: 60 }}
+        >
+          <div className="flex items-center justify-between px-4 h-[60px]">
+            <div className="flex items-center gap-3">
+              <Check className="w-5 h-5 text-green-400 shrink-0" />
+              <span className="font-display text-[12px] tracking-wider text-white font-bold">
+                SHOWING PARTS FOR {vehicleLabel.toUpperCase()}
+              </span>
+            </div>
+            <span className="font-body text-xs text-green-300 underline shrink-0">Change</span>
+          </div>
+        </div>
+      );
+    }
+
+    // No vehicle: yellow CTA bar
     return (
       <div
+        ref={ref}
         onClick={onOpenModal}
-        className="w-full bg-[hsl(220,15%,7%)] border-b border-border cursor-pointer"
+        className="w-full border-b border-border cursor-pointer"
+        style={{ background: "hsl(var(--primary))", minHeight: 60 }}
       >
-        <div className="flex items-center justify-between px-4 h-14">
+        <div className="flex items-center justify-between px-4 h-[60px]">
           <div className="flex items-center gap-3">
-            <Truck className="w-4 h-4 text-primary shrink-0" />
-            <span className="font-display text-[10px] tracking-widest text-foreground font-bold">
-              FIND PARTS FOR YOUR VEHICLE
+            <Truck className="w-5 h-5 text-primary-foreground shrink-0" />
+            <span className="font-display text-[13px] tracking-wider text-primary-foreground font-bold">
+              TAP HERE — FIND PARTS FOR YOUR VEHICLE
             </span>
           </div>
-          <ChevronRight className={`w-5 h-5 text-primary ${pulseClass}`} />
+          <ChevronRight className={`w-5 h-5 text-primary-foreground ${pulseClass}`} />
         </div>
       </div>
     );
   }
 
-  // Desktop: inline dropdowns
+  // Desktop: inline dropdowns (hide when vehicle is set — VehicleBar handles that)
+  if (vehicle) return <div ref={ref} />;
+
   return (
-    <div className="w-full bg-[hsl(220,15%,7%)] border-b border-border">
+    <div ref={ref} className="w-full bg-[hsl(220,15%,7%)] border-b border-border">
       <div className="flex items-center justify-between px-6 h-[72px]">
         {/* Left: label */}
         <div className="flex items-center gap-3 shrink-0">
@@ -119,6 +148,8 @@ const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
       </div>
     </div>
   );
-};
+});
+
+YMMBanner.displayName = "YMMBanner";
 
 export default YMMBanner;
