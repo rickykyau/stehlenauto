@@ -17,6 +17,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useVehicle } from "@/contexts/VehicleContext";
 import { parseFitmentSubAttributes, parseFitmentNotes, SUB_ATTRIBUTE_CATEGORIES, type FitmentSubAttributes } from "@/lib/shopify";
 import { supabase } from "@/integrations/supabase/client";
+import PDPFitmentModal from "@/components/PDPFitmentModal";
 
 /* ─── Description Parser ─── */
 
