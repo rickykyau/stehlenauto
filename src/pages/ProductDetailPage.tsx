@@ -819,6 +819,8 @@ const ProductTemplate = () => {
         tags={product.tags || []}
       />
 
+      <PDPFitmentModal imagesRef={imagesGalleryRef} />
+
       <SiteFooter />
     </div>
   );
