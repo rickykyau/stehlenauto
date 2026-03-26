@@ -60,9 +60,12 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
 
   return (
     <div className="border border-border bg-card p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <Truck className="w-5 h-5 text-primary" />
-        <h3 className="text-sm font-display tracking-widest">SELECT YOUR TRUCK</h3>
+      <div className="mb-4">
+        <div className="flex items-center gap-3 mb-1">
+          <Truck className="w-5 h-5 text-primary" />
+          <h3 className="text-sm font-display tracking-widest">SELECT YOUR TRUCK</h3>
+        </div>
+        <p className="text-xs text-muted-foreground font-body ml-8">We'll show you parts guaranteed to fit — no guessing.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border">
@@ -116,7 +119,7 @@ const FitmentSelector = ({ onVehicleSelect }: FitmentSelectorProps) => {
       >
         <div className="flex items-center justify-center gap-2">
           <Shield className="w-4 h-4" />
-          FIND MY PARTS
+          FIND MY PARTS{matchCount > 0 ? ` (${matchCount})` : ""}
         </div>
       </button>
 
