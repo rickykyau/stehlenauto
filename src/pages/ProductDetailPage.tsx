@@ -448,7 +448,7 @@ const ProductTemplate = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 border-b border-border">
 
         {/* Left: Image Gallery */}
-        <div className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6 lg:sticky lg:top-0 lg:self-start">
+        <div ref={imagesGalleryRef} className="border-b lg:border-b-0 lg:border-r border-border p-4 lg:p-6 lg:sticky lg:top-0 lg:self-start">
           <div className="flex gap-3">
             {/* Vertical Thumbnails */}
             {images.length > 1 && (
