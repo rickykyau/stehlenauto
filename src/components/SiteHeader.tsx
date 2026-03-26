@@ -323,7 +323,7 @@ const SiteHeader = () => {
                   <span className="absolute -top-1 -right-2 w-2 h-2 bg-green-500 rounded-full" />
                 </span>
               ) : (
-                "MY TRUCK"
+                "MY VEHICLE"
               )}
             </button>
             {/* Tablet: compact vehicle button */}
