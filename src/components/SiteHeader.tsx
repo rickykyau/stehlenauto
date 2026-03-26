@@ -314,7 +314,7 @@ const SiteHeader = () => {
                 ? { color: "hsl(var(--primary))" }
                 : { background: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
               }
-              aria-label="Select your truck"
+              aria-label="Select your vehicle"
             >
               <Truck className="w-3.5 h-3.5" />
               {vehicle ? (
