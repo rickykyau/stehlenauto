@@ -115,7 +115,17 @@ const HeroSection = ({ onOpenYMM }: { onOpenYMM?: () => void }) => {
           </p>
         )}
 
-        {!vehicle && (
+        {!vehicle && isMobile && (
+          <div className="bg-card/80 backdrop-blur-sm border border-border rounded-xl p-5 mb-6">
+            <h3 className="font-display text-base tracking-widest text-center mb-1">WHAT DO YOU DRIVE?</h3>
+            <p className="font-body text-[13px] text-muted-foreground text-center mb-3">
+              Select your vehicle to see parts guaranteed to fit.
+            </p>
+            <FitmentSelector onVehicleSelect={() => {}} />
+          </div>
+        )}
+
+        {!vehicle && !isMobile && (
           <p className="font-body text-sm text-muted-foreground/70 mb-10">
             Select your vehicle above to see parts guaranteed to fit.
           </p>
