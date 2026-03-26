@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import heroBg from "@/assets/hero-bullbar.jpg";
+import FitmentSelector from "./FitmentSelector";
 
 interface HeroSlide {
   headline: string;
