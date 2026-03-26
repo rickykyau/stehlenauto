@@ -48,7 +48,7 @@ const YMMBanner = ({ onOpenModal }: { onOpenModal: () => void }) => {
           <div className="flex items-center gap-3">
             <Truck className="w-4 h-4 text-primary shrink-0" />
             <span className="font-display text-[10px] tracking-widest text-foreground font-bold">
-              FIND PARTS FOR YOUR TRUCK
+              FIND PARTS FOR YOUR VEHICLE
             </span>
           </div>
           <ChevronRight className={`w-5 h-5 text-primary ${pulseClass}`} />
