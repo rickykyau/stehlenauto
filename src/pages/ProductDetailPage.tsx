@@ -194,6 +194,7 @@ const ProductTemplate = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [siblingProducts, setSiblingProducts] = useState<Array<{ handle: string; title: string; subAttr: FitmentSubAttributes }>>([]);
+  const imagesGalleryRef = useRef<HTMLDivElement>(null);
 
   // Track product view (GA4 standard)
   useEffect(() => {
