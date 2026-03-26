@@ -420,17 +420,17 @@ const SiteHeader = () => {
             <div ref={fitmentRef} className="md:hidden fixed inset-0 top-16 z-50 bg-background overflow-y-auto">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="font-display text-xs tracking-widest text-muted-foreground">SELECT YOUR TRUCK</span>
+                  <span className="font-display text-xs tracking-widest text-foreground">SELECT YOUR TRUCK</span>
                   <button onClick={() => setFitmentOpen(false)} className="text-muted-foreground hover:text-foreground">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
                 <button
-                  onClick={() => { setFitmentOpen(false); }}
-                  className="mt-3 w-full text-center font-body text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  onClick={() => { setFitmentOpen(false); navigate("/collections/all"); }}
+                  className="mt-3 w-full text-center font-body text-[13px] text-muted-foreground hover:text-foreground hover:underline transition-colors py-1"
                 >
-                  Skip and browse all
+                  Skip and browse all 1,330 parts
                 </button>
               </div>
             </div>
