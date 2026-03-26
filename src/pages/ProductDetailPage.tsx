@@ -476,6 +476,83 @@ const ProductTemplate = () => {
     return `${yearRange} ${make} ${model}`.trim();
   }, [product]);
 
+  // Fitment attribute pills (parsed from tags/title)
+  const fitmentPills = useMemo(() => {
+    if (!product) return [];
+    const tags = product.tags || [];
+    const pills: { label: string; value: string }[] = [];
+    const bed = bedLengthBadge;
+    if (bed) pills.push({ label: "Bed", value: bed });
+    const cab = parseCabTypeFromTags(tags, product.title || "");
+    if (cab) pills.push({ label: "Cab", value: cab });
+    const trim = parseTrimFromTags(tags);
+    if (trim) pills.push({ label: "Trim", value: trim });
+    return pills;
+  }, [product, bedLengthBadge]);
+
+  // Variation group fetch from Supabase
+  const [variationGroup, setVariationGroup] = useState<VariationGroup | null>(null);
+  const [variationMembers, setVariationMembers] = useState<VariationMember[]>([]);
+  const [variationsVisible, setVariationsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+    setVariationGroup(null);
+    setVariationMembers([]);
+    setVariationsVisible(false);
+    const shopifyId = product.id?.replace?.("gid://shopify/Product/", "") || "";
+    if (!shopifyId) return;
+    const fetchVariations = async () => {
+      try {
+        const { data: memberData } = await supabase
+          .from("product_variation_members")
+          .select("group_id, fitment_scope")
+          .eq("shopify_product_id", shopifyId)
+          .maybeSingle();
+        if (!memberData?.group_id) return;
+        const { data: groupData } = await supabase
+          .from("product_variation_groups")
+          .select("id, family_name, option_name, ymm_base, category")
+          .eq("id", memberData.group_id)
+          .maybeSingle();
+        if (!groupData) return;
+        setVariationGroup(groupData);
+        const { data: siblings } = await supabase
+          .from("product_variation_members")
+          .select("shopify_product_id, product_handle, product_title, price, image_url, option_label, bed_length, cab_type, trim_level, available_for_sale, display_order")
+          .eq("group_id", memberData.group_id)
+          .order("display_order", { ascending: true });
+        if (siblings && siblings.length >= 2) {
+          setVariationMembers(siblings as VariationMember[]);
+          requestAnimationFrame(() => setVariationsVisible(true));
+          const currentStyle = (siblings as VariationMember[]).find(s => s.shopify_product_id === shopifyId)?.option_label || null;
+          trackGA4Event("variation_options_shown", {
+            product_id: product.id,
+            variation_count: siblings.length,
+            current_style: currentStyle,
+          });
+        }
+      } catch (e) {
+        console.error("Variation group fetch failed:", e);
+      }
+    };
+    fetchVariations();
+  }, [product?.id]);
+
+  const currentShopifyId = product?.id?.replace?.("gid://shopify/Product/", "") || "";
+
+  const otherTrimsNotice = useMemo(() => {
+    if (variationMembers.length < 2 || !variationGroup) return null;
+    const currentTrim = parseTrimFromTags(product?.tags || []);
+    if (!currentTrim) return null;
+    const otherTrimMembers = variationMembers.filter(m => {
+      if (m.shopify_product_id === currentShopifyId) return false;
+      return m.trim_level && m.trim_level.toLowerCase() !== currentTrim.toLowerCase();
+    });
+    if (otherTrimMembers.length === 0) return null;
+    return { ymmBase: variationGroup.ymm_base, category: variationGroup.category };
+  }, [variationMembers, variationGroup, product?.tags, currentShopifyId]);
+
   if (productLoading) {
     return (
       <div className="min-h-screen bg-background">
