@@ -7,8 +7,9 @@ import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher"
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown,
 } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
