@@ -326,7 +326,6 @@ export type Database = {
           id: string
           member_count: number
           option_name: string
-          updated_at: string | null
           ymm_base: string
         }
         Insert: {
@@ -336,7 +335,6 @@ export type Database = {
           id?: string
           member_count?: number
           option_name?: string
-          updated_at?: string | null
           ymm_base: string
         }
         Update: {
@@ -346,7 +344,6 @@ export type Database = {
           id?: string
           member_count?: number
           option_name?: string
-          updated_at?: string | null
           ymm_base?: string
         }
         Relationships: []
