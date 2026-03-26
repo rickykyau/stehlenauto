@@ -151,6 +151,65 @@ function isBedLengthOption(option: { name: string; values: string[] }): boolean 
   return name.includes("bed length") || name.includes("bed size") || name === "length";
 }
 
+/* ─── Fitment Attribute Pill Parsers ─── */
+
+const CAB_TYPE_PATTERNS: [RegExp, string][] = [
+  [/\bsupercrew\b|\bcrew cab\b/i, "Crew Cab"],
+  [/\bsupercab\b|\bextended cab\b/i, "Extended Cab"],
+  [/\bregular cab\b|\bstandard cab\b|\bsingle cab\b/i, "Regular Cab"],
+  [/\bdouble cab\b/i, "Double Cab"],
+  [/\baccess cab\b/i, "Access Cab"],
+  [/\bclub cab\b/i, "Club Cab"],
+];
+
+const TRIM_KEYWORDS = [
+  "Raptor", "Lariat", "King Ranch", "Platinum", "Limited", "XLT", "XL", "FX4", "STX",
+  "Laramie", "Rebel", "Longhorn", "Power Wagon", "Denali", "AT4", "Elevation",
+  "LT", "LTZ", "Z71", "High Country", "WT", "SR5", "TRD", "Pro-4X", "Nismo", "Pro",
+];
+
+function parseCabTypeFromTags(tags: string[], title: string): string | null {
+  const combined = (tags.join(" ") + " " + title).toLowerCase();
+  for (const [pattern, label] of CAB_TYPE_PATTERNS) {
+    if (pattern.test(combined)) return label;
+  }
+  return null;
+}
+
+function parseTrimFromTags(tags: string[]): string | null {
+  for (const tag of tags) {
+    const trimmed = tag.trim();
+    for (const kw of TRIM_KEYWORDS) {
+      if (trimmed.toLowerCase() === kw.toLowerCase()) return kw;
+    }
+  }
+  return null;
+}
+
+/* ─── Variation Group Types ─── */
+
+interface VariationMember {
+  shopify_product_id: string;
+  product_handle: string;
+  product_title: string;
+  price: number | null;
+  image_url: string | null;
+  option_label: string | null;
+  bed_length: string | null;
+  cab_type: string | null;
+  trim_level: string | null;
+  available_for_sale: boolean;
+  display_order: number;
+}
+
+interface VariationGroup {
+  id: string;
+  family_name: string;
+  option_name: string;
+  ymm_base: string;
+  category: string;
+}
+
 /* ─── Year/Fitment Matching ─── */
 // Moved to src/utils/fitmentMatcher.ts
 
