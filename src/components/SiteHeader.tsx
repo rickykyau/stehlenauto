@@ -435,8 +435,16 @@ const SiteHeader = () => {
               </div>
             </div>
             {/* Tablet/Desktop: dropdown */}
-            <div className="hidden md:block absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl">
+            <div className="hidden md:block absolute top-full right-0 left-0 lg:left-auto lg:right-8 lg:w-[600px] z-50 border border-border shadow-xl bg-card">
               <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
+              <div className="px-6 pb-4">
+                <button
+                  onClick={() => { setFitmentOpen(false); navigate("/collections/all"); }}
+                  className="w-full text-center font-body text-[13px] text-muted-foreground hover:text-foreground hover:underline transition-colors py-1"
+                >
+                  Skip and browse all 1,330 parts
+                </button>
+              </div>
             </div>
           </>
         )}
