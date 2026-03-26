@@ -2,12 +2,12 @@
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
+import { trackEvent, trackGA4Event, trackKlaviyoEvent } from "@/lib/analytics";
 import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown, Info,
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
@@ -149,6 +149,65 @@ function parseBedLengthFromTitle(title: string): string | null {
 function isBedLengthOption(option: { name: string; values: string[] }): boolean {
   const name = option.name.toLowerCase();
   return name.includes("bed length") || name.includes("bed size") || name === "length";
+}
+
+/* ─── Fitment Attribute Pill Parsers ─── */
+
+const CAB_TYPE_PATTERNS: [RegExp, string][] = [
+  [/\bsupercrew\b|\bcrew cab\b/i, "Crew Cab"],
+  [/\bsupercab\b|\bextended cab\b/i, "Extended Cab"],
+  [/\bregular cab\b|\bstandard cab\b|\bsingle cab\b/i, "Regular Cab"],
+  [/\bdouble cab\b/i, "Double Cab"],
+  [/\baccess cab\b/i, "Access Cab"],
+  [/\bclub cab\b/i, "Club Cab"],
+];
+
+const TRIM_KEYWORDS = [
+  "Raptor", "Lariat", "King Ranch", "Platinum", "Limited", "XLT", "XL", "FX4", "STX",
+  "Laramie", "Rebel", "Longhorn", "Power Wagon", "Denali", "AT4", "Elevation",
+  "LT", "LTZ", "Z71", "High Country", "WT", "SR5", "TRD", "Pro-4X", "Nismo", "Pro",
+];
+
+function parseCabTypeFromTags(tags: string[], title: string): string | null {
+  const combined = (tags.join(" ") + " " + title).toLowerCase();
+  for (const [pattern, label] of CAB_TYPE_PATTERNS) {
+    if (pattern.test(combined)) return label;
+  }
+  return null;
+}
+
+function parseTrimFromTags(tags: string[]): string | null {
+  for (const tag of tags) {
+    const trimmed = tag.trim();
+    for (const kw of TRIM_KEYWORDS) {
+      if (trimmed.toLowerCase() === kw.toLowerCase()) return kw;
+    }
+  }
+  return null;
+}
+
+/* ─── Variation Group Types ─── */
+
+interface VariationMember {
+  shopify_product_id: string;
+  product_handle: string;
+  product_title: string;
+  price: number | null;
+  image_url: string | null;
+  option_label: string | null;
+  bed_length: string | null;
+  cab_type: string | null;
+  trim_level: string | null;
+  available_for_sale: boolean;
+  display_order: number;
+}
+
+interface VariationGroup {
+  id: string;
+  family_name: string;
+  option_name: string;
+  ymm_base: string;
+  category: string;
 }
 
 /* ─── Year/Fitment Matching ─── */
@@ -417,6 +476,83 @@ const ProductTemplate = () => {
     return `${yearRange} ${make} ${model}`.trim();
   }, [product]);
 
+  // Fitment attribute pills (parsed from tags/title)
+  const fitmentPills = useMemo(() => {
+    if (!product) return [];
+    const tags = product.tags || [];
+    const pills: { label: string; value: string }[] = [];
+    const bed = bedLengthBadge;
+    if (bed) pills.push({ label: "Bed", value: bed });
+    const cab = parseCabTypeFromTags(tags, product.title || "");
+    if (cab) pills.push({ label: "Cab", value: cab });
+    const trim = parseTrimFromTags(tags);
+    if (trim) pills.push({ label: "Trim", value: trim });
+    return pills;
+  }, [product, bedLengthBadge]);
+
+  // Variation group fetch from Supabase
+  const [variationGroup, setVariationGroup] = useState<VariationGroup | null>(null);
+  const [variationMembers, setVariationMembers] = useState<VariationMember[]>([]);
+  const [variationsVisible, setVariationsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!product) return;
+    setVariationGroup(null);
+    setVariationMembers([]);
+    setVariationsVisible(false);
+    const shopifyId = product.id?.replace?.("gid://shopify/Product/", "") || "";
+    if (!shopifyId) return;
+    const fetchVariations = async () => {
+      try {
+        const { data: memberData } = await supabase
+          .from("product_variation_members")
+          .select("group_id, fitment_scope")
+          .eq("shopify_product_id", shopifyId)
+          .maybeSingle();
+        if (!memberData?.group_id) return;
+        const { data: groupData } = await supabase
+          .from("product_variation_groups")
+          .select("id, family_name, option_name, ymm_base, category")
+          .eq("id", memberData.group_id)
+          .maybeSingle();
+        if (!groupData) return;
+        setVariationGroup(groupData);
+        const { data: siblings } = await supabase
+          .from("product_variation_members")
+          .select("shopify_product_id, product_handle, product_title, price, image_url, option_label, bed_length, cab_type, trim_level, available_for_sale, display_order")
+          .eq("group_id", memberData.group_id)
+          .order("display_order", { ascending: true });
+        if (siblings && siblings.length >= 2) {
+          setVariationMembers(siblings as VariationMember[]);
+          requestAnimationFrame(() => setVariationsVisible(true));
+          const currentStyle = (siblings as VariationMember[]).find(s => s.shopify_product_id === shopifyId)?.option_label || null;
+          trackGA4Event("variation_options_shown", {
+            product_id: product.id,
+            variation_count: siblings.length,
+            current_style: currentStyle,
+          });
+        }
+      } catch (e) {
+        console.error("Variation group fetch failed:", e);
+      }
+    };
+    fetchVariations();
+  }, [product?.id]);
+
+  const currentShopifyId = product?.id?.replace?.("gid://shopify/Product/", "") || "";
+
+  const otherTrimsNotice = useMemo(() => {
+    if (variationMembers.length < 2 || !variationGroup) return null;
+    const currentTrim = parseTrimFromTags(product?.tags || []);
+    if (!currentTrim) return null;
+    const otherTrimMembers = variationMembers.filter(m => {
+      if (m.shopify_product_id === currentShopifyId) return false;
+      return m.trim_level && m.trim_level.toLowerCase() !== currentTrim.toLowerCase();
+    });
+    if (otherTrimMembers.length === 0) return null;
+    return { ymmBase: variationGroup.ymm_base, category: variationGroup.category };
+  }, [variationMembers, variationGroup, product?.tags, currentShopifyId]);
+
   if (productLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -572,60 +708,160 @@ const ProductTemplate = () => {
             )}
           </div>
 
-          {/* Fitment Badge — 3-state: fits, partial, does_not_fit */}
-          {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
-            <div className={`flex items-start gap-2 px-3 py-2 mb-3 border ${
-              fitmentResult.status === "universal" || fitmentResult.status === "fits"
-                ? "border-green-600/40 bg-green-600/10 text-green-400"
-                : fitmentResult.status === "partial"
-                  ? "border-yellow-600/40 bg-yellow-600/10 text-yellow-500"
-                  : "border-red-600/40 bg-red-600/10 text-red-400"
-            }`}>
-              {fitmentResult.status === "universal" || fitmentResult.status === "fits" ? (
-                <Check className="w-4 h-4 shrink-0 mt-0.5" />
-              ) : fitmentResult.status === "partial" ? (
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              ) : (
-                <XIcon className="w-4 h-4 shrink-0 mt-0.5" />
+
+          {/* Fitment Attribute Pills Row */}
+          {(fitmentPills.length > 0 || vehicle || !vehicle) && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {/* Vehicle fitment badge */}
+              {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
+                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                  fitmentResult.status === "universal" || fitmentResult.status === "fits"
+                    ? "bg-green-600/15 text-green-500 border border-green-600/30"
+                    : fitmentResult.status === "partial"
+                      ? "bg-yellow-600/15 text-yellow-500 border border-yellow-600/30"
+                      : "bg-red-600/15 text-red-400 border border-red-600/30"
+                }`}>
+                  {(fitmentResult.status === "universal" || fitmentResult.status === "fits") && <Check className="w-3 h-3" />}
+                  {fitmentResult.status === "partial" && <AlertTriangle className="w-3 h-3" />}
+                  {fitmentResult.status === "does_not_fit" && <XIcon className="w-3 h-3" />}
+                  <span>
+                    {fitmentResult.status === "universal"
+                      ? "Universal Fit"
+                      : fitmentResult.status === "fits"
+                        ? `Fits your ${vehicleLabel}`
+                        : fitmentResult.status === "partial"
+                          ? `May fit your ${vehicleLabel}`
+                          : `Does not fit your ${vehicleLabel}`}
+                  </span>
+                </div>
               )}
-              <div>
-                <span className="font-display text-[10px] tracking-widest block">
-                  {fitmentResult.status === "universal"
-                    ? "UNIVERSAL FIT — WORKS WITH ANY VEHICLE"
-                    : fitmentResult.status === "fits"
-                      ? `FITS YOUR ${vehicleLabel.toUpperCase()}`
-                      : fitmentResult.status === "partial"
-                        ? `MAY FIT YOUR ${vehicleLabel.toUpperCase()}`
-                        : `DOES NOT FIT YOUR ${vehicleLabel.toUpperCase()}`}
-                </span>
-                {fitmentResult.status === "partial" && fitmentResult.warnings.length > 0 && (
-                  <div className="mt-1 space-y-0.5">
-                    {fitmentResult.warnings.map((w, i) => (
-                      <p key={i} className="font-body text-[10px] text-yellow-500/80">{w}</p>
-                    ))}
-                    <p className="font-body text-[10px] text-yellow-500/80 italic">Please confirm your trim before ordering.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {vehicle && fitmentResult?.status === "unknown" && (
-            <div className="flex items-start gap-2 px-3 py-2 mb-3 border border-border bg-muted/40 text-muted-foreground">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="font-display text-[10px] tracking-widest block">
-                FITMENT NOT CONFIRMED — PLEASE VERIFY COMPATIBILITY
-              </span>
+              {vehicle && fitmentResult?.status === "unknown" && (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>Fitment not confirmed</span>
+                </div>
+              )}
+              {!vehicle && (
+                <button
+                  onClick={() => {
+                    const ymmBtn = document.querySelector('[data-ymm-trigger]') as HTMLElement;
+                    ymmBtn?.click();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border hover:border-primary/40 transition-colors cursor-pointer"
+                >
+                  <Truck className="w-3 h-3" />
+                  <span>Select your vehicle to confirm fit</span>
+                </button>
+              )}
+
+              {/* Attribute pills */}
+              {fitmentPills.map(pill => (
+                <div key={pill.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                  {pill.label === "Bed" && <Ruler className="w-3 h-3" />}
+                  {pill.label === "Cab" && <Truck className="w-3 h-3" />}
+                  <span>{pill.label}: {pill.value}</span>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Bed Length Badge (fixed attribute, not a selector) */}
-          {bedLengthBadge && !bedLengthOption && (
-            <div className="flex items-center gap-2 px-3 py-1.5 mb-3 border border-slate-300 bg-slate-100 rounded-full w-fit">
-              <Ruler className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-              <span className="font-semibold text-sm text-slate-700">
-                <span className="uppercase text-xs tracking-wider">BED LENGTH:</span>{" "}
-                {bedLengthBadge}
-              </span>
+          {/* Partial fitment warnings (expanded) */}
+          {vehicle && fitmentResult?.status === "partial" && fitmentResult.warnings.length > 0 && (
+            <div className="px-3 py-2 mb-3 border border-yellow-600/40 bg-yellow-600/10">
+              <div className="space-y-0.5">
+                {fitmentResult.warnings.map((w, i) => (
+                  <p key={i} className="font-body text-[10px] text-yellow-500/80">{w}</p>
+                ))}
+                <p className="font-body text-[10px] text-yellow-500/80 italic">Please confirm your trim before ordering.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Style Variation Selector (from Supabase) */}
+          {variationMembers.length >= 2 && (() => {
+            const allSameStyle = variationMembers.every(m => m.option_label === variationMembers[0].option_label);
+            if (allSameStyle) return null;
+            const currentMember = variationMembers.find(m => m.shopify_product_id === currentShopifyId);
+            const currentPrice = currentMember?.price || price;
+            return (
+              <div className={`mb-3 transition-opacity duration-150 ${variationsVisible ? 'opacity-100' : 'opacity-0'}`}>
+                <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">
+                  {variationGroup?.option_name?.toUpperCase() || "STYLE OPTIONS"}
+                </h3>
+                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory">
+                  {variationMembers.map(member => {
+                    const isCurrent = member.shopify_product_id === currentShopifyId;
+                    const styleLabel = member.option_label || member.product_title.split(" ").slice(0, 3).join(" ");
+                    const priceDiff = member.price && currentPrice ? member.price - currentPrice : 0;
+                    return (
+                      <button
+                        key={member.shopify_product_id}
+                        onClick={() => {
+                          if (!isCurrent) {
+                            trackGA4Event("variation_selected", {
+                              from_product_id: product.id,
+                              to_product_id: member.shopify_product_id,
+                              from_style: currentMember?.option_label || "",
+                              to_style: member.option_label || "",
+                            });
+                            navigate(`/products/${member.product_handle}`);
+                          }
+                        }}
+                        className={`relative flex flex-col items-center gap-1 p-2 border rounded shrink-0 snap-start transition-colors min-w-[80px] ${
+                          isCurrent
+                            ? "border-primary bg-primary/5 shadow-sm"
+                            : "border-border hover:border-primary/40"
+                        } ${!member.available_for_sale ? "opacity-50" : ""}`}
+                      >
+                        {member.image_url ? (
+                          <img src={member.image_url} alt={styleLabel} className="w-10 h-10 rounded object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                            <ShoppingCart className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span className="font-display text-[9px] tracking-wider text-foreground text-center leading-tight max-w-[70px] truncate">
+                          {styleLabel}
+                        </span>
+                        {priceDiff !== 0 && (
+                          <span className={`text-[9px] font-semibold ${priceDiff > 0 ? 'text-muted-foreground' : 'text-green-500'}`}>
+                            {priceDiff > 0 ? `+$${priceDiff.toFixed(0)}` : `-$${Math.abs(priceDiff).toFixed(0)}`}
+                          </span>
+                        )}
+                        {!member.available_for_sale && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-background/60 rounded text-[8px] font-semibold text-muted-foreground">
+                            OUT OF STOCK
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* "Also available for other trims" notice */}
+          {otherTrimsNotice && (
+            <div className="flex items-start gap-2 px-3 py-2 mb-3 bg-muted/50 rounded text-sm">
+              <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div>
+                <span className="text-muted-foreground">
+                  Also available for other {otherTrimsNotice.ymmBase} configurations.
+                </span>{" "}
+                <Link
+                  to={`/collections/${otherTrimsNotice.category.toLowerCase().replace(/\s+/g, "-")}`}
+                  onClick={() => {
+                    trackGA4Event("other_trim_notice_clicked", {
+                      product_id: product.id,
+                      ymm_base: otherTrimsNotice.ymmBase,
+                    });
+                  }}
+                  className="text-primary text-sm font-semibold hover:underline"
+                >
+                  View all options →
+                </Link>
+              </div>
             </div>
           )}
 
