@@ -2,12 +2,12 @@
  * SHOPIFY TEMPLATE: templates/product.liquid
  */
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { trackEvent, trackKlaviyoEvent } from "@/lib/analytics";
+import { trackEvent, trackGA4Event, trackKlaviyoEvent } from "@/lib/analytics";
 import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown, Info,
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
