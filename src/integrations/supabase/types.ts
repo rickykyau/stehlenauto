@@ -318,6 +318,95 @@ export type Database = {
         }
         Relationships: []
       }
+      product_variation_groups: {
+        Row: {
+          category: string
+          created_at: string
+          family_name: string
+          id: string
+          member_count: number
+          option_name: string
+          ymm_base: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          family_name: string
+          id?: string
+          member_count?: number
+          option_name?: string
+          ymm_base: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          family_name?: string
+          id?: string
+          member_count?: number
+          option_name?: string
+          ymm_base?: string
+        }
+        Relationships: []
+      }
+      product_variation_members: {
+        Row: {
+          available_for_sale: boolean
+          bed_length: string | null
+          cab_type: string | null
+          created_at: string
+          display_order: number
+          group_id: string
+          id: string
+          option_label: string | null
+          price: number | null
+          product_handle: string
+          product_title: string
+          shopify_product_gid: string
+          shopify_product_id: string
+          trim_level: string | null
+        }
+        Insert: {
+          available_for_sale?: boolean
+          bed_length?: string | null
+          cab_type?: string | null
+          created_at?: string
+          display_order?: number
+          group_id: string
+          id?: string
+          option_label?: string | null
+          price?: number | null
+          product_handle: string
+          product_title: string
+          shopify_product_gid: string
+          shopify_product_id: string
+          trim_level?: string | null
+        }
+        Update: {
+          available_for_sale?: boolean
+          bed_length?: string | null
+          cab_type?: string | null
+          created_at?: string
+          display_order?: number
+          group_id?: string
+          id?: string
+          option_label?: string | null
+          price?: number | null
+          product_handle?: string
+          product_title?: string
+          shopify_product_gid?: string
+          shopify_product_id?: string
+          trim_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variation_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_variation_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_cache: {
         Row: {
           cb_item_name: string | null
