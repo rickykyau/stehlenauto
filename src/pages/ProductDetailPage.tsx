@@ -7,8 +7,9 @@ import { checkProductFitment, type FitmentResult } from "@/utils/fitmentMatcher"
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
-  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle,
+  Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown,
 } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import RelatedProductsCarousel from "@/components/RelatedProductsCarousel";
@@ -123,6 +124,31 @@ function extractKeyValues(html: string): Record<string, string> {
     }
   }
   return result;
+}
+
+/* ─── Bed Length Parser ─── */
+
+function parseBedLengthFromTags(tags: string[]): string | null {
+  for (const tag of tags) {
+    const lower = tag.toLowerCase();
+    const match = lower.match(/^bed[-_]?length[-_]?([\d.]+)\s*(?:ft|'|foot)?$/);
+    if (match) return `${match[1]} ft`;
+  }
+  return null;
+}
+
+function parseBedLengthFromTitle(title: string): string | null {
+  const match = title.match(/([\d.]+)\s*(?:ft|'|foot|feet)/i);
+  if (match) {
+    const val = parseFloat(match[1]);
+    if (val >= 4 && val <= 9) return `${match[1]} ft`;
+  }
+  return null;
+}
+
+function isBedLengthOption(option: { name: string; values: string[] }): boolean {
+  const name = option.name.toLowerCase();
+  return name.includes("bed length") || name.includes("bed size") || name === "length";
 }
 
 /* ─── Year/Fitment Matching ─── */
@@ -346,9 +372,50 @@ const ProductTemplate = () => {
   // Determine if customer needs sub-attribute warning
   const showSubAttrWarning = useMemo(() => {
     if (!vehicle || !relevantSubAttr) return false;
-    // Show warning if product has sub-attribute but user hasn't confirmed
-    return true; // Product is sub-attribute specific
+    return true;
   }, [vehicle, relevantSubAttr]);
+
+  // Bed length badge: fixed attribute (not a variant selector)
+  const bedLengthBadge = useMemo(() => {
+    if (!product) return null;
+    // Check sub-attributes first
+    if (fitmentSubAttrs?.bed_length) return fitmentSubAttrs.bed_length;
+    // Check tags
+    const fromTags = parseBedLengthFromTags(product.tags || []);
+    if (fromTags) return fromTags;
+    // Check title
+    return parseBedLengthFromTitle(product.title || "");
+  }, [product, fitmentSubAttrs]);
+
+  // Determine which options to show (only multi-value, non-Title)
+  const visibleOptions = useMemo(() => {
+    if (!product?.options) return [];
+    return product.options.filter((o: { name: string; values: string[] }) =>
+      o.name !== "Title" && o.values.length > 1
+    );
+  }, [product?.options]);
+
+  // Check if any visible option is a bed length selector
+  const bedLengthOption = useMemo(() => {
+    return visibleOptions.find((o: { name: string; values: string[] }) => isBedLengthOption(o)) || null;
+  }, [visibleOptions]);
+
+  // Step numbering: only when 2+ selectors visible
+  const showStepNumbers = visibleOptions.length >= 2;
+
+  // Fitment vehicle range from tags
+  const fitmentVehicleRange = useMemo(() => {
+    if (!product) return null;
+    const tags = product.tags || [];
+    const years = tags.filter((t: string) => /^\d{4}$/.test(t)).map(Number).sort();
+    const makes = tags.filter((t: string) => t.startsWith?.("make:"))?.map((t: string) => t.replace("make:", "")) || [];
+    const models = tags.filter((t: string) => t.startsWith?.("model:"))?.map((t: string) => t.replace("model:", "")) || [];
+    if (years.length === 0) return null;
+    const yearRange = years.length === 1 ? `${years[0]}` : `${years[0]}–${years[years.length - 1]}`;
+    const make = makes[0] || "";
+    const model = models[0] || "";
+    return `${yearRange} ${make} ${model}`.trim();
+  }, [product]);
 
   if (productLoading) {
     return (
@@ -551,8 +618,19 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Sub-Attribute Badge */}
-          {relevantSubAttr && (
+          {/* Bed Length Badge (fixed attribute, not a selector) */}
+          {bedLengthBadge && !bedLengthOption && (
+            <div className="flex items-center gap-2 px-3 py-1.5 mb-3 border border-slate-300 bg-slate-100 rounded-full w-fit">
+              <Ruler className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <span className="font-semibold text-sm text-slate-700">
+                <span className="uppercase text-xs tracking-wider">BED LENGTH:</span>{" "}
+                {bedLengthBadge}
+              </span>
+            </div>
+          )}
+
+          {/* Sub-Attribute Badge (cab type etc.) */}
+          {relevantSubAttr && relevantSubAttr.field !== "bed_length" && (
             <div className="flex items-center gap-2 px-3 py-2 mb-3 border border-primary/30 bg-primary/5">
               <Truck className="w-4 h-4 text-primary shrink-0" />
               <span className="font-display text-[10px] tracking-widest text-primary">
@@ -575,11 +653,9 @@ const ProductTemplate = () => {
                 SELECT YOUR {relevantSubAttr.label.toUpperCase()}:
               </h3>
               <div className="flex flex-wrap gap-2">
-                {/* Current product option - highlighted */}
                 <button className="px-3 py-1.5 border-2 border-primary bg-primary/10 text-primary font-display text-[10px] tracking-wider">
                   {relevantSubAttr.value.toUpperCase()}
                 </button>
-                {/* Sibling options */}
                 {siblingProducts.map((sib) => {
                   const sibVal = sib.subAttr[relevantSubAttr.field];
                   if (!sibVal) return null;
@@ -617,13 +693,24 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {variants.length > 1 && product.options?.some((o: { name: string }) => o.name !== "Title") && (
+          {/* Variant Selectors — only options with 2+ values */}
+          {visibleOptions.length > 0 && (
             <div className="mb-3">
-              {product.options
-                .filter((o: { name: string }) => o.name !== "Title")
-                .map((option: { name: string; values: string[] }) => (
+              {visibleOptions.map((option: { name: string; values: string[] }, optIdx: number) => {
+                const isBedLen = isBedLengthOption(option);
+                const stepLabel = showStepNumbers ? `Step ${optIdx + 1}: ` : "";
+                const label = isBedLen ? `${stepLabel}Select Bed Length` : `${stepLabel}${option.name}`;
+
+                return (
                   <div key={option.name} className="mb-3">
-                    <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">{option.name.toUpperCase()}</h3>
+                    <h3 className="font-semibold text-sm text-slate-700 mb-1">
+                      {label.toUpperCase()}
+                    </h3>
+                    {isBedLen && (
+                      <p className="font-body text-xs text-muted-foreground mb-2">
+                        Measure from the inside of the bulkhead to the inside of the tailgate.
+                      </p>
+                    )}
                     <div className="flex flex-wrap gap-2">
                       {option.values.map((value: string) => {
                         const variantIdx = variants.findIndex((v) =>
@@ -641,9 +728,9 @@ const ProductTemplate = () => {
                                 trackEvent("product_variant_selected", { item_id: product.id, variant_type: option.name, variant_value: value });
                               }
                             }}
-                            className={`px-3 py-1.5 border font-display text-[10px] tracking-wider transition-colors ${
+                            className={`px-4 py-2 border rounded-full font-display text-xs tracking-wider transition-colors ${
                               isSelected
-                                ? "border-primary bg-primary/10 text-primary"
+                                ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border text-muted-foreground hover:border-primary/40"
                             }`}
                           >
@@ -653,7 +740,8 @@ const ProductTemplate = () => {
                       })}
                     </div>
                   </div>
-                ))}
+                );
+              })}
             </div>
           )}
 
@@ -714,6 +802,48 @@ const ProductTemplate = () => {
               </div>
             ))}
           </div>
+
+          {/* Fitment Details Accordion */}
+          {(fitmentVehicleRange || bedLengthBadge || fitmentNotes || fitmentSubAttrs?.bed_style) && (
+            <Accordion type="single" collapsible defaultValue={typeof window !== 'undefined' && window.innerWidth >= 1024 ? "fitment-details" : undefined}>
+              <AccordionItem value="fitment-details" className="border border-border mb-4">
+                <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-display text-[10px] tracking-widest text-foreground">FITMENT DETAILS</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-3">
+                  <div className="space-y-2 text-sm">
+                    {fitmentVehicleRange && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Vehicle Fitment:</span>
+                        <span className="text-foreground">{fitmentVehicleRange}</span>
+                      </div>
+                    )}
+                    {bedLengthBadge && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Bed Length:</span>
+                        <span className="text-foreground">{bedLengthBadge}</span>
+                      </div>
+                    )}
+                    {fitmentSubAttrs?.bed_style && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Bed Style:</span>
+                        <span className="text-foreground">{fitmentSubAttrs.bed_style}</span>
+                      </div>
+                    )}
+                    {fitmentNotes && (
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-muted-foreground min-w-[120px]">Notes:</span>
+                        <span className="text-foreground italic">{fitmentNotes}</span>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
 
           {/* ── Tabbed Content (inside right column) ── */}
           <div className="border-t border-border pt-3">
