@@ -326,6 +326,7 @@ export type Database = {
           id: string
           member_count: number
           option_name: string
+          updated_at: string | null
           ymm_base: string
         }
         Insert: {
@@ -335,6 +336,7 @@ export type Database = {
           id?: string
           member_count?: number
           option_name?: string
+          updated_at?: string | null
           ymm_base: string
         }
         Update: {
@@ -344,6 +346,7 @@ export type Database = {
           id?: string
           member_count?: number
           option_name?: string
+          updated_at?: string | null
           ymm_base?: string
         }
         Relationships: []
@@ -355,8 +358,10 @@ export type Database = {
           cab_type: string | null
           created_at: string
           display_order: number
+          fitment_scope: string
           group_id: string
           id: string
+          image_url: string | null
           option_label: string | null
           price: number | null
           product_handle: string
@@ -371,8 +376,10 @@ export type Database = {
           cab_type?: string | null
           created_at?: string
           display_order?: number
+          fitment_scope?: string
           group_id: string
           id?: string
+          image_url?: string | null
           option_label?: string | null
           price?: number | null
           product_handle: string
@@ -387,8 +394,10 @@ export type Database = {
           cab_type?: string | null
           created_at?: string
           display_order?: number
+          fitment_scope?: string
           group_id?: string
           id?: string
+          image_url?: string | null
           option_label?: string | null
           price?: number | null
           product_handle?: string
