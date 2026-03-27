@@ -54,7 +54,7 @@ const DEFAULT_CARD: FeaturedCard = {
 };
 
 export default function AdminContentPage() {
-  const [tab, setTab] = useState<"hero" | "featured" | "categories">("hero");
+  const [tab, setTab] = useState<"hero" | "featured" | "categories" | "announcement">("hero");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
