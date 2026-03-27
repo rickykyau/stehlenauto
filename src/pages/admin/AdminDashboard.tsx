@@ -69,14 +69,14 @@ export default function AdminDashboard() {
   }, []);
 
   const kpis: KPI[] = [
-    { label: "Total Users", value: totalUsers ?? "–", icon: Users, loading },
-    { label: "New Users Today", value: newUsersToday ?? "–", icon: UserPlus, loading },
-    { label: "Total Orders", value: totalOrders ?? "–", icon: Package, loading },
     { label: "Revenue This Month", value: revenueMonth !== null ? `$${revenueMonth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "–", icon: DollarSign, loading },
+    { label: "Total Orders", value: totalOrders ?? "–", icon: Package, loading },
     { label: "Avg Order Value", value: avgOrderValue !== null ? `$${avgOrderValue.toFixed(2)}` : "–", icon: ShoppingCart, loading },
     { label: "Orders Today", value: ordersToday ?? "–", icon: Package, loading },
-    { label: "Active Promos", value: activePromos ?? "–", icon: Tag, loading },
+    { label: "Total Users", value: totalUsers ?? "–", icon: Users, loading },
+    { label: "New Users Today", value: newUsersToday ?? "–", icon: UserPlus, loading },
     { label: "Active Users (15m)", value: activeNow ?? "–", icon: Activity, loading },
+    { label: "Active Promos", value: activePromos ?? "–", icon: Tag, loading },
   ];
 
   const handleAcknowledge = async (alertId: string) => {
@@ -87,15 +87,20 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="border border-border bg-card p-4 space-y-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, i) => (
+          <div
+            key={kpi.label}
+            className={`border border-border bg-card p-4 sm:p-5 min-h-[100px] flex flex-col justify-between ${
+              i < 4 ? "border-primary/20" : ""
+            }`}
+          >
             <div className="flex items-center gap-2 text-muted-foreground">
-              <kpi.icon className="w-4 h-4" />
-              <span className="font-display text-[9px] tracking-widest uppercase">{kpi.label}</span>
+              <kpi.icon className="w-4 h-4 flex-shrink-0" />
+              <span className="font-display text-[10px] sm:text-xs tracking-widest uppercase leading-tight">{kpi.label}</span>
             </div>
-            <p className="font-display text-2xl text-foreground">
-              {kpi.loading ? <span className="loading-bar w-12 inline-block" /> : kpi.value}
+            <p className={`font-display text-foreground mt-2 ${i < 4 ? "text-2xl sm:text-3xl" : "text-xl sm:text-2xl"}`}>
+              {kpi.loading ? <span className="loading-bar w-16 inline-block" /> : kpi.value}
             </p>
           </div>
         ))}
