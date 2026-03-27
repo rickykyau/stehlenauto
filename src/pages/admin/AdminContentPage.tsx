@@ -195,57 +195,7 @@ export default function AdminContentPage() {
     toast({ title: "Categories saved" });
   };
 
-  // ── Announcement ──
-  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [announcementLinkLabel, setAnnouncementLinkLabel] = useState("");
-  const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
-  const [announcementBgColor, setAnnouncementBgColor] = useState("#18181b");
-  const [announcementTextColor, setAnnouncementTextColor] = useState("#ffffff");
-  const [announcementStartDate, setAnnouncementStartDate] = useState("");
-  const [announcementEndDate, setAnnouncementEndDate] = useState("");
-  const [announcementLoading, setAnnouncementLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.from("site_settings").select("value").eq("key", "announcement_banner").maybeSingle().then(({ data }) => {
-      if (data?.value) {
-        const v = data.value as any;
-        setAnnouncementEnabled(v.enabled ?? false);
-        setAnnouncementText(v.text ?? "");
-        setAnnouncementLinkLabel(v.link_label ?? "");
-        setAnnouncementLinkUrl(v.link_url ?? "");
-        setAnnouncementBgColor(v.bg_color ?? "#18181b");
-        setAnnouncementTextColor(v.text_color ?? "#ffffff");
-        setAnnouncementStartDate(v.start_date ?? "");
-        setAnnouncementEndDate(v.end_date ?? "");
-      }
-      setAnnouncementLoading(false);
-    });
-  }, []);
-
-  const saveAnnouncement = async () => {
-    setSaving(true);
-    const session = await getSession();
-    const value = {
-      enabled: announcementEnabled,
-      text: announcementText,
-      link_label: announcementLinkLabel,
-      link_url: announcementLinkUrl,
-      bg_color: announcementBgColor,
-      text_color: announcementTextColor,
-      start_date: announcementStartDate || null,
-      end_date: announcementEndDate || null,
-    };
-    await supabase.from("site_settings").upsert(
-      { key: "announcement_banner", value: value as any, updated_by: session?.user?.id ?? null, updated_at: new Date().toISOString() },
-      { onConflict: "key" }
-    );
-    setSaving(false);
-    toast({ title: "Announcement saved" });
-  };
-
   const TABS = [
-    { key: "announcement" as const, label: "Announcement" },
     { key: "hero" as const, label: "Hero Section" },
     { key: "featured" as const, label: "Featured Products" },
     { key: "categories" as const, label: "Categories" },
