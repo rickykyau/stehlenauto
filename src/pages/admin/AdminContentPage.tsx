@@ -268,6 +268,87 @@ export default function AdminContentPage() {
         ))}
       </div>
 
+      {/* ═══ Announcement ═══ */}
+      {tab === "announcement" && (
+        <div className="space-y-4">
+          <div className="border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-display text-[10px] tracking-widest text-muted-foreground">ANNOUNCEMENT BAR</h4>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="font-display text-[10px] tracking-widest text-muted-foreground">{announcementEnabled ? "ENABLED" : "DISABLED"}</span>
+                <button
+                  onClick={() => setAnnouncementEnabled(!announcementEnabled)}
+                  className={`w-10 h-5 rounded-full transition-colors ${announcementEnabled ? "bg-primary" : "bg-muted"} relative`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${announcementEnabled ? "translate-x-5" : ""}`} />
+                </button>
+              </label>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="font-display text-[10px] tracking-widest">MESSAGE (max 120 chars)</Label>
+              <Input value={announcementText} onChange={(e) => setAnnouncementText(e.target.value.slice(0, 120))} placeholder="Free shipping on all orders $99+ — No membership required" />
+              <p className="text-[10px] text-muted-foreground">{announcementText.length}/120</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">LINK LABEL (optional)</Label>
+                <Input value={announcementLinkLabel} onChange={(e) => setAnnouncementLinkLabel(e.target.value)} placeholder="Shop Now" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">LINK URL</Label>
+                <Input value={announcementLinkUrl} onChange={(e) => setAnnouncementLinkUrl(e.target.value)} placeholder="/collections/all" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">BACKGROUND COLOR</Label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={announcementBgColor} onChange={(e) => setAnnouncementBgColor(e.target.value)} className="w-8 h-8 rounded border border-border cursor-pointer" />
+                  <Input value={announcementBgColor} onChange={(e) => setAnnouncementBgColor(e.target.value)} className="flex-1" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">TEXT COLOR</Label>
+                <div className="flex gap-2 items-center">
+                  <input type="color" value={announcementTextColor} onChange={(e) => setAnnouncementTextColor(e.target.value)} className="w-8 h-8 rounded border border-border cursor-pointer" />
+                  <Input value={announcementTextColor} onChange={(e) => setAnnouncementTextColor(e.target.value)} className="flex-1" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">START DATE (optional)</Label>
+                <Input type="datetime-local" value={announcementStartDate} onChange={(e) => setAnnouncementStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="font-display text-[10px] tracking-widest">END DATE (optional)</Label>
+                <Input type="datetime-local" value={announcementEndDate} onChange={(e) => setAnnouncementEndDate(e.target.value)} />
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="space-y-1.5">
+              <p className="font-display text-[9px] tracking-widest text-muted-foreground">PREVIEW</p>
+              <div className="relative flex items-center justify-center px-10 py-2 rounded" style={{ backgroundColor: announcementBgColor, color: announcementTextColor }}>
+                <span className="text-sm font-medium">{announcementText || "Your announcement text here"}</span>
+                {announcementLinkLabel && (
+                  <span className="ml-2 underline text-sm font-medium opacity-80">{announcementLinkLabel}</span>
+                )}
+                <span className="absolute right-3 opacity-50">✕</span>
+              </div>
+            </div>
+          </div>
+
+          <Button onClick={saveAnnouncement} disabled={saving}>
+            {saving ? "Saving..." : "Save Announcement"}
+          </Button>
+        </div>
+      )}
+
       {/* ═══ Hero Section ═══ */}
       {tab === "hero" && (
         <div className="space-y-4">
