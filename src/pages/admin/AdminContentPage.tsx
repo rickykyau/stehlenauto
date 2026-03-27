@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, GripVertical, Eye, EyeOff, ArrowUp, ArrowDown, Search, X, Loader2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { storefrontApiRequest } from "@/lib/shopify";
-import type { ShopifyProduct } from "@/lib/shopify";
+import { Plus, Trash2, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
+import CmsImageUpload from "@/components/admin/CmsImageUpload";
+import ProductSearchPicker from "@/components/admin/ProductSearchPicker";
 
 /* ── Types ── */
 interface HeroSlide {
-  id?: string;
   headline: string;
   subheadline: string;
   eyebrow: string;
@@ -20,11 +19,23 @@ interface HeroSlide {
   secondary_button_text: string;
   secondary_button_link: string;
   background_image: string;
+  dbId?: string;
+}
+
+interface FeaturedCard {
+  product_handle: string | null;
+  custom_link: string | null;
+  title: string;
+  description: string;
+  image_url: string | null;
+  product_image_url: string | null;
 }
 
 interface CategoryItem {
   handle: string;
   title: string;
+  description?: string;
+  image_url?: string;
   visible: boolean;
   order: number;
 }
@@ -36,52 +47,59 @@ const DEFAULT_HERO: HeroSlide = {
   background_image: "",
 };
 
+const DEFAULT_CARD: FeaturedCard = {
+  product_handle: null, custom_link: null,
+  title: "", description: "",
+  image_url: null, product_image_url: null,
+};
+
 export default function AdminContentPage() {
   const [tab, setTab] = useState<"hero" | "featured" | "categories">("hero");
   const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
 
   // ── Hero ──
-  const [heroSlides, setHeroSlides] = useState<(HeroSlide & { id?: string; dbId?: string })[]>([]);
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([]);
   const [heroLoading, setHeroLoading] = useState(true);
 
   // ── Featured ──
-  const [featuredHandles, setFeaturedHandles] = useState<string[]>([]);
+  const [featuredCards, setFeaturedCards] = useState<FeaturedCard[]>([]);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
   const [featuredLoading, setFeaturedLoading] = useState(true);
-  const [productSearchOpen, setProductSearchOpen] = useState(false);
-  const [productSearchQuery, setProductSearchQuery] = useState("");
-  const [productSearchResults, setProductSearchResults] = useState<any[]>([]);
-  const [productSearching, setProductSearching] = useState(false);
 
   // ── Categories ──
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [categoriesId, setCategoriesId] = useState<string | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    loadAll();
-  }, []);
+  useEffect(() => { loadAll(); }, []);
 
   const loadAll = async () => {
     const { data } = await supabase.from("homepage_content").select("*").order("display_order");
     if (!data) return;
 
-    // Hero
     const heroes = data.filter((r) => r.section === "hero");
     setHeroSlides(heroes.map((h) => ({ ...(h.content as any), dbId: h.id })));
     setHeroLoading(false);
 
-    // Featured
     const feat = data.find((r) => r.section === "featured");
     if (feat) {
-      setFeaturedHandles((feat.content as any).handles ?? []);
+      const content = feat.content as any;
+      // Migrate from old handles-only format
+      if (content.handles && !content.cards) {
+        const migrated: FeaturedCard[] = content.handles.map((h: string) => ({
+          ...DEFAULT_CARD,
+          product_handle: h,
+          title: h.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()),
+        }));
+        setFeaturedCards(migrated);
+      } else {
+        setFeaturedCards(content.cards ?? []);
+      }
       setFeaturedId(feat.id);
     }
     setFeaturedLoading(false);
 
-    // Categories
     const cats = data.find((r) => r.section === "categories");
     if (cats) {
       setCategories(((cats.content as any).categories ?? []).sort((a: CategoryItem, b: CategoryItem) => a.order - b.order));
@@ -90,9 +108,12 @@ export default function AdminContentPage() {
     setCategoriesLoading(false);
   };
 
+  const getSession = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  };
+
   // ── Hero handlers ──
-  const addHeroSlide = () => setHeroSlides([...heroSlides, { ...DEFAULT_HERO }]);
-  const removeHeroSlide = (i: number) => setHeroSlides(heroSlides.filter((_, idx) => idx !== i));
   const updateHeroSlide = (i: number, field: string, value: string) => {
     const updated = [...heroSlides];
     (updated[i] as any)[field] = value;
@@ -101,20 +122,13 @@ export default function AdminContentPage() {
 
   const saveHero = async () => {
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
-
-    // Delete existing hero rows
+    const session = await getSession();
     await supabase.from("homepage_content").delete().eq("section", "hero");
-
-    // Insert new ones
     for (let i = 0; i < heroSlides.length; i++) {
       const { dbId, ...content } = heroSlides[i];
       await supabase.from("homepage_content").insert({
-        section: "hero",
-        content: content as any,
-        is_active: true,
-        display_order: i,
-        updated_by: session?.user?.id ?? null,
+        section: "hero", content: content as any, is_active: true,
+        display_order: i, updated_by: session?.user?.id ?? null,
       });
     }
     setSaving(false);
@@ -123,51 +137,28 @@ export default function AdminContentPage() {
   };
 
   // ── Featured handlers ──
-  const searchProducts = async (query: string) => {
-    if (query.length < 2) return;
-    setProductSearching(true);
-    try {
-      const result = await storefrontApiRequest(`
-        query SearchProducts($query: String!) {
-          products(first: 10, query: $query) {
-            edges { node { id title handle featuredImage { url } priceRange { minVariantPrice { amount } } } }
-          }
-        }
-      `, { query });
-      setProductSearchResults(result?.data?.products?.edges?.map((e: any) => e.node) ?? []);
-    } catch {
-      setProductSearchResults([]);
-    }
-    setProductSearching(false);
-  };
-
-  const addFeaturedProduct = (handle: string) => {
-    if (!featuredHandles.includes(handle)) {
-      setFeaturedHandles([...featuredHandles, handle]);
-    }
-    setProductSearchOpen(false);
-    setProductSearchQuery("");
-    setProductSearchResults([]);
-  };
-
-  const removeFeaturedProduct = (handle: string) => {
-    setFeaturedHandles(featuredHandles.filter((h) => h !== handle));
+  const updateFeaturedCard = (i: number, field: keyof FeaturedCard, value: any) => {
+    const updated = [...featuredCards];
+    (updated[i] as any)[field] = value;
+    setFeaturedCards(updated);
   };
 
   const moveFeatured = (i: number, dir: number) => {
-    const arr = [...featuredHandles];
+    const arr = [...featuredCards];
     const j = i + dir;
     if (j < 0 || j >= arr.length) return;
     [arr[i], arr[j]] = [arr[j], arr[i]];
-    setFeaturedHandles(arr);
+    setFeaturedCards(arr);
   };
 
   const saveFeatured = async () => {
     if (!featuredId) return;
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await getSession();
+    // Save in new cards format, but also keep handles for backward compat
+    const handles = featuredCards.map(c => c.product_handle).filter(Boolean);
     await supabase.from("homepage_content").update({
-      content: { handles: featuredHandles } as any,
+      content: { cards: featuredCards, handles } as any,
       updated_by: session?.user?.id ?? null,
       updated_at: new Date().toISOString(),
     }).eq("id", featuredId);
@@ -176,12 +167,6 @@ export default function AdminContentPage() {
   };
 
   // ── Category handlers ──
-  const toggleCategoryVisibility = (i: number) => {
-    const updated = [...categories];
-    updated[i].visible = !updated[i].visible;
-    setCategories(updated);
-  };
-
   const moveCategory = (i: number, dir: number) => {
     const arr = [...categories];
     const j = i + dir;
@@ -191,16 +176,16 @@ export default function AdminContentPage() {
     setCategories(arr);
   };
 
-  const updateCategoryTitle = (i: number, title: string) => {
+  const updateCategory = (i: number, field: keyof CategoryItem, value: any) => {
     const updated = [...categories];
-    updated[i].title = title;
+    (updated[i] as any)[field] = value;
     setCategories(updated);
   };
 
   const saveCategories = async () => {
     if (!categoriesId) return;
     setSaving(true);
-    const { data: { session } } = await supabase.auth.getSession();
+    const session = await getSession();
     await supabase.from("homepage_content").update({
       content: { categories } as any,
       updated_by: session?.user?.id ?? null,
@@ -233,7 +218,7 @@ export default function AdminContentPage() {
         ))}
       </div>
 
-      {/* Hero Section */}
+      {/* ═══ Hero Section ═══ */}
       {tab === "hero" && (
         <div className="space-y-4">
           {heroSlides.map((slide, i) => (
@@ -241,7 +226,7 @@ export default function AdminContentPage() {
               <div className="flex items-center justify-between">
                 <h4 className="font-display text-[10px] tracking-widest text-muted-foreground">SLIDE {i + 1}</h4>
                 {heroSlides.length > 1 && (
-                  <button onClick={() => removeHeroSlide(i)} className="text-muted-foreground hover:text-destructive">
+                  <button onClick={() => setHeroSlides(heroSlides.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -278,10 +263,14 @@ export default function AdminContentPage() {
                   <Input value={slide.secondary_button_link} onChange={(e) => updateHeroSlide(i, "secondary_button_link", e.target.value)} />
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">BACKGROUND IMAGE URL</Label>
-                <Input value={slide.background_image} onChange={(e) => updateHeroSlide(i, "background_image", e.target.value)} placeholder="https://..." />
-              </div>
+
+              {/* Image Upload */}
+              <CmsImageUpload
+                label="BACKGROUND IMAGE"
+                value={slide.background_image}
+                onChange={(url) => updateHeroSlide(i, "background_image", url)}
+                previewWidth={300}
+              />
 
               {/* Preview */}
               <div className="border border-border p-4 bg-background">
@@ -308,7 +297,7 @@ export default function AdminContentPage() {
           ))}
 
           <div className="flex gap-3">
-            <Button variant="outline" onClick={addHeroSlide} className="gap-1.5">
+            <Button variant="outline" onClick={() => setHeroSlides([...heroSlides, { ...DEFAULT_HERO }])} className="gap-1.5">
               <Plus className="w-4 h-4" /> Add Slide
             </Button>
             <Button onClick={saveHero} disabled={saving}>
@@ -318,89 +307,119 @@ export default function AdminContentPage() {
         </div>
       )}
 
-      {/* Featured Products */}
+      {/* ═══ Featured Products ═══ */}
       {tab === "featured" && (
         <div className="space-y-4">
           <div className="border border-border bg-card">
             <div className="px-4 py-3 border-b border-border flex items-center justify-between">
               <h4 className="font-display text-[10px] tracking-widest text-muted-foreground">
-                FEATURED PRODUCTS ({featuredHandles.length})
+                FEATURED PRODUCTS ({featuredCards.length})
               </h4>
-              <Button size="sm" variant="outline" onClick={() => setProductSearchOpen(true)} className="gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setFeaturedCards([...featuredCards, { ...DEFAULT_CARD }])}
+                className="gap-1.5"
+              >
                 <Plus className="w-3.5 h-3.5" /> Add Product
               </Button>
             </div>
+
             <div className="divide-y divide-border">
-              {featuredHandles.map((handle, i) => (
-                <div key={handle} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/30">
-                  <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveFeatured(i, -1)} disabled={i === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button onClick={() => moveFeatured(i, 1)} disabled={i === featuredHandles.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
+              {featuredCards.map((card, i) => (
+                <div key={i} className="p-4 space-y-3">
+                  <div className="flex gap-4">
+                    {/* Image column */}
+                    <div className="w-[150px] shrink-0">
+                      <CmsImageUpload
+                        label="CARD IMAGE"
+                        value={card.image_url || card.product_image_url || ""}
+                        onChange={(url) => updateFeaturedCard(i, "image_url", url)}
+                        previewWidth={150}
+                        previewHeight={150}
+                      />
+                    </div>
+
+                    {/* Fields column */}
+                    <div className="flex-1 space-y-3 min-w-0">
+                      <div className="space-y-1.5">
+                        <Label className="font-display text-[10px] tracking-widest">TITLE</Label>
+                        <Input
+                          value={card.title}
+                          onChange={(e) => updateFeaturedCard(i, "title", e.target.value)}
+                          placeholder="Step Bar"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="font-display text-[10px] tracking-widest">DESCRIPTION</Label>
+                        <Textarea
+                          value={card.description}
+                          onChange={(e) => updateFeaturedCard(i, "description", e.target.value)}
+                          placeholder="Keep your truck bed protected..."
+                          rows={2}
+                          className="resize-none"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="font-display text-[10px] tracking-widest">LINKED PRODUCT</Label>
+                        <ProductSearchPicker
+                          value={card.product_handle}
+                          autoFocus={!card.product_handle && !card.title}
+                          onSelect={(p) => {
+                            updateFeaturedCard(i, "product_handle", p.handle);
+                            if (!card.title) updateFeaturedCard(i, "title", p.title);
+                            if (!card.image_url && p.imageUrl) updateFeaturedCard(i, "product_image_url", p.imageUrl);
+                          }}
+                          onClear={() => updateFeaturedCard(i, "product_handle", null)}
+                        />
+                      </div>
+
+                      {!card.product_handle && (
+                        <div className="space-y-1.5">
+                          <Label className="font-display text-[10px] tracking-widest">CUSTOM LINK</Label>
+                          <Input
+                            value={card.custom_link || ""}
+                            onChange={(e) => updateFeaturedCard(i, "custom_link", e.target.value)}
+                            placeholder="/collections/tonneau-covers"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions column */}
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <button onClick={() => moveFeatured(i, -1)} disabled={i === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => moveFeatured(i, 1)} disabled={i === featuredCards.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setFeaturedCards(featuredCards.filter((_, idx) => idx !== i))}
+                        className="text-muted-foreground hover:text-destructive mt-2"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <span className="font-body text-sm text-foreground flex-1 truncate">{handle}</span>
-                  <button onClick={() => removeFeaturedProduct(handle)} className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
                 </div>
               ))}
-              {featuredHandles.length === 0 && (
+
+              {featuredCards.length === 0 && (
                 <p className="px-4 py-6 text-center text-muted-foreground font-body text-sm">No products selected</p>
               )}
             </div>
           </div>
+
           <Button onClick={saveFeatured} disabled={saving}>
             {saving ? "Saving..." : "Save Featured Products"}
           </Button>
-
-          {/* Product search dialog */}
-          <Dialog open={productSearchOpen} onOpenChange={setProductSearchOpen}>
-            <DialogContent className="sm:max-w-md bg-card border-border">
-              <DialogHeader>
-                <DialogTitle className="font-display text-sm tracking-widest">ADD PRODUCT</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search products..."
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && searchProducts(productSearchQuery)}
-                  />
-                  <Button size="sm" onClick={() => searchProducts(productSearchQuery)}>
-                    {productSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                </div>
-                <div className="max-h-[300px] overflow-y-auto divide-y divide-border border border-border">
-                  {productSearchResults.map((p: any) => (
-                    <button
-                      key={p.id}
-                      onClick={() => addFeaturedProduct(p.handle)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-accent/30 text-left"
-                    >
-                      {p.featuredImage?.url && (
-                        <img src={p.featuredImage.url} alt="" className="w-10 h-10 object-cover border border-border" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-body text-sm text-foreground truncate">{p.title}</p>
-                        <p className="font-display text-xs text-primary">${parseFloat(p.priceRange?.minVariantPrice?.amount || "0").toFixed(2)}</p>
-                      </div>
-                    </button>
-                  ))}
-                  {productSearchResults.length === 0 && productSearchQuery && !productSearching && (
-                    <p className="px-4 py-4 text-center text-muted-foreground text-xs">No results</p>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       )}
 
-      {/* Categories */}
+      {/* ═══ Categories ═══ */}
       {tab === "categories" && (
         <div className="space-y-4">
           <div className="border border-border bg-card">
@@ -409,24 +428,55 @@ export default function AdminContentPage() {
             </div>
             <div className="divide-y divide-border">
               {categories.map((cat, i) => (
-                <div key={cat.handle} className={`flex items-center gap-3 px-4 py-2.5 ${!cat.visible ? "opacity-50" : ""}`}>
-                  <div className="flex flex-col gap-0.5">
-                    <button onClick={() => moveCategory(i, -1)} disabled={i === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                      <ArrowUp className="w-3 h-3" />
-                    </button>
-                    <button onClick={() => moveCategory(i, 1)} disabled={i === categories.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
-                      <ArrowDown className="w-3 h-3" />
-                    </button>
+                <div key={cat.handle} className={`p-4 space-y-3 ${!cat.visible ? "opacity-50" : ""}`}>
+                  <div className="flex gap-4">
+                    {/* Image */}
+                    <div className="w-[120px] shrink-0">
+                      <CmsImageUpload
+                        label="IMAGE"
+                        value={cat.image_url || ""}
+                        onChange={(url) => updateCategory(i, "image_url", url)}
+                        previewWidth={120}
+                        previewHeight={120}
+                      />
+                    </div>
+
+                    {/* Fields */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <div className="space-y-1.5">
+                        <Label className="font-display text-[10px] tracking-widest">TITLE</Label>
+                        <Input
+                          value={cat.title}
+                          onChange={(e) => updateCategory(i, "title", e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="font-display text-[10px] tracking-widest">DESCRIPTION</Label>
+                        <Textarea
+                          value={cat.description || ""}
+                          onChange={(e) => updateCategory(i, "description", e.target.value)}
+                          placeholder="Category description..."
+                          rows={2}
+                          className="resize-none text-sm"
+                        />
+                      </div>
+                      <p className="font-display text-[10px] text-muted-foreground">Handle: {cat.handle}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <button onClick={() => moveCategory(i, -1)} disabled={i === 0} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <ArrowUp className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => moveCategory(i, 1)} disabled={i === categories.length - 1} className="text-muted-foreground hover:text-foreground disabled:opacity-30">
+                        <ArrowDown className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => updateCategory(i, "visible", !cat.visible)} className="text-muted-foreground hover:text-foreground mt-2">
+                        {cat.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                  <Input
-                    value={cat.title}
-                    onChange={(e) => updateCategoryTitle(i, e.target.value)}
-                    className="flex-1 h-8 text-sm"
-                  />
-                  <span className="font-body text-[10px] text-muted-foreground shrink-0">{cat.handle}</span>
-                  <button onClick={() => toggleCategoryVisibility(i)} className="text-muted-foreground hover:text-foreground">
-                    {cat.visible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-                  </button>
                 </div>
               ))}
             </div>
