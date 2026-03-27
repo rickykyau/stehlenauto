@@ -54,7 +54,7 @@ const DEFAULT_CARD: FeaturedCard = {
 };
 
 export default function AdminContentPage() {
-  const [tab, setTab] = useState<"hero" | "featured" | "categories" | "announcement">("hero");
+  const [tab, setTab] = useState<"hero" | "featured" | "categories">("hero");
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
 
@@ -195,57 +195,7 @@ export default function AdminContentPage() {
     toast({ title: "Categories saved" });
   };
 
-  // ── Announcement ──
-  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
-  const [announcementText, setAnnouncementText] = useState("");
-  const [announcementLinkLabel, setAnnouncementLinkLabel] = useState("");
-  const [announcementLinkUrl, setAnnouncementLinkUrl] = useState("");
-  const [announcementBgColor, setAnnouncementBgColor] = useState("#18181b");
-  const [announcementTextColor, setAnnouncementTextColor] = useState("#ffffff");
-  const [announcementStartDate, setAnnouncementStartDate] = useState("");
-  const [announcementEndDate, setAnnouncementEndDate] = useState("");
-  const [announcementLoading, setAnnouncementLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.from("site_settings").select("value").eq("key", "announcement_banner").maybeSingle().then(({ data }) => {
-      if (data?.value) {
-        const v = data.value as any;
-        setAnnouncementEnabled(v.enabled ?? false);
-        setAnnouncementText(v.text ?? "");
-        setAnnouncementLinkLabel(v.link_label ?? "");
-        setAnnouncementLinkUrl(v.link_url ?? "");
-        setAnnouncementBgColor(v.bg_color ?? "#18181b");
-        setAnnouncementTextColor(v.text_color ?? "#ffffff");
-        setAnnouncementStartDate(v.start_date ?? "");
-        setAnnouncementEndDate(v.end_date ?? "");
-      }
-      setAnnouncementLoading(false);
-    });
-  }, []);
-
-  const saveAnnouncement = async () => {
-    setSaving(true);
-    const session = await getSession();
-    const value = {
-      enabled: announcementEnabled,
-      text: announcementText,
-      link_label: announcementLinkLabel,
-      link_url: announcementLinkUrl,
-      bg_color: announcementBgColor,
-      text_color: announcementTextColor,
-      start_date: announcementStartDate || null,
-      end_date: announcementEndDate || null,
-    };
-    await supabase.from("site_settings").upsert(
-      { key: "announcement_banner", value: value as any, updated_by: session?.user?.id ?? null, updated_at: new Date().toISOString() },
-      { onConflict: "key" }
-    );
-    setSaving(false);
-    toast({ title: "Announcement saved" });
-  };
-
   const TABS = [
-    { key: "announcement" as const, label: "Announcement" },
     { key: "hero" as const, label: "Hero Section" },
     { key: "featured" as const, label: "Featured Products" },
     { key: "categories" as const, label: "Categories" },
@@ -267,87 +217,6 @@ export default function AdminContentPage() {
           </button>
         ))}
       </div>
-
-      {/* ═══ Announcement ═══ */}
-      {tab === "announcement" && (
-        <div className="space-y-4">
-          <div className="border border-border bg-card p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-display text-[10px] tracking-widest text-muted-foreground">ANNOUNCEMENT BAR</h4>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="font-display text-[10px] tracking-widest text-muted-foreground">{announcementEnabled ? "ENABLED" : "DISABLED"}</span>
-                <button
-                  onClick={() => setAnnouncementEnabled(!announcementEnabled)}
-                  className={`w-10 h-5 rounded-full transition-colors ${announcementEnabled ? "bg-primary" : "bg-muted"} relative`}
-                >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${announcementEnabled ? "translate-x-5" : ""}`} />
-                </button>
-              </label>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="font-display text-[10px] tracking-widest">MESSAGE (max 120 chars)</Label>
-              <Input value={announcementText} onChange={(e) => setAnnouncementText(e.target.value.slice(0, 120))} placeholder="Free shipping on all orders $99+ — No membership required" />
-              <p className="text-[10px] text-muted-foreground">{announcementText.length}/120</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">LINK LABEL (optional)</Label>
-                <Input value={announcementLinkLabel} onChange={(e) => setAnnouncementLinkLabel(e.target.value)} placeholder="Shop Now" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">LINK URL</Label>
-                <Input value={announcementLinkUrl} onChange={(e) => setAnnouncementLinkUrl(e.target.value)} placeholder="/collections/all" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">BACKGROUND COLOR</Label>
-                <div className="flex gap-2 items-center">
-                  <input type="color" value={announcementBgColor} onChange={(e) => setAnnouncementBgColor(e.target.value)} className="w-8 h-8 rounded border border-border cursor-pointer" />
-                  <Input value={announcementBgColor} onChange={(e) => setAnnouncementBgColor(e.target.value)} className="flex-1" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">TEXT COLOR</Label>
-                <div className="flex gap-2 items-center">
-                  <input type="color" value={announcementTextColor} onChange={(e) => setAnnouncementTextColor(e.target.value)} className="w-8 h-8 rounded border border-border cursor-pointer" />
-                  <Input value={announcementTextColor} onChange={(e) => setAnnouncementTextColor(e.target.value)} className="flex-1" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">START DATE (optional)</Label>
-                <Input type="datetime-local" value={announcementStartDate} onChange={(e) => setAnnouncementStartDate(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-display text-[10px] tracking-widest">END DATE (optional)</Label>
-                <Input type="datetime-local" value={announcementEndDate} onChange={(e) => setAnnouncementEndDate(e.target.value)} />
-              </div>
-            </div>
-
-            {/* Preview */}
-            <div className="space-y-1.5">
-              <p className="font-display text-[9px] tracking-widest text-muted-foreground">PREVIEW</p>
-              <div className="relative flex items-center justify-center px-10 py-2 rounded" style={{ backgroundColor: announcementBgColor, color: announcementTextColor }}>
-                <span className="text-sm font-medium">{announcementText || "Your announcement text here"}</span>
-                {announcementLinkLabel && (
-                  <span className="ml-2 underline text-sm font-medium opacity-80">{announcementLinkLabel}</span>
-                )}
-                <span className="absolute right-3 opacity-50">✕</span>
-              </div>
-            </div>
-          </div>
-
-          <Button onClick={saveAnnouncement} disabled={saving}>
-            {saving ? "Saving..." : "Save Announcement"}
-          </Button>
-        </div>
-      )}
 
       {/* ═══ Hero Section ═══ */}
       {tab === "hero" && (
