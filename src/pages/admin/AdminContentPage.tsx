@@ -273,15 +273,28 @@ export default function AdminContentPage() {
               />
 
               {/* Preview */}
-              <div className="border border-border p-4 bg-background">
-                <p className="font-display text-[9px] tracking-widest text-muted-foreground mb-2">PREVIEW</p>
-                <div className="relative min-h-[120px] bg-card overflow-hidden p-4">
-                  {slide.background_image && (
-                    <img src={slide.background_image} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+              <div className="border border-border bg-background">
+                <p className="font-display text-[9px] tracking-widest text-muted-foreground px-4 pt-3 pb-2">LIVE PREVIEW</p>
+                <div className="relative w-full overflow-hidden rounded-b-lg" style={{ aspectRatio: "16 / 7" }}>
+                  {/* Background image */}
+                  {slide.background_image ? (
+                    <img src={slide.background_image} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 bg-card" />
                   )}
-                  <div className="relative">
-                    {slide.eyebrow && <p className="font-display text-[9px] tracking-[0.2em] text-primary mb-2">{slide.eyebrow}</p>}
-                    <h3 className="font-display text-lg tracking-wider font-bold leading-tight">
+                  {/* Gradient overlays matching live hero */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/30" />
+
+                  {/* Text overlay */}
+                  <div className="relative h-full flex flex-col justify-center px-6 py-4 max-w-[60%]">
+                    {slide.eyebrow && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-[2px] bg-primary" />
+                        <span className="font-display text-[8px] tracking-[0.2em] text-primary">{slide.eyebrow}</span>
+                      </div>
+                    )}
+                    <h3 className="font-display text-base sm:text-lg md:text-xl tracking-wider font-bold leading-[1.1]">
                       {slide.headline.split("\\n").map((line, li) => (
                         <span key={li}>
                           {li > 0 && <br />}
@@ -289,7 +302,23 @@ export default function AdminContentPage() {
                         </span>
                       ))}
                     </h3>
-                    {slide.subheadline && <p className="font-body text-xs text-muted-foreground mt-2 max-w-md">{slide.subheadline}</p>}
+                    {slide.subheadline && (
+                      <p className="font-body text-[10px] sm:text-xs text-muted-foreground mt-2 max-w-[90%] leading-relaxed line-clamp-2">{slide.subheadline}</p>
+                    )}
+                    {(slide.primary_button_text || slide.secondary_button_text) && (
+                      <div className="flex items-center gap-2 mt-3">
+                        {slide.primary_button_text && (
+                          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground font-display text-[8px] tracking-widest uppercase">
+                            {slide.primary_button_text}
+                          </span>
+                        )}
+                        {slide.secondary_button_text && (
+                          <span className="inline-flex items-center px-3 py-1.5 border border-foreground/20 text-foreground font-display text-[8px] tracking-widest uppercase">
+                            {slide.secondary_button_text}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
