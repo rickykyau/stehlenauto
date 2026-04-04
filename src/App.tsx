@@ -79,6 +79,7 @@ const RouterContent = () => {
         <Route path="/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
         <Route path="/policies/shipping-policy" element={<ShopifyPolicyPage field="shippingPolicy" fallbackTitle="Shipping Policy" />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/welcome-back" element={<WelcomeBackPage />} />
         <Route path="/help" element={<HelpCenterPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/account/login" element={<LoginPage />} />
