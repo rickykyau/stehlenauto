@@ -1,9 +1,9 @@
-import { useState, useEffect, forwardRef } from "react";
+import { useState, useEffect, forwardRef, useMemo } from "react";
 import { Truck, ChevronDown, ChevronRight, Check } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { trackEvent } from "@/lib/analytics";
 import { useVehicle } from "@/contexts/VehicleContext";
-import { useYMMConfig } from "@/hooks/useYMMConfig";
+import { useYMMTree } from "@/hooks/useYMMTree";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface YMMBannerProps {
@@ -11,9 +11,8 @@ interface YMMBannerProps {
 }
 
 const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, ref) => {
-  const { vehicle, vehicleLabel } = useVehicle();
-  const { makes, models, years } = useYMMConfig();
-  const { setVehicle } = useVehicle();
+  const { vehicle, vehicleLabel, setVehicle } = useVehicle();
+  const { years, makesForYear, modelsForYearMake, isLoading } = useYMMTree();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [year, setYear] = useState("");
@@ -21,12 +20,28 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
   const [model, setModel] = useState("");
   const [pulseCount, setPulseCount] = useState(0);
 
-  // Pulse animation — 2 pulses then stop
+  const availableMakes = useMemo(() => (year ? makesForYear(year) : []), [year, makesForYear]);
+  const availableModels = useMemo(() => (year && make ? modelsForYearMake(year, make) : []), [year, make, modelsForYearMake]);
+  const showNoModels = !!(year && make && availableModels.length === 0 && !isLoading);
+
   useEffect(() => {
     if (pulseCount >= 2) return;
     const timer = setTimeout(() => setPulseCount((c) => c + 1), 600);
     return () => clearTimeout(timer);
   }, [pulseCount]);
+
+  useEffect(() => {
+    if (make && !availableMakes.includes(make)) {
+      setMake("");
+      setModel("");
+    }
+  }, [make, availableMakes]);
+
+  useEffect(() => {
+    if (model && !availableModels.includes(model)) {
+      setModel("");
+    }
+  }, [model, availableModels]);
 
   const handleSubmit = () => {
     if (year && make && model) {
@@ -39,9 +54,7 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
 
   const pulseClass = pulseCount < 2 ? "animate-pulse" : "";
 
-  // Mobile: high-contrast yellow tappable bar
   if (isMobile) {
-    // Vehicle IS set: success state
     if (vehicle) {
       return (
         <div
@@ -63,7 +76,6 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
       );
     }
 
-    // No vehicle: yellow CTA bar
     return (
       <div
         ref={ref}
@@ -84,13 +96,11 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
     );
   }
 
-  // Desktop: inline dropdowns (hide when vehicle is set — VehicleBar handles that)
   if (vehicle) return <div ref={ref} />;
 
   return (
     <div ref={ref} className="w-full bg-[hsl(220,15%,7%)] border-b border-border overflow-x-hidden">
       <div className="flex flex-wrap items-center gap-3 px-6 py-3 min-[1100px]:flex-nowrap min-[1100px]:h-[72px] min-[1100px]:py-0 min-[1100px]:justify-between">
-        {/* Label */}
         <div className="flex items-center gap-3 shrink-0 w-full min-[1100px]:w-auto">
           <Truck className="w-5 h-5 text-primary" />
           <span className="font-display text-xs tracking-widest text-foreground font-bold whitespace-nowrap">
@@ -98,13 +108,17 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
           </span>
         </div>
 
-        {/* Dropdowns + button row */}
         <div className="flex items-center gap-0 w-full min-[1100px]:w-auto min-[1100px]:mx-6">
           <div className="flex items-center border border-border flex-1 min-w-0">
             <div className="relative border-r border-border flex-1 min-w-0">
               <select
                 value={year}
-                onChange={(e) => { setYear(e.target.value); setMake(""); setModel(""); }}
+                onChange={(e) => {
+                  const nextYear = e.target.value;
+                  setYear(nextYear);
+                  setMake("");
+                  setModel("");
+                }}
                 className="h-10 w-full px-3 bg-input text-foreground font-display text-[11px] tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="">YEAR</option>
@@ -115,12 +129,16 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
             <div className="relative border-r border-border flex-1 min-w-0">
               <select
                 value={make}
-                onChange={(e) => { setMake(e.target.value); setModel(""); }}
-                disabled={!year}
+                onChange={(e) => {
+                  const nextMake = e.target.value;
+                  setMake(nextMake);
+                  setModel("");
+                }}
+                disabled={!year || availableMakes.length === 0}
                 className="h-10 w-full px-3 bg-input text-foreground font-display text-[11px] tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
               >
-                <option value="">MAKE</option>
-                {makes.map((m) => <option key={m} value={m}>{m}</option>)}
+                <option value="">{year && availableMakes.length === 0 ? "NO MAKES AVAILABLE" : "MAKE"}</option>
+                {availableMakes.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
             </div>
@@ -128,11 +146,11 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                disabled={!make}
+                disabled={!make || availableModels.length === 0}
                 className="h-10 w-full px-3 bg-input text-foreground font-display text-[11px] tracking-wider appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-40"
               >
-                <option value="">MODEL</option>
-                {make && models[make]?.map((m) => <option key={m} value={m}>{m}</option>)}
+                <option value="">{showNoModels ? "NO MODELS AVAILABLE" : "MODEL"}</option>
+                {availableModels.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
             </div>
@@ -147,6 +165,15 @@ const YMMBanner = forwardRef<HTMLDivElement, YMMBannerProps>(({ onOpenModal }, r
           </button>
         </div>
       </div>
+
+      {showNoModels && (
+        <div className="px-6 pb-3 text-sm font-body text-muted-foreground">
+          We don't carry parts for this vehicle yet.{" "}
+          <Link to="/collections/all" className="text-primary hover:underline font-medium">
+            Browse all parts instead
+          </Link>
+        </div>
+      )}
     </div>
   );
 });
