@@ -1,118 +1,202 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { storefrontApiRequest } from "@/lib/shopify";
 
-/**
- * YMM Tree: Year → Make → Model[], precomputed from product fitment tags.
- * Ensures dropdowns never show dead-end combinations.
- */
 export interface YMMTree {
-  /** All years that have at least one product */
   years: string[];
-  /** Given a year, returns makes with products */
   makesForYear: (year: string) => string[];
-  /** Given a year + make, returns models with products */
   modelsForYearMake: (year: string, make: string) => string[];
   isLoading: boolean;
 }
 
-// year -> make -> model[]
 type TreeData = Record<string, Record<string, string[]>>;
 
-let cachedTree: TreeData | null = null;
-let treePromise: Promise<TreeData> | null = null;
-
-async function fetchTree(): Promise<TreeData> {
-  if (cachedTree) return cachedTree;
-  if (treePromise) return treePromise;
-
-  treePromise = (async () => {
-    try {
-      const { data, error } = await supabase.rpc("get_ymm_tree" as any);
-      if (error || !data) throw new Error("RPC failed");
-
-      const tree: TreeData = {};
-      for (const row of data as any[]) {
-        const { year, make, models } = row;
-        if (!year || !make) continue;
-        if (!tree[year]) tree[year] = {};
-        tree[year][make] = Array.isArray(models) ? models : [];
+const STORAGE_KEY = "stehlen_ymm_tree_v1";
+const STORAGE_TTL_MS = 6 * 60 * 60 * 1000;
+const TAGS_QUERY = `
+  query GetProductTags($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      pageInfo {
+        hasNextPage
+        endCursor
       }
-      cachedTree = tree;
-      return tree;
-    } catch {
-      // Fallback: query products_cache directly
-      try {
-        const { data: products } = await supabase
-          .from("products_cache")
-          .select("tags")
-          .eq("status", "active")
-          .not("tags", "is", null);
-
-        const tree: TreeData = {};
-        for (const p of products || []) {
-          const tags: string[] = (p as any).tags || [];
-          const years = tags.filter(t => t.startsWith("year:")).map(t => t.slice(5));
-          const makes = tags.filter(t => t.startsWith("make:")).map(t => t.slice(5));
-          const models = tags.filter(t => t.startsWith("model:")).map(t => t.slice(6));
-          for (const y of years) {
-            for (const mk of makes) {
-              for (const mo of models) {
-                if (!tree[y]) tree[y] = {};
-                if (!tree[y][mk]) tree[y][mk] = [];
-                if (!tree[y][mk].includes(mo)) tree[y][mk].push(mo);
-              }
-            }
-          }
+      edges {
+        node {
+          id
+          tags
         }
-        // Sort models
-        for (const y of Object.keys(tree)) {
-          for (const mk of Object.keys(tree[y])) {
-            tree[y][mk].sort();
-          }
-        }
-        cachedTree = tree;
-        return tree;
-      } catch {
-        cachedTree = {};
-        return {};
       }
-    } finally {
-      treePromise = null;
     }
+  }
+`;
+
+let cachedTree: TreeData | null = null;
+let fetchPromise: Promise<TreeData> | null = null;
+
+function sortTree(tree: TreeData): TreeData {
+  const sortedYears = Object.keys(tree).sort((a, b) => Number(b) - Number(a));
+  const result: TreeData = {};
+
+  for (const year of sortedYears) {
+    const makes = Object.keys(tree[year]).sort((a, b) => a.localeCompare(b));
+    result[year] = {};
+
+    for (const make of makes) {
+      result[year][make] = [...tree[year][make]].sort((a, b) => a.localeCompare(b));
+    }
+  }
+
+  return result;
+}
+
+function readCachedTree(): TreeData | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { savedAt?: number; tree?: TreeData };
+    if (!parsed?.savedAt || !parsed?.tree) return null;
+    if (Date.now() - parsed.savedAt > STORAGE_TTL_MS) return null;
+
+    return parsed.tree;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedTree(tree: TreeData) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        savedAt: Date.now(),
+        tree,
+      })
+    );
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function extractTagValues(tags: string[], prefix: "year:" | "make:" | "model:") {
+  return tags
+    .filter((tag) => tag.startsWith(prefix))
+    .map((tag) => tag.slice(prefix.length).trim())
+    .filter(Boolean);
+}
+
+async function fetchAllProductTags(): Promise<string[][]> {
+  const allTags: string[][] = [];
+  let after: string | null = null;
+  let hasNextPage = true;
+
+  while (hasNextPage) {
+    const data = await storefrontApiRequest(TAGS_QUERY, {
+      first: 250,
+      after,
+    });
+
+    const connection = data?.data?.products;
+    const edges = connection?.edges ?? [];
+
+    for (const edge of edges) {
+      allTags.push(edge?.node?.tags ?? []);
+    }
+
+    hasNextPage = Boolean(connection?.pageInfo?.hasNextPage);
+    after = connection?.pageInfo?.endCursor ?? null;
+  }
+
+  return allTags;
+}
+
+function buildTreeFromProductTags(productsTags: string[][]): TreeData {
+  const tree: TreeData = {};
+
+  for (const tags of productsTags) {
+    const years = extractTagValues(tags, "year:");
+    const makes = extractTagValues(tags, "make:");
+    const models = extractTagValues(tags, "model:");
+
+    if (years.length === 0 || makes.length === 0) continue;
+
+    for (const year of years) {
+      if (!tree[year]) tree[year] = {};
+
+      for (const make of makes) {
+        if (!tree[year][make]) tree[year][make] = [];
+
+        for (const model of models) {
+          if (!tree[year][make].includes(model)) {
+            tree[year][make].push(model);
+          }
+        }
+      }
+    }
+  }
+
+  return sortTree(tree);
+}
+
+async function fetchYMMTree(): Promise<TreeData> {
+  if (cachedTree) return cachedTree;
+
+  const stored = readCachedTree();
+  if (stored) {
+    cachedTree = stored;
+    return stored;
+  }
+
+  if (fetchPromise) return fetchPromise;
+
+  fetchPromise = (async () => {
+    const productsTags = await fetchAllProductTags();
+    const tree = buildTreeFromProductTags(productsTags);
+    cachedTree = tree;
+    writeCachedTree(tree);
+    return tree;
   })();
 
-  return treePromise;
+  try {
+    return await fetchPromise;
+  } finally {
+    fetchPromise = null;
+  }
 }
 
 export function useYMMTree(): YMMTree {
-  const [tree, setTree] = useState<TreeData | null>(cachedTree);
-  const [isLoading, setIsLoading] = useState(!cachedTree);
+  const [tree, setTree] = useState<TreeData | null>(() => cachedTree ?? readCachedTree());
+  const [isLoading, setIsLoading] = useState(!cachedTree && !readCachedTree());
 
   useEffect(() => {
-    if (cachedTree) {
-      setTree(cachedTree);
-      setIsLoading(false);
-      return;
-    }
-    fetchTree().then((t) => {
-      setTree(t);
-      setIsLoading(false);
-    });
+    let isMounted = true;
+
+    fetchYMMTree()
+      .then((nextTree) => {
+        if (!isMounted) return;
+        setTree(nextTree);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setTree({});
+        setIsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const years = tree
-    ? Object.keys(tree).sort((a, b) => Number(b) - Number(a))
-    : [];
+  const currentTree = tree ?? {};
 
-  const makesForYear = (year: string): string[] => {
-    if (!tree || !tree[year]) return [];
-    return Object.keys(tree[year]).sort();
+  return {
+    years: Object.keys(currentTree).sort((a, b) => Number(b) - Number(a)),
+    makesForYear: (year: string) => Object.keys(currentTree[year] ?? {}).sort((a, b) => a.localeCompare(b)),
+    modelsForYearMake: (year: string, make: string) => [...(currentTree[year]?.[make] ?? [])].sort((a, b) => a.localeCompare(b)),
+    isLoading,
   };
-
-  const modelsForYearMake = (year: string, make: string): string[] => {
-    if (!tree || !tree[year] || !tree[year][make]) return [];
-    return tree[year][make];
-  };
-
-  return { years, makesForYear, modelsForYearMake, isLoading };
 }
