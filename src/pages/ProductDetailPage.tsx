@@ -1019,24 +1019,57 @@ const ProductTemplate = () => {
           </div>
 
           {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
             {[
-              { icon: Truck, label: "Free", sublabel: "Shipping" },
-              { icon: RotateCcw, label: "30-Day", sublabel: "Returns" },
-              { icon: Shield, label: "Manufacturer", sublabel: "Warranty" },
-            ].map(({ icon: Icon, label, sublabel }) => (
+              {
+                icon: RotateCcw,
+                title: "Free Returns",
+                subtitle: "30-day hassle-free",
+                badge: "returns",
+                highlight: false,
+              },
+              {
+                icon: Shield,
+                title: "Fitment Guaranteed",
+                subtitle: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal")
+                  ? "Confirmed to fit your vehicle"
+                  : "Confirmed to fit your vehicle",
+                badge: "fitment",
+                highlight: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal"),
+              },
+              {
+                icon: Truck,
+                title: "Fast Shipping",
+                subtitle: "Ships in 1-2 days from California",
+                badge: "shipping",
+                highlight: false,
+              },
+            ].map(({ icon: Icon, title, subtitle, badge, highlight }) => (
               <div
-                key={label}
-                className="flex items-center gap-2 border border-border p-2 bg-card cursor-pointer hover:border-primary/40 transition-colors"
-                onClick={() => trackEvent("trust_badge_clicked", { badge_type: `${label}_${sublabel}`.toLowerCase().replace(/\s+/g, "_") })}
+                key={badge}
+                className={`flex items-start gap-2.5 border rounded-lg p-3 transition-colors cursor-pointer hover:border-primary/40 ${
+                  highlight ? "border-green-600/40 bg-green-600/5" : "border-border bg-card"
+                }`}
+                onClick={() => trackEvent("trust_badge_clicked", { badge_type: badge })}
               >
-                <Icon className="w-4 h-4 text-primary shrink-0" />
+                <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${highlight ? "text-green-500" : "text-primary"}`} />
                 <div>
-                  <span className="font-display text-[9px] tracking-wider text-foreground block leading-tight">{label}</span>
-                  <span className="font-display text-[9px] tracking-wider text-muted-foreground block leading-tight">{sublabel}</span>
+                  <span className="font-display text-xs tracking-wider text-foreground block leading-tight font-bold">{title}</span>
+                  <span className="font-body text-[11px] text-muted-foreground block leading-snug mt-0.5">{subtitle}</span>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Social proof banner */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 py-2.5 mb-4 rounded-lg bg-muted/50 border border-border">
+            <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">
+              <span className="text-primary">★</span> 10+ Years in Business
+            </span>
+            <span className="text-border">|</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">100,000+ Orders Shipped</span>
+            <span className="text-border hidden sm:inline">|</span>
+            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider hidden sm:inline">Previously on eBay</span>
           </div>
 
           {/* Fitment Details Accordion */}
