@@ -455,9 +455,9 @@ const SiteHeader = () => {
                 <FitmentSelector onVehicleSelect={() => setFitmentOpen(false)} />
                 <button
                   onClick={() => { setFitmentOpen(false); navigate("/collections/all"); }}
-                  className="mt-3 w-full text-center font-body text-[13px] text-muted-foreground hover:text-foreground hover:underline transition-colors py-1"
+                  className="mt-3 w-full text-center font-body text-[13px] text-zinc-300 hover:text-white hover:underline transition-colors py-1"
                 >
-                  Skip and browse all 1,330 parts
+                  Skip and browse all parts
                 </button>
               </div>
             </div>
