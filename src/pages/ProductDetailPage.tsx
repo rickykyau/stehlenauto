@@ -1114,7 +1114,38 @@ const ProductTemplate = () => {
             </Accordion>
           )}
 
-          {/* ── Tabbed Content (inside right column) ── */}
+          {/* Shipping & Returns Accordion */}
+          <Accordion type="single" collapsible>
+            <AccordionItem value="shipping-returns" className="border border-border mb-4">
+              <AccordionTrigger className="px-3 py-2.5 hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-display text-[10px] tracking-widest text-foreground">SHIPPING & RETURNS</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-3">
+                <div className="space-y-4 text-sm text-muted-foreground font-body leading-relaxed">
+                  <div>
+                    <p className="font-display text-[10px] tracking-widest text-foreground mb-1">FREE SHIPPING</p>
+                    <p>All orders ship free within the United States. No minimum order required.</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-[10px] tracking-widest text-foreground mb-1">FAST PROCESSING</p>
+                    <p>Orders placed before 2 PM PST ship same business day. Estimated delivery: 3–7 business days.</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-[10px] tracking-widest text-foreground mb-1">EASY RETURNS</p>
+                    <p>30-day hassle-free returns. If the part doesn't fit or you're not satisfied, return it for a full refund. No restocking fees.</p>
+                  </div>
+                  <div>
+                    <p className="font-display text-[10px] tracking-widest text-foreground mb-1">FITMENT GUARANTEE</p>
+                    <p>Every part is confirmed to fit your specific vehicle before it ships. If we got it wrong, we'll pay for return shipping.</p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
           <div className="border-t border-border pt-3">
             {/* Tab bar */}
             <div className="flex border-b border-border overflow-x-auto overflow-y-hidden scrollbar-none">
