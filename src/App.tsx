@@ -53,6 +53,7 @@ import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage.tsx";
 import AdminPromoCodeDetailPage from "./pages/admin/AdminPromoCodeDetailPage.tsx";
 import AdminChatLogsPage from "./pages/admin/AdminChatLogsPage.tsx";
 import AdminSupportTicketsPage from "./pages/admin/AdminSupportTicketsPage.tsx";
+import WelcomeBackPage from "./pages/WelcomeBackPage.tsx";
 import ChatWidget from "./components/ChatWidget.tsx";
 
 const queryClient = new QueryClient();
