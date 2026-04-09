@@ -45,7 +45,7 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
   "trailer-hitches": "trailer hitch",
   "front-grilles": "grille",
   "headlights": "headlight",
-  "truck-bed-mats": "truck bed mat",
+  "truck-bed-mats": "bed mat",
   "floor-mats": "floor mat",
   "running-boards-side-steps": "running board",
   "roof-racks-baskets": "roof rack",
@@ -189,6 +189,47 @@ function EmptyVehicleState({
   );
 }
 
+/* ─── Sub-Model Filter Types ─── */
+
+const FITMENT_DIMENSIONS = new Set(["bed_length", "cab_type"]);
+const DIMENSION_LABELS: Record<string, string> = {
+  bed_length: "Bed Length",
+  cab_type: "Cab Type",
+};
+
+interface SubModelFilterState {
+  dimension: string;
+  selectedValues: Set<string>;
+}
+
+function getSubModelData(product: ShopifyProduct): { dimension: string; value: string; clusterKey: string } | null {
+  const node = product.node as any;
+  const dim = node.subModelDimension?.value;
+  const val = node.subModelValue?.value;
+  if (!dim || !val) return null;
+  return { dimension: dim, value: val, clusterKey: node.subModelClusterKey?.value || "" };
+}
+
+function buildSubModelFilters(products: ShopifyProduct[]): Map<string, Map<string, number>> {
+  const dimMap = new Map<string, Map<string, number>>();
+  for (const p of products) {
+    const sm = getSubModelData(p);
+    if (!sm || !FITMENT_DIMENSIONS.has(sm.dimension)) continue;
+    if (!dimMap.has(sm.dimension)) dimMap.set(sm.dimension, new Map());
+    const valMap = dimMap.get(sm.dimension)!;
+    valMap.set(sm.value, (valMap.get(sm.value) || 0) + 1);
+  }
+  // Only return dimensions with >= 3 products and >= 2 distinct values
+  const result = new Map<string, Map<string, number>>();
+  for (const [dim, valMap] of dimMap) {
+    const totalProducts = Array.from(valMap.values()).reduce((a, b) => a + b, 0);
+    if (totalProducts >= 3 && valMap.size >= 2) {
+      result.set(dim, valMap);
+    }
+  }
+  return result;
+}
+
 const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -201,6 +242,7 @@ const CollectionTemplate = () => {
   const [showVehicleChange, setShowVehicleChange] = useState(false);
   const [vehicleOverridden, setVehicleOverridden] = useState(false);
   const [includeUniversal, setIncludeUniversal] = useState(true);
+  const [subModelFilter, setSubModelFilter] = useState<SubModelFilterState | null>(null);
   const [filters, setFilters] = useState<RefineFilters>({
     year: null,
     make: null,
