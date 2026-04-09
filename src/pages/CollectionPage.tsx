@@ -219,11 +219,11 @@ function buildSubModelFilters(products: ShopifyProduct[]): Map<string, Map<strin
     const valMap = dimMap.get(sm.dimension)!;
     valMap.set(sm.value, (valMap.get(sm.value) || 0) + 1);
   }
-  // Only return dimensions with >= 3 products and >= 2 distinct values
+  // Only return dimensions with >= 2 products and >= 2 distinct values
   const result = new Map<string, Map<string, number>>();
   for (const [dim, valMap] of dimMap) {
     const totalProducts = Array.from(valMap.values()).reduce((a, b) => a + b, 0);
-    if (totalProducts >= 3 && valMap.size >= 2) {
+    if (totalProducts >= 2 && valMap.size >= 2) {
       result.set(dim, valMap);
     }
   }
@@ -472,7 +472,21 @@ const CollectionTemplate = () => {
 
   // Build sub-model filter options from raw products (before sub-model filtering)
   const subModelFilterOptions = useMemo(() => {
-    return buildSubModelFilters(rawDisplayProducts);
+    const result = buildSubModelFilters(rawDisplayProducts);
+    // Debug: log sub_model metafield stats
+    const withSubModel = rawDisplayProducts.filter(p => getSubModelData(p) !== null);
+    console.log('[SubModel Debug]', {
+      totalProducts: rawDisplayProducts.length,
+      withSubModel: withSubModel.length,
+      dimensions: Object.fromEntries(
+        Array.from(result.entries()).map(([dim, valMap]) => [
+          dim,
+          Object.fromEntries(valMap.entries()),
+        ])
+      ),
+      thresholdMet: result.size > 0,
+    });
+    return result;
   }, [rawDisplayProducts]);
 
   const displayProducts = includeUniversal
