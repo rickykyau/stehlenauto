@@ -540,6 +540,66 @@ const ProductTemplate = () => {
     fetchVariations();
   }, [product?.id]);
 
+  // Cosmetic variant strip via sub_model metafields
+  const COSMETIC_DIMENSIONS = new Set(["color", "finish", "style"]);
+  const [cosmeticSiblings, setCosmeticSiblings] = useState<Array<{ handle: string; value: string; isCurrent: boolean }>>([]);
+  const [cosmeticDimension, setCosmeticDimension] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!product) {
+      setCosmeticSiblings([]);
+      setCosmeticDimension(null);
+      return;
+    }
+    const dimension = (product as any).subModelDimension?.value;
+    const value = (product as any).subModelValue?.value;
+    const clusterKey = (product as any).subModelClusterKey?.value;
+    if (!dimension || !value || !clusterKey || !COSMETIC_DIMENSIONS.has(dimension)) {
+      setCosmeticSiblings([]);
+      setCosmeticDimension(null);
+      return;
+    }
+    setCosmeticDimension(dimension);
+    // Search for products with same cluster_key
+    const fetchClusterSiblings = async () => {
+      try {
+        const { storefrontApiRequest } = await import("@/lib/shopify");
+        const query = `
+          query ClusterSearch($query: String!) {
+            products(first: 20, query: $query) {
+              edges {
+                node {
+                  handle
+                  subModelValue: metafield(namespace: "sub_model", key: "value") { value }
+                  subModelClusterKey: metafield(namespace: "sub_model", key: "cluster_key") { value }
+                }
+              }
+            }
+          }
+        `;
+        // Search by tag or title — cluster_key isn't directly searchable, so we search broadly
+        // and filter client-side
+        const data = await storefrontApiRequest(query, { query: `tag:"${clusterKey}"` });
+        const edges = data?.data?.products?.edges || [];
+        const siblings = edges
+          .filter((e: any) => e.node.subModelClusterKey?.value === clusterKey)
+          .map((e: any) => ({
+            handle: e.node.handle,
+            value: e.node.subModelValue?.value || "",
+            isCurrent: e.node.handle === product.handle,
+          }));
+        if (siblings.length >= 2) {
+          setCosmeticSiblings(siblings);
+        } else {
+          setCosmeticSiblings([]);
+        }
+      } catch {
+        setCosmeticSiblings([]);
+      }
+    };
+    fetchClusterSiblings();
+  }, [product?.handle]);
+
   const currentShopifyId = product?.id?.replace?.("gid://shopify/Product/", "") || "";
 
   const otherTrimsNotice = useMemo(() => {
@@ -841,6 +901,40 @@ const ProductTemplate = () => {
               </div>
             );
           })()}
+
+          {/* Cosmetic Variant Strip (color/finish/style via sub_model metafields) */}
+          {cosmeticSiblings.length >= 2 && cosmeticDimension && (
+            <div className="mb-3">
+              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">
+                AVAILABLE IN:
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {cosmeticSiblings.map((sib) => (
+                  <button
+                    key={sib.handle}
+                    onClick={() => {
+                      if (!sib.isCurrent) {
+                        trackGA4Event("cosmetic_variant_selected", {
+                          from_handle: product.handle,
+                          to_handle: sib.handle,
+                          dimension: cosmeticDimension,
+                          value: sib.value,
+                        });
+                        navigate(`/products/${sib.handle}`);
+                      }
+                    }}
+                    className={`px-3 py-1.5 font-display text-[10px] tracking-wider transition-colors border ${
+                      sib.isCurrent
+                        ? "bg-primary text-primary-foreground border-primary font-bold"
+                        : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                    }`}
+                  >
+                    {sib.isCurrent ? "■ " : "□ "}{sib.value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* "Also available for other trims" notice */}
           {otherTrimsNotice && (

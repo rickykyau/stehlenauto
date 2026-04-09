@@ -24,7 +24,7 @@ const CATEGORIES = [
   { handle: "trailer-hitches", label: "Trailer Hitches" },
   { handle: "front-grilles", label: "Front Grilles" },
   { handle: "headlights", label: "Headlights" },
-  { handle: "truck-bed-mats", label: "Truck Bed Mats" },
+  { handle: "truck-bed-mats", label: "Bed Mats" },
   { handle: "floor-mats", label: "Floor Mats" },
   { handle: "running-boards-side-steps", label: "Running Boards & Side Steps" },
   { handle: "roof-racks-baskets", label: "Roof Racks & Baskets" },

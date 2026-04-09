@@ -45,7 +45,7 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
   "trailer-hitches": "trailer hitch",
   "front-grilles": "grille",
   "headlights": "headlight",
-  "truck-bed-mats": "truck bed mat",
+  "truck-bed-mats": "bed mat",
   "floor-mats": "floor mat",
   "running-boards-side-steps": "running board",
   "roof-racks-baskets": "roof rack",
@@ -189,6 +189,47 @@ function EmptyVehicleState({
   );
 }
 
+/* ─── Sub-Model Filter Types ─── */
+
+const FITMENT_DIMENSIONS = new Set(["bed_length", "cab_type"]);
+const DIMENSION_LABELS: Record<string, string> = {
+  bed_length: "Bed Length",
+  cab_type: "Cab Type",
+};
+
+interface SubModelFilterState {
+  dimension: string;
+  selectedValues: Set<string>;
+}
+
+function getSubModelData(product: ShopifyProduct): { dimension: string; value: string; clusterKey: string } | null {
+  const node = product.node as any;
+  const dim = node.subModelDimension?.value;
+  const val = node.subModelValue?.value;
+  if (!dim || !val) return null;
+  return { dimension: dim, value: val, clusterKey: node.subModelClusterKey?.value || "" };
+}
+
+function buildSubModelFilters(products: ShopifyProduct[]): Map<string, Map<string, number>> {
+  const dimMap = new Map<string, Map<string, number>>();
+  for (const p of products) {
+    const sm = getSubModelData(p);
+    if (!sm || !FITMENT_DIMENSIONS.has(sm.dimension)) continue;
+    if (!dimMap.has(sm.dimension)) dimMap.set(sm.dimension, new Map());
+    const valMap = dimMap.get(sm.dimension)!;
+    valMap.set(sm.value, (valMap.get(sm.value) || 0) + 1);
+  }
+  // Only return dimensions with >= 3 products and >= 2 distinct values
+  const result = new Map<string, Map<string, number>>();
+  for (const [dim, valMap] of dimMap) {
+    const totalProducts = Array.from(valMap.values()).reduce((a, b) => a + b, 0);
+    if (totalProducts >= 3 && valMap.size >= 2) {
+      result.set(dim, valMap);
+    }
+  }
+  return result;
+}
+
 const CollectionTemplate = () => {
   const { handle } = useParams<{ handle: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -201,6 +242,7 @@ const CollectionTemplate = () => {
   const [showVehicleChange, setShowVehicleChange] = useState(false);
   const [vehicleOverridden, setVehicleOverridden] = useState(false);
   const [includeUniversal, setIncludeUniversal] = useState(true);
+  const [subModelFilter, setSubModelFilter] = useState<SubModelFilterState | null>(null);
   const [filters, setFilters] = useState<RefineFilters>({
     year: null,
     make: null,
@@ -263,11 +305,13 @@ const CollectionTemplate = () => {
   const activeCategoryLabel = filters.category
     ? CATEGORIES.find((c) => c.handle === filters.category)?.label || null
     : null;
-  const title = activeCategoryLabel
+  const rawTitle = activeCategoryLabel
     ? activeCategoryLabel
     : isAllProducts
       ? "All Products"
       : collection?.node.title || handle || "All Products";
+  // Strip "Truck" from customer-facing collection titles
+  const title = rawTitle.replace(/\bTruck\s*/gi, "").replace(/\s{2,}/g, " ").trim();
 
   const { sortKey, reverse } = SORT_MAP[sort];
 
@@ -372,6 +416,16 @@ const CollectionTemplate = () => {
       }
     }
 
+    // Apply sub_model metafield filter
+    if (subModelFilter && subModelFilter.selectedValues.size > 0) {
+      filtered = filtered.filter((p) => {
+        const sm = getSubModelData(p);
+        // Products without sub_model data are always shown (treated as "fits all")
+        if (!sm || sm.dimension !== subModelFilter.dimension) return true;
+        return subModelFilter.selectedValues.has(sm.value);
+      });
+    }
+
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
@@ -414,7 +468,12 @@ const CollectionTemplate = () => {
       return { vehicleProducts: vehicleSpecific, universalProducts: universal, partialProducts: partial };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[], partialProducts: [] as ShopifyProduct[] };
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM, subModelFilter]);
+
+  // Build sub-model filter options from raw products (before sub-model filtering)
+  const subModelFilterOptions = useMemo(() => {
+    return buildSubModelFilters(rawDisplayProducts);
+  }, [rawDisplayProducts]);
 
   const displayProducts = includeUniversal
     ? [...vehicleProducts, ...partialProducts, ...universalProducts]
@@ -693,6 +752,62 @@ const CollectionTemplate = () => {
               <button onClick={() => handleFilterChange({ ...filters, subAttribute: null })}><X className="w-3 h-3" /></button>
             </span>
           )}
+        </div>
+      )}
+
+      {/* Sub-Model Fitment Filters */}
+      {subModelFilterOptions.size > 0 && (
+        <div className="border-b border-border px-4 lg:px-8 py-3">
+          {Array.from(subModelFilterOptions.entries()).map(([dimension, valMap]) => (
+            <div key={dimension} className="flex items-center gap-2 flex-wrap">
+              <span className="font-display text-[10px] tracking-widest text-muted-foreground mr-1">
+                {DIMENSION_LABELS[dimension] || dimension.toUpperCase()}:
+              </span>
+              {Array.from(valMap.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([value, count]) => {
+                  const isActive = subModelFilter?.dimension === dimension && subModelFilter.selectedValues.has(value);
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setSubModelFilter((prev) => {
+                          if (!prev || prev.dimension !== dimension) {
+                            return { dimension, selectedValues: new Set([value]) };
+                          }
+                          const next = new Set(prev.selectedValues);
+                          if (next.has(value)) {
+                            next.delete(value);
+                          } else {
+                            next.add(value);
+                          }
+                          return next.size === 0 ? null : { dimension, selectedValues: next };
+                        });
+                        setAllProducts([]);
+                      }}
+                      className={`px-3 py-1 font-display text-[10px] tracking-wider transition-colors border ${
+                        isActive
+                          ? "bg-[#f5a823] text-[#1a1a1a] border-[#f5a823] font-bold"
+                          : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                      }`}
+                    >
+                      {value} ({count})
+                    </button>
+                  );
+                })}
+              {subModelFilter?.dimension === dimension && subModelFilter.selectedValues.size > 0 && (
+                <button
+                  onClick={() => {
+                    setSubModelFilter(null);
+                    setAllProducts([]);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" /> CLEAR
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
