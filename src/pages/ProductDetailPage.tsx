@@ -696,9 +696,53 @@ const ProductTemplate = () => {
         {/* Right: Product Info + Tabs */}
         <div className="p-4 lg:p-6 flex flex-col">
           {/* Title */}
-          <h1 className="text-lg lg:text-xl font-display font-bold tracking-wider leading-tight mb-3">
+          <h1 className="text-lg lg:text-xl font-display font-bold tracking-wider leading-tight mb-2">
             {product.title.toUpperCase()}
           </h1>
+
+          {/* Fitment Badge — above the fold, below title */}
+          <div className="mb-2">
+            {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                fitmentResult.status === "universal" || fitmentResult.status === "fits"
+                  ? "bg-green-600/15 text-green-500 border border-green-600/30"
+                  : fitmentResult.status === "partial"
+                    ? "bg-yellow-600/15 text-yellow-500 border border-yellow-600/30"
+                    : "bg-red-600/15 text-red-400 border border-red-600/30"
+              }`}>
+                {(fitmentResult.status === "universal" || fitmentResult.status === "fits") && <Check className="w-3.5 h-3.5" />}
+                {fitmentResult.status === "partial" && <AlertTriangle className="w-3.5 h-3.5" />}
+                {fitmentResult.status === "does_not_fit" && <XIcon className="w-3.5 h-3.5" />}
+                <span>
+                  {fitmentResult.status === "universal"
+                    ? "Universal Fit"
+                    : fitmentResult.status === "fits"
+                      ? `✓ Fits your ${vehicleLabel}`
+                      : fitmentResult.status === "partial"
+                        ? `May fit your ${vehicleLabel}`
+                        : `Does not fit your ${vehicleLabel}`}
+                </span>
+              </div>
+            )}
+            {vehicle && fitmentResult?.status === "unknown" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Fitment not confirmed for your {vehicleLabel}</span>
+              </div>
+            )}
+            {!vehicle && (
+              <button
+                onClick={() => {
+                  const ymmBtn = document.querySelector('[data-ymm-trigger]') as HTMLElement;
+                  ymmBtn?.click();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Check vehicle fitment →</span>
+              </button>
+            )}
+          </div>
 
           {/* Price */}
           <div className="flex items-baseline gap-3 mb-3">
@@ -707,7 +751,6 @@ const ProductTemplate = () => {
               <span className="font-display text-sm text-muted-foreground line-through">${compareAt.toFixed(2)}</span>
             )}
           </div>
-
 
           {/* Fitment Attribute Pills Row */}
           {(fitmentPills.length > 0 || vehicle || !vehicle) && (

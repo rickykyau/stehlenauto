@@ -8,9 +8,6 @@ import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
 import SiteFooter from "@/components/SiteFooter";
 import CustomerReviews from "@/components/CustomerReviews";
-import { useQuery } from "@tanstack/react-query";
-import { storefrontApiRequest } from "@/lib/shopify";
-import { useVehicle } from "@/contexts/VehicleContext";
 
 /* ─── Categories config ─── */
 
@@ -29,75 +26,11 @@ const CATEGORIES = [
   { handle: "under-seat-storage", title: "Accessories", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
 ];
 
-/* ─── Fetch vehicle match counts per category ─── */
-
-const COLLECTION_PRODUCTS_QUERY = `
-  query GetCollectionProducts($handle: String!) {
-    collectionByHandle(handle: $handle) {
-      products(first: 250) {
-        edges { node { id title } }
-      }
-    }
-  }
-`;
-
-function parseYearRange(title: string): [number, number] | null {
-  const rangeMatch = title.match(/(\d{4})\s*[-–]\s*(\d{4})/);
-  if (rangeMatch) return [parseInt(rangeMatch[1]), parseInt(rangeMatch[2])];
-  const plusMatch = title.match(/(\d{4})\+/);
-  if (plusMatch) return [parseInt(plusMatch[1]), new Date().getFullYear()];
-  const singleMatch = title.match(/^(\d{4})\s/);
-  if (singleMatch) return [parseInt(singleMatch[1]), parseInt(singleMatch[1])];
-  return null;
-}
-
-function countVehicleMatches(
-  products: { title: string }[],
-  vehicle: { year: string; make: string; model: string }
-): number {
-  return products.filter((p) => {
-    const title = p.title.toLowerCase();
-    if (title.includes("universal")) return true;
-    if (!title.includes(vehicle.make.toLowerCase())) return false;
-    if (!title.includes(vehicle.model.toLowerCase())) return false;
-    const y = parseInt(vehicle.year);
-    const range = parseYearRange(p.title);
-    if (!range) return false;
-    return y >= range[0] && y <= range[1];
-  }).length;
-}
-
-function useCategoryVehicleCounts() {
-  const { vehicle } = useVehicle();
-  return useQuery({
-    queryKey: ["category-vehicle-counts", vehicle?.year, vehicle?.make, vehicle?.model],
-    queryFn: async () => {
-      if (!vehicle) return null;
-      const results: Record<string, number> = {};
-      await Promise.all(
-        CATEGORIES.map(async (cat) => {
-          try {
-            const data = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, { handle: cat.handle });
-            const products = (data?.data?.collectionByHandle?.products?.edges || []).map((e: any) => e.node);
-            results[cat.handle] = countVehicleMatches(products, vehicle);
-          } catch {
-            results[cat.handle] = 0;
-          }
-        })
-      );
-      return results;
-    },
-    enabled: !!vehicle,
-    staleTime: 300_000,
-  });
-}
-
 /* ─── Category Tile ─── */
 
-function CategoryTile({ handle, title, vehicleCount }: {
+function CategoryTile({ handle, title }: {
   handle: string;
   title: string;
-  vehicleCount?: number;
   image: string;
 }) {
   const cat = CATEGORIES.find((c) => c.handle === handle);
@@ -126,9 +59,6 @@ function CategoryTile({ handle, title, vehicleCount }: {
       <div className="absolute bottom-0 left-0 p-4">
         <span className="font-display text-sm tracking-wider font-bold text-white drop-shadow-lg block">
           {title.toUpperCase()}
-          {vehicleCount !== undefined && (
-            <span className="font-body text-xs font-normal ml-2 text-white/80">({vehicleCount})</span>
-          )}
         </span>
       </div>
     </Link>
@@ -138,9 +68,6 @@ function CategoryTile({ handle, title, vehicleCount }: {
 /* ─── Main Page ─── */
 
 const IndexTemplate = () => {
-  const { vehicle } = useVehicle();
-  const { data: vehicleCounts } = useCategoryVehicleCounts();
-
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -158,7 +85,6 @@ const IndexTemplate = () => {
               handle={cat.handle}
               title={cat.title}
               image={cat.image}
-              vehicleCount={vehicle && vehicleCounts ? vehicleCounts[cat.handle] : undefined}
             />
           ))}
         </div>
