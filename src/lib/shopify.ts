@@ -251,6 +251,15 @@ export const PRODUCTS_QUERY = `
           fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
             value
           }
+          subModelDimension: metafield(namespace: "sub_model", key: "dimension") {
+            value
+          }
+          subModelValue: metafield(namespace: "sub_model", key: "value") {
+            value
+          }
+          subModelClusterKey: metafield(namespace: "sub_model", key: "cluster_key") {
+            value
+          }
         }
       }
     }
@@ -316,6 +325,15 @@ export const PRODUCT_BY_HANDLE_QUERY = `
         value
       }
       fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+        value
+      }
+      subModelDimension: metafield(namespace: "sub_model", key: "dimension") {
+        value
+      }
+      subModelValue: metafield(namespace: "sub_model", key: "value") {
+        value
+      }
+      subModelClusterKey: metafield(namespace: "sub_model", key: "cluster_key") {
         value
       }
     }
@@ -426,6 +444,15 @@ export const COLLECTION_PRODUCTS_QUERY = `
               value
             }
             fitmentNotes: metafield(namespace: "custom", key: "fitment_notes") {
+              value
+            }
+            subModelDimension: metafield(namespace: "sub_model", key: "dimension") {
+              value
+            }
+            subModelValue: metafield(namespace: "sub_model", key: "value") {
+              value
+            }
+            subModelClusterKey: metafield(namespace: "sub_model", key: "cluster_key") {
               value
             }
           }
