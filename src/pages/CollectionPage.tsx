@@ -466,7 +466,12 @@ const CollectionTemplate = () => {
       return { vehicleProducts: vehicleSpecific, universalProducts: universal, partialProducts: partial };
     }
     return { vehicleProducts: filtered, universalProducts: [] as ShopifyProduct[], partialProducts: [] as ShopifyProduct[] };
-  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM]);
+  }, [rawDisplayProducts, filters.year, filters.make, filters.model, filters.category, filters.subAttribute, hasFullYMM, subModelFilter]);
+
+  // Build sub-model filter options from raw products (before sub-model filtering)
+  const subModelFilterOptions = useMemo(() => {
+    return buildSubModelFilters(rawDisplayProducts);
+  }, [rawDisplayProducts]);
 
   const displayProducts = includeUniversal
     ? [...vehicleProducts, ...partialProducts, ...universalProducts]
