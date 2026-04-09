@@ -1,46 +1,41 @@
 /**
  * SHOPIFY TEMPLATE: templates/index.liquid
- * SECTIONS: hero, category-carousel (12), featured-products carousel, trust-badges
+ * SECTIONS: hero, category-grid, trust-badges, reviews
  */
 import { Link } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import SiteHeader from "@/components/SiteHeader";
 import HeroSection from "@/components/HeroSection";
-import ProductCard from "@/components/ProductCard";
-import HorizontalCarousel from "@/components/HorizontalCarousel";
 import SiteFooter from "@/components/SiteFooter";
 import CustomerReviews from "@/components/CustomerReviews";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify";
-import type { ShopifyProduct } from "@/lib/shopify";
 import { useVehicle } from "@/contexts/VehicleContext";
-import { isUniversalProduct } from "@/lib/shopify";
-import { supabase } from "@/integrations/supabase/client";
 
-/* ─── All 12 Categories (fallback defaults) ─── */
+/* ─── Categories config ─── */
 
-const ALL_CATEGORIES = [
-  { handle: "bull-guards-grille-guards", title: "Bull Guards & Grille Guards", fallbackCount: 190, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
-  { handle: "tonneau-covers", title: "Tonneau Covers", fallbackCount: 287, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065" },
-  { handle: "trailer-hitches", title: "Trailer Hitches", fallbackCount: 288, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
-  { handle: "front-grilles", title: "Front Grilles", fallbackCount: 168, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_fg-zh-mus05gt-me-bk-ws-1.jpg?v=1773608072" },
-  { handle: "headlights", title: "Headlights", fallbackCount: 161, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075" },
-  { handle: "truck-bed-mats", title: "Truck Bed Mats", fallbackCount: 119, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-tun22-5.5-rb-v2-w-1.jpg?v=1773608078" },
-  { handle: "floor-mats", title: "Floor Mats", fallbackCount: 52, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
-  { handle: "running-boards-side-steps", title: "Running Boards & Side Steps", fallbackCount: 51, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_sbrs-rs2-tb-ws-1.jpg?v=1773608085" },
-  { handle: "roof-racks-baskets", title: "Roof Racks & Baskets", fallbackCount: 6, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_rr-lp-fullsize-uni-ws-1_b80d4918-e311-4039-8d13-c3c613105c8b.jpg?v=1773608088" },
-  { handle: "chase-racks-sport-bars", title: "Chase Racks & Sport Bars", fallbackCount: 3, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_crjz-raz-1000-st-mb-ws-1_135fbf61-e2a7-409b-9228-51a321b81ac9.jpg?v=1773608092" },
-  { handle: "molle-panels", title: "MOLLE Panels", fallbackCount: 3, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_mp-colo23-5-3p-ws-1_de4c08ed-efa7-41bf-93b1-57376cde9caa.jpg?v=1773608095" },
-  { handle: "under-seat-storage", title: "Under Seat Storage", fallbackCount: 2, image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
+const CATEGORIES = [
+  { handle: "tonneau-covers", title: "Tonneau Covers", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065" },
+  { handle: "running-boards-side-steps", title: "Running Boards", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_sbrs-rs2-tb-ws-1.jpg?v=1773608085" },
+  { handle: "bull-guards-grille-guards", title: "Bull Bars & Brush Guards", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
+  { handle: "front-grilles", title: "Grilles", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_fg-zh-mus05gt-me-bk-ws-1.jpg?v=1773608072" },
+  { handle: "headlights", title: "Headlights & Tail Lights", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075" },
+  { handle: "trailer-hitches", title: "Hitches & Towing", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
+  { handle: "chase-racks-sport-bars", title: "Bumpers", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_crjz-raz-1000-st-mb-ws-1_135fbf61-e2a7-409b-9228-51a321b81ac9.jpg?v=1773608092" },
+  { handle: "molle-panels", title: "Fenders & Body Kits", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_mp-colo23-5-3p-ws-1_de4c08ed-efa7-41bf-93b1-57376cde9caa.jpg?v=1773608095" },
+  { handle: "truck-bed-mats", title: "Bed Mats & Liners", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-tun22-5.5-rb-v2-w-1.jpg?v=1773608078" },
+  { handle: "roof-racks-baskets", title: "Roof Racks", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_rr-lp-fullsize-uni-ws-1_b80d4918-e311-4039-8d13-c3c613105c8b.jpg?v=1773608088" },
+  { handle: "floor-mats", title: "Mirrors", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
+  { handle: "under-seat-storage", title: "Accessories", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
 ];
 
-const COLLECTION_IMAGE_QUERY = `
-  query GetCollectionInfo($handle: String!) {
+/* ─── Fetch vehicle match counts per category ─── */
+
+const COLLECTION_PRODUCTS_QUERY = `
+  query GetCollectionProducts($handle: String!) {
     collectionByHandle(handle: $handle) {
-      image { url }
       products(first: 250) {
-        edges { node { id title productType featuredImage { url } } }
+        edges { node { id title } }
       }
     }
   }
@@ -56,15 +51,8 @@ function parseYearRange(title: string): [number, number] | null {
   return null;
 }
 
-interface CategoryProductNode {
-  id: string;
-  title: string;
-  productType: string;
-  featuredImage: { url: string } | null;
-}
-
 function countVehicleMatches(
-  products: CategoryProductNode[],
+  products: { title: string }[],
   vehicle: { year: string; make: string; model: string }
 ): number {
   return products.filter((p) => {
@@ -79,234 +67,68 @@ function countVehicleMatches(
   }).length;
 }
 
-function useCategoryData() {
+function useCategoryVehicleCounts() {
+  const { vehicle } = useVehicle();
   return useQuery({
-    queryKey: ["category-data-all"],
+    queryKey: ["category-vehicle-counts", vehicle?.year, vehicle?.make, vehicle?.model],
     queryFn: async () => {
-      const results: Record<string, { count: number; image: string; products: CategoryProductNode[] }> = {};
+      if (!vehicle) return null;
+      const results: Record<string, number> = {};
       await Promise.all(
-        ALL_CATEGORIES.map(async (cat) => {
+        CATEGORIES.map(async (cat) => {
           try {
-            const data = await storefrontApiRequest(COLLECTION_IMAGE_QUERY, { handle: cat.handle });
-            const col = data?.data?.collectionByHandle;
-            const products = (col?.products?.edges || []).map((e: any) => e.node) as CategoryProductNode[];
-            const count = products.length || cat.fallbackCount;
-            const apiImage = col?.image?.url || null;
-            results[cat.handle] = { count, image: apiImage || cat.image || "", products };
+            const data = await storefrontApiRequest(COLLECTION_PRODUCTS_QUERY, { handle: cat.handle });
+            const products = (data?.data?.collectionByHandle?.products?.edges || []).map((e: any) => e.node);
+            results[cat.handle] = countVehicleMatches(products, vehicle);
           } catch {
-            results[cat.handle] = { count: cat.fallbackCount, image: cat.image || "", products: [] };
+            results[cat.handle] = 0;
           }
         })
       );
       return results;
     },
+    enabled: !!vehicle,
     staleTime: 300_000,
   });
 }
 
-/* ─── Admin-managed category config ─── */
-interface AdminCategory {
+/* ─── Category Tile ─── */
+
+function CategoryTile({ handle, title, vehicleCount }: {
   handle: string;
   title: string;
-  visible: boolean;
-  order: number;
-}
-
-function useAdminCategories() {
-  return useQuery({
-    queryKey: ["homepage-categories-config"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("homepage_content")
-        .select("content")
-        .eq("section", "categories")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-      if (!data?.content) return null;
-      return ((data.content as any).categories as AdminCategory[])?.sort((a, b) => a.order - b.order) ?? null;
-    },
-    staleTime: 60_000,
-  });
-}
-
-/* ─── Admin-managed featured product handles ─── */
-function useAdminFeaturedHandles() {
-  return useQuery({
-    queryKey: ["homepage-featured-config"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("homepage_content")
-        .select("content")
-        .eq("section", "featured")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
-      if (!data?.content) return null;
-      return ((data.content as any).handles as string[]) ?? null;
-    },
-    staleTime: 60_000,
-  });
-}
-
-/* ─── Featured Products ─── */
-
-const FALLBACK_HANDLES = [
-  "2020-2023-tesla-model-y-rear-bumper-guard-black",
-  "2022-2025-toyota-tundra-5-5-bed-tonneau-cover-led-light-kit",
-  "2005-2015-nissan-xterra-class-3-trailer-hitch-ball-mount-kit",
-  "2005-2009-ford-mustang-gt-honeycomb-mesh-front-grille-black",
-  "2014-2021-toyota-tundra-projector-headlights-sequential-led-chrome",
-  "2022-2026-toyota-tundra-5-5ft-bed-rubber-mat-lightweight-v2",
-  "rubber-truck-bed-mat-for-dakota-raider-6-5-bed-grey",
-  "2022-toyota-tundra-double-cab-rock-sliders-side-steps-texture-black",
-  "2014-2021-toyota-tundra-crew-cab-low-profile-roof-basket-system",
-  "stehlen-razor-1000-universal-chase-rack-w-led-lights-matte-black",
-  "2023-chevy-colorado-5ft-bed-molle-panels-3pc-set",
-  "2014-2019-silverado-sierra-rear-underseat-storage-organizer-box",
-];
-
-const PRODUCT_FRAGMENT = `
-  id title handle productType tags
-  featuredImage { url altText }
-  priceRange { minVariantPrice { amount currencyCode } }
-  variants(first: 1) {
-    edges {
-      node {
-        id title
-        price { amount currencyCode }
-        compareAtPrice { amount currencyCode }
-        availableForSale
-        selectedOptions { name value }
-      }
-    }
-  }
-`;
-
-function normalizeFeaturedNode(node: any): ShopifyProduct {
-  const firstVariant = node.variants?.edges?.[0]?.node;
-  return {
-    node: {
-      id: node.id,
-      title: node.title,
-      description: "",
-      handle: node.handle,
-      productType: node.productType || "",
-      tags: node.tags || [],
-      priceRange: node.priceRange,
-      compareAtPriceRange: firstVariant?.compareAtPrice
-        ? { minVariantPrice: firstVariant.compareAtPrice }
-        : undefined,
-      images: {
-        edges: node.featuredImage
-          ? [{ node: { url: node.featuredImage.url, altText: node.featuredImage.altText ?? null } }]
-          : [],
-      },
-      variants: { edges: node.variants?.edges || [] },
-      options: [],
-    },
-  };
-}
-
-function useFeaturedProducts(handles: string[]) {
-  return useQuery({
-    queryKey: ["featured-products-by-handle", handles],
-    queryFn: async () => {
-      if (handles.length === 0) return [];
-      const query = `
-        query GetFeaturedByHandle {
-          ${handles.map((h, i) => `p${i + 1}: productByHandle(handle: "${h}") { ${PRODUCT_FRAGMENT} }`).join("\n    ")}
-        }
-      `;
-      try {
-        const response = await storefrontApiRequest(query);
-        const data = response?.data;
-        if (!data) return [];
-        const products: ShopifyProduct[] = [];
-        for (let i = 1; i <= handles.length; i++) {
-          const node = data[`p${i}`];
-          if (node) products.push(normalizeFeaturedNode(node));
-        }
-        return products;
-      } catch {
-        return [];
-      }
-    },
-    staleTime: 300_000,
-  });
-}
-
-function FeaturedProductsSection() {
-  const { data: adminHandles } = useAdminFeaturedHandles();
-  const handles = adminHandles ?? FALLBACK_HANDLES;
-  const { data: products, isLoading } = useFeaturedProducts(handles);
-
-  if (isLoading) {
-    return (
-      <section className="border-b border-border">
-        <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
-          <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
-          <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
-            SHOP ALL <ArrowRight className="w-3 h-3" />
-          </Link>
-        </div>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      </section>
-    );
-  }
-
-  if (!products || products.length === 0) return null;
-
-  return (
-    <section className="border-b border-border">
-      <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
-        <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">FEATURED PRODUCTS</h2>
-        <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
-          SHOP ALL <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
-      <HorizontalCarousel>
-        {products.map((product) => (
-          <ProductCard key={product.node.id} product={product} compact />
-        ))}
-      </HorizontalCarousel>
-    </section>
-  );
-}
-
-/* ─── Category Card ─── */
-
-function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel }: { handle: string; title: string; count: number; image: string; vehicleCount?: number; vehicleModel?: string }) {
-  const hasVehicle = vehicleCount !== undefined;
-  const dimmed = hasVehicle && vehicleCount === 0;
+  vehicleCount?: number;
+  image: string;
+}) {
+  const cat = CATEGORIES.find((c) => c.handle === handle);
+  const img = cat?.image || "";
 
   return (
     <Link
       to={`/collections/all?category=${handle}`}
-      className={`group relative aspect-[4/3] border border-border overflow-hidden block transition-opacity duration-300 ${dimmed ? "opacity-50" : ""}`}
+      className="group relative aspect-[4/3] overflow-hidden block border border-border hover:border-[#f5a823] transition-colors duration-300"
+      onClick={() => trackEvent("category_tile_clicked", { category: handle })}
     >
-      {image ? (
+      {img ? (
         <img
-          src={image}
+          src={img}
           alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
       ) : (
         <div className="w-full h-full bg-card" />
       )}
       <div
-        className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 30%, transparent 50%)" }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 40%, transparent 70%)" }}
       />
       <div className="absolute bottom-0 left-0 p-4">
-        <span className="font-display text-xs tracking-wider block mb-1 font-bold" style={{ color: "#FFFFFF", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>{title.toUpperCase()}</span>
-        <span className="font-body text-xs" style={{ color: "rgba(255,255,255,0.85)", textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-          {hasVehicle
-            ? `${vehicleCount} Product${vehicleCount !== 1 ? "s" : ""} for your ${vehicleModel}`
-            : `${count} Products`}
+        <span className="font-display text-sm tracking-wider font-bold text-white drop-shadow-lg block">
+          {title.toUpperCase()}
+          {vehicleCount !== undefined && (
+            <span className="font-body text-xs font-normal ml-2 text-white/80">({vehicleCount})</span>
+          )}
         </span>
       </div>
     </Link>
@@ -316,53 +138,31 @@ function CategoryCard({ handle, title, count, image, vehicleCount, vehicleModel 
 /* ─── Main Page ─── */
 
 const IndexTemplate = () => {
-  const { data: categoryData } = useCategoryData();
-  const { data: adminCategories } = useAdminCategories();
   const { vehicle } = useVehicle();
-
-  // Use admin-managed categories if available, otherwise fallback
-  const displayCategories = adminCategories
-    ? adminCategories.filter((c) => c.visible).map((c) => {
-        const fallback = ALL_CATEGORIES.find((ac) => ac.handle === c.handle);
-        return { ...c, fallbackCount: fallback?.fallbackCount ?? 0, image: fallback?.image ?? "" };
-      })
-    : ALL_CATEGORIES;
+  const { data: vehicleCounts } = useCategoryVehicleCounts();
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <HeroSection onOpenYMM={() => window.dispatchEvent(new CustomEvent("open-ymm-modal"))} />
 
-      {/* Shop by Category Carousel */}
+      {/* Shop by Category Grid */}
       <section className="border-b border-border">
-        <div className="px-4 lg:px-8 py-6 border-b border-border flex items-center justify-between">
+        <div className="px-4 lg:px-8 py-6 border-b border-border">
           <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">SHOP BY CATEGORY</h2>
-          <Link to="/collections/all" className="flex items-center gap-2 text-primary font-display text-xs tracking-widest btn-press hover:brightness-110">
-            VIEW ALL <ArrowRight className="w-3 h-3" />
-          </Link>
         </div>
-        <HorizontalCarousel loop>
-          {displayCategories.map((cat) => {
-            const info = categoryData?.[cat.handle];
-            const vehicleCount = vehicle && info?.products
-              ? countVehicleMatches(info.products, vehicle)
-              : undefined;
-            return (
-              <CategoryCard
-                key={cat.handle}
-                handle={cat.handle}
-                title={cat.title}
-                count={info?.count ?? cat.fallbackCount}
-                image={info?.image || cat.image || ""}
-                vehicleCount={vehicleCount}
-                vehicleModel={vehicle?.model}
-              />
-            );
-          })}
-        </HorizontalCarousel>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-border p-px">
+          {CATEGORIES.map((cat) => (
+            <CategoryTile
+              key={cat.handle}
+              handle={cat.handle}
+              title={cat.title}
+              image={cat.image}
+              vehicleCount={vehicle && vehicleCounts ? vehicleCounts[cat.handle] : undefined}
+            />
+          ))}
+        </div>
       </section>
-
-      <FeaturedProductsSection />
 
       <CustomerReviews />
 
