@@ -414,6 +414,16 @@ const CollectionTemplate = () => {
       }
     }
 
+    // Apply sub_model metafield filter
+    if (subModelFilter && subModelFilter.selectedValues.size > 0) {
+      filtered = filtered.filter((p) => {
+        const sm = getSubModelData(p);
+        // Products without sub_model data are always shown (treated as "fits all")
+        if (!sm || sm.dimension !== subModelFilter.dimension) return true;
+        return subModelFilter.selectedValues.has(sm.value);
+      });
+    }
+
     // Separate vehicle-specific and universal products
     const hasVehicleFilter = filters.year || filters.make || filters.model;
     if (hasVehicleFilter && filters.make !== "Universal") {
