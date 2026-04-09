@@ -778,7 +778,13 @@ const CollectionTemplate = () => {
                 {DIMENSION_LABELS[dimension] || dimension.toUpperCase()}:
               </span>
               {Array.from(valMap.entries())
-                .sort(([a], [b]) => a.localeCompare(b))
+                .sort(([a], [b]) => {
+                  // Numeric sort for bed lengths (e.g. "5.5 ft" < "6.5 ft")
+                  const numA = parseFloat(a);
+                  const numB = parseFloat(b);
+                  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                  return a.localeCompare(b);
+                })
                 .map(([value, count]) => {
                   const isActive = subModelFilter?.dimension === dimension && subModelFilter.selectedValues.has(value);
                   return (
@@ -805,7 +811,7 @@ const CollectionTemplate = () => {
                           : "bg-card text-muted-foreground border-border hover:border-primary/40"
                       }`}
                     >
-                      {value} ({count})
+                      {value}
                     </button>
                   );
                 })}

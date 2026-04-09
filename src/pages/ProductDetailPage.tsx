@@ -842,15 +842,41 @@ const ProductTemplate = () => {
           {variationMembers.length >= 2 && (() => {
             const allSameStyle = variationMembers.every(m => m.option_label === variationMembers[0].option_label);
             if (allSameStyle) return null;
+            // Deduplicate labels: if multiple members share the same option_label, derive a differentiator from title
+            const labelCounts = new Map<string, number>();
+            variationMembers.forEach(m => {
+              const lbl = (m.option_label || "").toLowerCase();
+              labelCounts.set(lbl, (labelCounts.get(lbl) || 0) + 1);
+            });
+            function getSmartLabel(member: VariationMember): string {
+              const base = member.option_label || "";
+              const baseLower = base.toLowerCase();
+              if ((labelCounts.get(baseLower) || 0) <= 1) return base;
+              // Extract differentiator from title: find part of title after the base label
+              const title = member.product_title || "";
+              const baseIdx = title.toLowerCase().indexOf(baseLower);
+              if (baseIdx >= 0) {
+                const after = title.slice(baseIdx + base.length).trim();
+                // Clean up leading separators
+                const cleaned = after.replace(/^[\s\-–—,]+/, "").trim();
+                if (cleaned) return `${base} ${cleaned}`;
+              }
+              // Fallback: use full title excerpt
+              return title.length > 30 ? title.slice(0, 30) + "…" : title;
+            }
+            // Sort alphabetically for stable order
+            const sorted = [...variationMembers].sort((a, b) => 
+              getSmartLabel(a).localeCompare(getSmartLabel(b))
+            );
             return (
               <div className={`mb-3 transition-opacity duration-150 ${variationsVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">
                   {(variationGroup?.option_name || "STYLE").toUpperCase()}:
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {variationMembers.map(member => {
+                  {sorted.map(member => {
                     const isCurrent = member.shopify_product_id === currentShopifyId;
-                    const styleLabel = member.option_label || member.product_title.split(" ").slice(0, 3).join(" ");
+                    const styleLabel = getSmartLabel(member);
                     return (
                       <button
                         key={member.shopify_product_id}
@@ -886,7 +912,7 @@ const ProductTemplate = () => {
                 AVAILABLE IN:
               </h3>
               <div className="flex flex-wrap gap-2">
-                {cosmeticSiblings.map((sib) => (
+                {[...cosmeticSiblings].sort((a, b) => a.value.localeCompare(b.value)).map((sib) => (
                   <button
                     key={sib.handle}
                     onClick={() => {
@@ -955,39 +981,54 @@ const ProductTemplate = () => {
           )}
 
           {/* Sub-Attribute Configurator (sibling products) */}
-          {relevantSubAttr && siblingProducts.length > 0 && (
-            <div className="mb-3">
-              <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
-                {relevantSubAttr.label.toUpperCase()}:
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                <button className="px-3 py-1.5 font-display text-[10px] tracking-wider border bg-primary text-primary-foreground border-primary font-bold">
-                  {relevantSubAttr.value.toUpperCase()}
-                </button>
-                {siblingProducts.map((sib) => {
-                  const sibVal = sib.subAttr[relevantSubAttr.field];
-                  if (!sibVal) return null;
-                  return (
+          {relevantSubAttr && siblingProducts.length > 0 && (() => {
+            // Build all options including current, sorted numerically for bed lengths
+            const allOptions = [
+              { handle: product.handle, value: relevantSubAttr.value, isCurrent: true },
+              ...siblingProducts
+                .filter(sib => sib.subAttr[relevantSubAttr.field])
+                .map(sib => ({ handle: sib.handle, value: String(sib.subAttr[relevantSubAttr.field]), isCurrent: false }))
+            ];
+            // Stable sort: numeric for bed lengths, alphabetical otherwise
+            allOptions.sort((a, b) => {
+              const numA = parseFloat(a.value);
+              const numB = parseFloat(b.value);
+              if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+              return a.value.localeCompare(b.value);
+            });
+            return (
+              <div className="mb-3">
+                <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
+                  {relevantSubAttr.label.toUpperCase()}:
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {allOptions.map((opt) => (
                     <button
-                      key={sib.handle}
+                      key={opt.handle}
                       onClick={() => {
-                        trackEvent("fitment_subattribute_selected", {
-                          item_id: product.id,
-                          attribute_type: relevantSubAttr.field,
-                          attribute_value: sibVal,
-                          source: "pdp_configurator",
-                        });
-                        navigate(`/products/${sib.handle}`);
+                        if (!opt.isCurrent) {
+                          trackEvent("fitment_subattribute_selected", {
+                            item_id: product.id,
+                            attribute_type: relevantSubAttr.field,
+                            attribute_value: opt.value,
+                            source: "pdp_configurator",
+                          });
+                          navigate(`/products/${opt.handle}`);
+                        }
                       }}
-                      className="px-3 py-1.5 font-display text-[10px] tracking-wider border border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
+                      className={`px-3 py-1.5 font-display text-[10px] tracking-wider transition-colors border ${
+                        opt.isCurrent
+                          ? "bg-primary text-primary-foreground border-primary font-bold"
+                          : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                      }`}
                     >
-                      {String(sibVal).toUpperCase()}
+                      {opt.value.toUpperCase()}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Sub-Attribute Confirmation */}
           {vehicle && relevantSubAttr && (
