@@ -753,6 +753,62 @@ const CollectionTemplate = () => {
         </div>
       )}
 
+      {/* Sub-Model Fitment Filters */}
+      {subModelFilterOptions.size > 0 && (
+        <div className="border-b border-border px-4 lg:px-8 py-3">
+          {Array.from(subModelFilterOptions.entries()).map(([dimension, valMap]) => (
+            <div key={dimension} className="flex items-center gap-2 flex-wrap">
+              <span className="font-display text-[10px] tracking-widest text-muted-foreground mr-1">
+                {DIMENSION_LABELS[dimension] || dimension.toUpperCase()}:
+              </span>
+              {Array.from(valMap.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([value, count]) => {
+                  const isActive = subModelFilter?.dimension === dimension && subModelFilter.selectedValues.has(value);
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setSubModelFilter((prev) => {
+                          if (!prev || prev.dimension !== dimension) {
+                            return { dimension, selectedValues: new Set([value]) };
+                          }
+                          const next = new Set(prev.selectedValues);
+                          if (next.has(value)) {
+                            next.delete(value);
+                          } else {
+                            next.add(value);
+                          }
+                          return next.size === 0 ? null : { dimension, selectedValues: next };
+                        });
+                        setAllProducts([]);
+                      }}
+                      className={`px-3 py-1 font-display text-[10px] tracking-wider transition-colors border ${
+                        isActive
+                          ? "bg-[#f5a823] text-[#1a1a1a] border-[#f5a823] font-bold"
+                          : "bg-card text-muted-foreground border-border hover:border-primary/40"
+                      }`}
+                    >
+                      {value} ({count})
+                    </button>
+                  );
+                })}
+              {subModelFilter?.dimension === dimension && subModelFilter.selectedValues.size > 0 && (
+                <button
+                  onClick={() => {
+                    setSubModelFilter(null);
+                    setAllProducts([]);
+                  }}
+                  className="inline-flex items-center gap-1 px-2 py-1 font-display text-[10px] tracking-widest text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3 h-3" /> CLEAR
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Main Content: Sidebar + Grid */}
       <div className="flex">
         {/* Desktop Sidebar */}
