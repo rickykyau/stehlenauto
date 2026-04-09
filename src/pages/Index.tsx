@@ -22,7 +22,7 @@ const CATEGORIES = [
   { handle: "molle-panels", title: "Fenders & Body Kits", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_mp-colo23-5-3p-ws-1_de4c08ed-efa7-41bf-93b1-57376cde9caa.jpg?v=1773608095" },
   { handle: "truck-bed-mats", title: "Bed Mats & Liners", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-tun22-5.5-rb-v2-w-1.jpg?v=1773608078" },
   { handle: "roof-racks-baskets", title: "Roof Racks", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_rr-lp-fullsize-uni-ws-1_b80d4918-e311-4039-8d13-c3c613105c8b.jpg?v=1773608088" },
-  { handle: "floor-mats", title: "Mirrors", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
+  { handle: "floor-mats", title: "Floor Mats", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
   { handle: "under-seat-storage", title: "Accessories", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
 ];
 
