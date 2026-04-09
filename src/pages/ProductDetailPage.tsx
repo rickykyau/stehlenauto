@@ -8,6 +8,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
   Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown, Info,
+  Users, Award, Clock,
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
@@ -696,9 +697,53 @@ const ProductTemplate = () => {
         {/* Right: Product Info + Tabs */}
         <div className="p-4 lg:p-6 flex flex-col">
           {/* Title */}
-          <h1 className="text-lg lg:text-xl font-display font-bold tracking-wider leading-tight mb-3">
+          <h1 className="text-lg lg:text-xl font-display font-bold tracking-wider leading-tight mb-2">
             {product.title.toUpperCase()}
           </h1>
+
+          {/* Fitment Badge — above the fold, below title */}
+          <div className="mb-2">
+            {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
+              <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${
+                fitmentResult.status === "universal" || fitmentResult.status === "fits"
+                  ? "bg-green-600/15 text-green-500 border border-green-600/30"
+                  : fitmentResult.status === "partial"
+                    ? "bg-yellow-600/15 text-yellow-500 border border-yellow-600/30"
+                    : "bg-red-600/15 text-red-400 border border-red-600/30"
+              }`}>
+                {(fitmentResult.status === "universal" || fitmentResult.status === "fits") && <Check className="w-3.5 h-3.5" />}
+                {fitmentResult.status === "partial" && <AlertTriangle className="w-3.5 h-3.5" />}
+                {fitmentResult.status === "does_not_fit" && <XIcon className="w-3.5 h-3.5" />}
+                <span>
+                  {fitmentResult.status === "universal"
+                    ? "Universal Fit"
+                    : fitmentResult.status === "fits"
+                      ? `✓ Fits your ${vehicleLabel}`
+                      : fitmentResult.status === "partial"
+                        ? `May fit your ${vehicleLabel}`
+                        : `Does not fit your ${vehicleLabel}`}
+                </span>
+              </div>
+            )}
+            {vehicle && fitmentResult?.status === "unknown" && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>Fitment not confirmed for your {vehicleLabel}</span>
+              </div>
+            )}
+            {!vehicle && (
+              <button
+                onClick={() => {
+                  const ymmBtn = document.querySelector('[data-ymm-trigger]') as HTMLElement;
+                  ymmBtn?.click();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors cursor-pointer"
+              >
+                <Truck className="w-3.5 h-3.5" />
+                <span>Check vehicle fitment →</span>
+              </button>
+            )}
+          </div>
 
           {/* Price */}
           <div className="flex items-baseline gap-3 mb-3">
@@ -708,53 +753,9 @@ const ProductTemplate = () => {
             )}
           </div>
 
-
           {/* Fitment Attribute Pills Row */}
-          {(fitmentPills.length > 0 || vehicle || !vehicle) && (
+          {fitmentPills.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              {/* Vehicle fitment badge */}
-              {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  fitmentResult.status === "universal" || fitmentResult.status === "fits"
-                    ? "bg-green-600/15 text-green-500 border border-green-600/30"
-                    : fitmentResult.status === "partial"
-                      ? "bg-yellow-600/15 text-yellow-500 border border-yellow-600/30"
-                      : "bg-red-600/15 text-red-400 border border-red-600/30"
-                }`}>
-                  {(fitmentResult.status === "universal" || fitmentResult.status === "fits") && <Check className="w-3 h-3" />}
-                  {fitmentResult.status === "partial" && <AlertTriangle className="w-3 h-3" />}
-                  {fitmentResult.status === "does_not_fit" && <XIcon className="w-3 h-3" />}
-                  <span>
-                    {fitmentResult.status === "universal"
-                      ? "Universal Fit"
-                      : fitmentResult.status === "fits"
-                        ? `Fits your ${vehicleLabel}`
-                        : fitmentResult.status === "partial"
-                          ? `May fit your ${vehicleLabel}`
-                          : `Does not fit your ${vehicleLabel}`}
-                  </span>
-                </div>
-              )}
-              {vehicle && fitmentResult?.status === "unknown" && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
-                  <AlertTriangle className="w-3 h-3" />
-                  <span>Fitment not confirmed</span>
-                </div>
-              )}
-              {!vehicle && (
-                <button
-                  onClick={() => {
-                    const ymmBtn = document.querySelector('[data-ymm-trigger]') as HTMLElement;
-                    ymmBtn?.click();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border hover:border-primary/40 transition-colors cursor-pointer"
-                >
-                  <Truck className="w-3 h-3" />
-                  <span>Select your vehicle to confirm fit</span>
-                </button>
-              )}
-
-              {/* Attribute pills */}
               {fitmentPills.map(pill => (
                 <div key={pill.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
                   {pill.label === "Bed" && <Ruler className="w-3 h-3" />}
@@ -917,15 +918,32 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Sub-Attribute Warning */}
+          {/* Sub-Attribute Confirmation */}
           {vehicle && relevantSubAttr && (
-            <div className="flex items-start gap-2 px-3 py-2 mb-3 border border-yellow-600/40 bg-yellow-600/10">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-              <span className="font-display text-[10px] tracking-widest text-yellow-500">
-                {relevantSubAttr.field === "bed_length"
-                  ? "THIS PRODUCT IS BED-LENGTH SPECIFIC. PLEASE CONFIRM YOUR BED LENGTH BEFORE ORDERING."
-                  : "THIS PRODUCT IS CAB-SIZE SPECIFIC. PLEASE CONFIRM YOUR CAB CONFIGURATION BEFORE ORDERING."}
-              </span>
+            <div className={`flex items-start gap-2 px-3 py-2 mb-3 border ${
+              relevantSubAttr.field === "bed_length"
+                ? "border-green-600/30 bg-green-600/5"
+                : "border-green-600/30 bg-green-600/5"
+            }`}>
+              <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-display text-[10px] tracking-widest text-green-500 block">
+                  {relevantSubAttr.field === "bed_length"
+                    ? `THIS PRODUCT FITS YOUR ${relevantSubAttr.value.toUpperCase()} BED`
+                    : `THIS PRODUCT FITS YOUR ${relevantSubAttr.value.toUpperCase()} CAB`}
+                </span>
+                <button
+                  onClick={() => {
+                    const el = document.querySelector('[data-accordion-fitment]');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="font-body text-[10px] text-muted-foreground hover:text-primary transition-colors mt-0.5"
+                >
+                  {relevantSubAttr.field === "bed_length"
+                    ? "Not sure of your bed length? →"
+                    : "Not sure of your cab type? →"}
+                </button>
+              </div>
             </div>
           )}
 
@@ -1018,59 +1036,35 @@ const ProductTemplate = () => {
             </button>
           </div>
 
-          {/* Trust badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          {/* Trust & Social Proof Banner */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
             {[
-              {
-                icon: RotateCcw,
-                title: "Free Returns",
-                subtitle: "30-day hassle-free",
-                badge: "returns",
-                highlight: false,
-              },
-              {
-                icon: Shield,
-                title: "Fitment Guaranteed",
-                subtitle: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal")
-                  ? "Confirmed to fit your vehicle"
-                  : "Confirmed to fit your vehicle",
-                badge: "fitment",
-                highlight: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal"),
-              },
-              {
-                icon: Truck,
-                title: "Fast Shipping",
-                subtitle: "Ships in 1-2 days from California",
-                badge: "shipping",
-                highlight: false,
-              },
-            ].map(({ icon: Icon, title, subtitle, badge, highlight }) => (
+              { icon: Users, title: "300,000+ Customers", badge: "customers" },
+              { icon: Award, title: "10+ Years Selling Auto Parts", badge: "experience" },
+              { icon: Truck, title: "Free Shipping on Every Order", badge: "shipping" },
+              { icon: RotateCcw, title: "30-Day Hassle-Free Returns", badge: "returns" },
+            ].map(({ icon: Icon, title, badge }) => (
               <div
                 key={badge}
-                className={`flex items-start gap-2.5 border rounded-lg p-3 transition-colors cursor-pointer hover:border-primary/40 ${
-                  highlight ? "border-green-600/40 bg-green-600/5" : "border-border bg-card"
-                }`}
+                className="flex items-center gap-2 border border-border bg-card rounded-lg p-2.5 transition-colors hover:border-primary/40 cursor-pointer"
                 onClick={() => trackEvent("trust_badge_clicked", { badge_type: badge })}
               >
-                <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${highlight ? "text-green-500" : "text-primary"}`} />
-                <div>
-                  <span className="font-display text-xs tracking-wider text-foreground block leading-tight font-bold">{title}</span>
-                  <span className="font-body text-[11px] text-muted-foreground block leading-snug mt-0.5">{subtitle}</span>
-                </div>
+                <Icon className="w-4 h-4 text-primary shrink-0" />
+                <span className="font-display text-[10px] tracking-wider text-foreground leading-tight">{title}</span>
               </div>
             ))}
           </div>
 
-          {/* Social proof banner */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 py-2.5 mb-4 rounded-lg bg-muted/50 border border-border">
-            <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">
-              <span className="text-primary">★</span> 10+ Years in Business
-            </span>
-            <span className="text-border">|</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">100,000+ Orders Shipped</span>
-            <span className="text-border hidden sm:inline">|</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider hidden sm:inline">Previously on eBay</span>
-          </div>
+          {/* Fitment Guarantee badge */}
+          {vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal") && (
+            <div className="flex items-center gap-2.5 border border-green-600/40 bg-green-600/5 rounded-lg p-3 mb-3">
+              <Shield className="w-5 h-5 text-green-500 shrink-0" />
+              <div>
+                <span className="font-display text-xs tracking-wider text-foreground block leading-tight font-bold">Fitment Guaranteed</span>
+                <span className="font-body text-[11px] text-muted-foreground block leading-snug mt-0.5">Confirmed to fit your vehicle</span>
+              </div>
+            </div>
+          )}
 
           {/* Fitment Details Accordion */}
           {(fitmentVehicleRange || bedLengthBadge || fitmentNotes || fitmentSubAttrs?.bed_style) && (
