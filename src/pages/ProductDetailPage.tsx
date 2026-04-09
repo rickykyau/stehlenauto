@@ -8,6 +8,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ChevronRight, Minus, Plus, ShoppingCart, Truck, RotateCcw, Shield,
   Loader2, Check, X as XIcon, ZoomIn, AlertTriangle, Ruler, ChevronDown, Info,
+  Users, Award, Clock,
 } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SiteHeader from "@/components/SiteHeader";
@@ -1035,59 +1036,35 @@ const ProductTemplate = () => {
             </button>
           </div>
 
-          {/* Trust badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+          {/* Trust & Social Proof Banner */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
             {[
-              {
-                icon: RotateCcw,
-                title: "Free Returns",
-                subtitle: "30-day hassle-free",
-                badge: "returns",
-                highlight: false,
-              },
-              {
-                icon: Shield,
-                title: "Fitment Guaranteed",
-                subtitle: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal")
-                  ? "Confirmed to fit your vehicle"
-                  : "Confirmed to fit your vehicle",
-                badge: "fitment",
-                highlight: vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal"),
-              },
-              {
-                icon: Truck,
-                title: "Fast Shipping",
-                subtitle: "Ships in 1-2 days from California",
-                badge: "shipping",
-                highlight: false,
-              },
-            ].map(({ icon: Icon, title, subtitle, badge, highlight }) => (
+              { icon: Users, title: "300,000+ Customers", badge: "customers" },
+              { icon: Award, title: "10+ Years Selling Auto Parts", badge: "experience" },
+              { icon: Truck, title: "Free Shipping on Every Order", badge: "shipping" },
+              { icon: RotateCcw, title: "30-Day Hassle-Free Returns", badge: "returns" },
+            ].map(({ icon: Icon, title, badge }) => (
               <div
                 key={badge}
-                className={`flex items-start gap-2.5 border rounded-lg p-3 transition-colors cursor-pointer hover:border-primary/40 ${
-                  highlight ? "border-green-600/40 bg-green-600/5" : "border-border bg-card"
-                }`}
+                className="flex items-center gap-2 border border-border bg-card rounded-lg p-2.5 transition-colors hover:border-primary/40 cursor-pointer"
                 onClick={() => trackEvent("trust_badge_clicked", { badge_type: badge })}
               >
-                <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${highlight ? "text-green-500" : "text-primary"}`} />
-                <div>
-                  <span className="font-display text-xs tracking-wider text-foreground block leading-tight font-bold">{title}</span>
-                  <span className="font-body text-[11px] text-muted-foreground block leading-snug mt-0.5">{subtitle}</span>
-                </div>
+                <Icon className="w-4 h-4 text-primary shrink-0" />
+                <span className="font-display text-[10px] tracking-wider text-foreground leading-tight">{title}</span>
               </div>
             ))}
           </div>
 
-          {/* Social proof banner */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 px-3 py-2.5 mb-4 rounded-lg bg-muted/50 border border-border">
-            <span className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">
-              <span className="text-primary">★</span> 10+ Years in Business
-            </span>
-            <span className="text-border">|</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider">100,000+ Orders Shipped</span>
-            <span className="text-border hidden sm:inline">|</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground font-display tracking-wider hidden sm:inline">Previously on eBay</span>
-          </div>
+          {/* Fitment Guarantee badge */}
+          {vehicle && (fitmentResult?.status === "fits" || fitmentResult?.status === "universal") && (
+            <div className="flex items-center gap-2.5 border border-green-600/40 bg-green-600/5 rounded-lg p-3 mb-3">
+              <Shield className="w-5 h-5 text-green-500 shrink-0" />
+              <div>
+                <span className="font-display text-xs tracking-wider text-foreground block leading-tight font-bold">Fitment Guaranteed</span>
+                <span className="font-body text-[11px] text-muted-foreground block leading-snug mt-0.5">Confirmed to fit your vehicle</span>
+              </div>
+            </div>
+          )}
 
           {/* Fitment Details Accordion */}
           {(fitmentVehicleRange || bedLengthBadge || fitmentNotes || fitmentSubAttrs?.bed_style) && (
