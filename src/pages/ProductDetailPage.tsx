@@ -838,22 +838,19 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Style Variation Selector (from Supabase) */}
+          {/* Style Variation Selector (from Supabase) — simple chips */}
           {variationMembers.length >= 2 && (() => {
             const allSameStyle = variationMembers.every(m => m.option_label === variationMembers[0].option_label);
             if (allSameStyle) return null;
-            const currentMember = variationMembers.find(m => m.shopify_product_id === currentShopifyId);
-            const currentPrice = currentMember?.price || price;
             return (
               <div className={`mb-3 transition-opacity duration-150 ${variationsVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-2">
-                  {variationGroup?.option_name?.toUpperCase() || "STYLE OPTIONS"}
+                  {(variationGroup?.option_name || "STYLE").toUpperCase()}:
                 </h3>
-                <div className="flex gap-3 overflow-x-auto md:overflow-x-visible md:flex-wrap scrollbar-none snap-x snap-mandatory md:snap-none pb-1 md:pb-0">
+                <div className="flex flex-wrap gap-2">
                   {variationMembers.map(member => {
                     const isCurrent = member.shopify_product_id === currentShopifyId;
                     const styleLabel = member.option_label || member.product_title.split(" ").slice(0, 3).join(" ");
-                    const priceDiff = member.price && currentPrice ? member.price - currentPrice : 0;
                     return (
                       <button
                         key={member.shopify_product_id}
@@ -862,38 +859,18 @@ const ProductTemplate = () => {
                             trackGA4Event("variation_selected", {
                               from_product_id: product.id,
                               to_product_id: member.shopify_product_id,
-                              from_style: currentMember?.option_label || "",
                               to_style: member.option_label || "",
                             });
                             navigate(`/products/${member.product_handle}`);
                           }
                         }}
-                        className={`relative flex flex-col items-center gap-1 p-2 border rounded flex-shrink-0 snap-start transition-colors min-w-[90px] w-[90px] md:min-w-[100px] md:w-auto ${
+                        className={`px-3 py-1.5 font-display text-[10px] tracking-wider transition-colors border ${
                           isCurrent
-                            ? "border-primary bg-primary/5 shadow-sm"
-                            : "border-border hover:border-primary/40"
+                            ? "bg-primary text-primary-foreground border-primary font-bold"
+                            : "bg-card text-muted-foreground border-border hover:border-primary/40"
                         } ${!member.available_for_sale ? "opacity-50" : ""}`}
                       >
-                        {member.image_url ? (
-                          <img src={member.image_url} alt={styleLabel} className="w-10 h-10 rounded object-cover" />
-                        ) : (
-                          <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
-                            <ShoppingCart className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                        )}
-                        <span className="font-display text-[11px] tracking-wider text-foreground text-center leading-tight">
-                          {styleLabel}
-                        </span>
-                        {priceDiff !== 0 && (
-                          <span className={`text-[9px] font-semibold ${priceDiff > 0 ? 'text-muted-foreground' : 'text-green-500'}`}>
-                            {priceDiff > 0 ? `+$${priceDiff.toFixed(0)}` : `-$${Math.abs(priceDiff).toFixed(0)}`}
-                          </span>
-                        )}
-                        {!member.available_for_sale && (
-                          <span className="absolute inset-0 flex items-center justify-center bg-background/60 rounded text-[8px] font-semibold text-muted-foreground">
-                            OUT OF STOCK
-                          </span>
-                        )}
+                        {styleLabel.toUpperCase()}
                       </button>
                     );
                   })}
@@ -981,10 +958,10 @@ const ProductTemplate = () => {
           {relevantSubAttr && siblingProducts.length > 0 && (
             <div className="mb-3">
               <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
-                SELECT YOUR {relevantSubAttr.label.toUpperCase()}:
+                {relevantSubAttr.label.toUpperCase()}:
               </h3>
               <div className="flex flex-wrap gap-2">
-                <button className="px-3 py-1.5 border-2 border-primary bg-primary/10 text-primary font-display text-[10px] tracking-wider">
+                <button className="px-3 py-1.5 font-display text-[10px] tracking-wider border bg-primary text-primary-foreground border-primary font-bold">
                   {relevantSubAttr.value.toUpperCase()}
                 </button>
                 {siblingProducts.map((sib) => {
@@ -1002,7 +979,7 @@ const ProductTemplate = () => {
                         });
                         navigate(`/products/${sib.handle}`);
                       }}
-                      className="px-3 py-1.5 border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground font-display text-[10px] tracking-wider transition-colors"
+                      className="px-3 py-1.5 font-display text-[10px] tracking-wider border border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground transition-colors"
                     >
                       {String(sibVal).toUpperCase()}
                     </button>
