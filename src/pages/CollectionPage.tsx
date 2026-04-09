@@ -472,7 +472,21 @@ const CollectionTemplate = () => {
 
   // Build sub-model filter options from raw products (before sub-model filtering)
   const subModelFilterOptions = useMemo(() => {
-    return buildSubModelFilters(rawDisplayProducts);
+    const result = buildSubModelFilters(rawDisplayProducts);
+    // Debug: log sub_model metafield stats
+    const withSubModel = rawDisplayProducts.filter(p => getSubModelData(p) !== null);
+    console.log('[SubModel Debug]', {
+      totalProducts: rawDisplayProducts.length,
+      withSubModel: withSubModel.length,
+      dimensions: Object.fromEntries(
+        Array.from(result.entries()).map(([dim, valMap]) => [
+          dim,
+          Object.fromEntries(valMap.entries()),
+        ])
+      ),
+      thresholdMet: result.size > 0,
+    });
+    return result;
   }, [rawDisplayProducts]);
 
   const displayProducts = includeUniversal
