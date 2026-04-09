@@ -769,8 +769,8 @@ const CollectionTemplate = () => {
         </div>
       )}
 
-      {/* Sub-Model Fitment Filters */}
-      {subModelFilterOptions.size > 0 && (
+      {/* Sub-Model Fitment Filters — only show when a specific category is selected */}
+      {subModelFilterOptions.size > 0 && filters.category && (
         <div className="border-b border-border px-4 lg:px-8 py-3">
           {Array.from(subModelFilterOptions.entries()).map(([dimension, valMap]) => (
             <div key={dimension} className="flex items-center gap-2 flex-wrap">
