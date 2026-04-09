@@ -305,11 +305,13 @@ const CollectionTemplate = () => {
   const activeCategoryLabel = filters.category
     ? CATEGORIES.find((c) => c.handle === filters.category)?.label || null
     : null;
-  const title = activeCategoryLabel
+  const rawTitle = activeCategoryLabel
     ? activeCategoryLabel
     : isAllProducts
       ? "All Products"
       : collection?.node.title || handle || "All Products";
+  // Strip "Truck" from customer-facing collection titles
+  const title = rawTitle.replace(/\bTruck\s*/gi, "").replace(/\s{2,}/g, " ").trim();
 
   const { sortKey, reverse } = SORT_MAP[sort];
 
