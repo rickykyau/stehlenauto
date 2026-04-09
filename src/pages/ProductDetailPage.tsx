@@ -187,29 +187,8 @@ function parseTrimFromTags(tags: string[]): string | null {
   return null;
 }
 
-/* ─── Variation Group Types ─── */
 
-interface VariationMember {
-  shopify_product_id: string;
-  product_handle: string;
-  product_title: string;
-  price: number | null;
-  image_url: string | null;
-  option_label: string | null;
-  bed_length: string | null;
-  cab_type: string | null;
-  trim_level: string | null;
-  available_for_sale: boolean;
-  display_order: number;
-}
 
-interface VariationGroup {
-  id: string;
-  family_name: string;
-  option_name: string;
-  ymm_base: string;
-  category: string;
-}
 
 /* ─── Year/Fitment Matching ─── */
 // Moved to src/utils/fitmentMatcher.ts
