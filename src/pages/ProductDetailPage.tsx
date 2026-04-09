@@ -753,51 +753,8 @@ const ProductTemplate = () => {
           </div>
 
           {/* Fitment Attribute Pills Row */}
-          {(fitmentPills.length > 0 || vehicle || !vehicle) && (
+          {fitmentPills.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              {/* Vehicle fitment badge */}
-              {vehicle && fitmentResult && fitmentResult.status !== "unknown" && (
-                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  fitmentResult.status === "universal" || fitmentResult.status === "fits"
-                    ? "bg-green-600/15 text-green-500 border border-green-600/30"
-                    : fitmentResult.status === "partial"
-                      ? "bg-yellow-600/15 text-yellow-500 border border-yellow-600/30"
-                      : "bg-red-600/15 text-red-400 border border-red-600/30"
-                }`}>
-                  {(fitmentResult.status === "universal" || fitmentResult.status === "fits") && <Check className="w-3 h-3" />}
-                  {fitmentResult.status === "partial" && <AlertTriangle className="w-3 h-3" />}
-                  {fitmentResult.status === "does_not_fit" && <XIcon className="w-3 h-3" />}
-                  <span>
-                    {fitmentResult.status === "universal"
-                      ? "Universal Fit"
-                      : fitmentResult.status === "fits"
-                        ? `Fits your ${vehicleLabel}`
-                        : fitmentResult.status === "partial"
-                          ? `May fit your ${vehicleLabel}`
-                          : `Does not fit your ${vehicleLabel}`}
-                  </span>
-                </div>
-              )}
-              {vehicle && fitmentResult?.status === "unknown" && (
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
-                  <AlertTriangle className="w-3 h-3" />
-                  <span>Fitment not confirmed</span>
-                </div>
-              )}
-              {!vehicle && (
-                <button
-                  onClick={() => {
-                    const ymmBtn = document.querySelector('[data-ymm-trigger]') as HTMLElement;
-                    ymmBtn?.click();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border hover:border-primary/40 transition-colors cursor-pointer"
-                >
-                  <Truck className="w-3 h-3" />
-                  <span>Select your vehicle to confirm fit</span>
-                </button>
-              )}
-
-              {/* Attribute pills */}
               {fitmentPills.map(pill => (
                 <div key={pill.label} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border">
                   {pill.label === "Bed" && <Ruler className="w-3 h-3" />}
@@ -960,15 +917,32 @@ const ProductTemplate = () => {
             </div>
           )}
 
-          {/* Sub-Attribute Warning */}
+          {/* Sub-Attribute Confirmation */}
           {vehicle && relevantSubAttr && (
-            <div className="flex items-start gap-2 px-3 py-2 mb-3 border border-yellow-600/40 bg-yellow-600/10">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
-              <span className="font-display text-[10px] tracking-widest text-yellow-500">
-                {relevantSubAttr.field === "bed_length"
-                  ? "THIS PRODUCT IS BED-LENGTH SPECIFIC. PLEASE CONFIRM YOUR BED LENGTH BEFORE ORDERING."
-                  : "THIS PRODUCT IS CAB-SIZE SPECIFIC. PLEASE CONFIRM YOUR CAB CONFIGURATION BEFORE ORDERING."}
-              </span>
+            <div className={`flex items-start gap-2 px-3 py-2 mb-3 border ${
+              relevantSubAttr.field === "bed_length"
+                ? "border-green-600/30 bg-green-600/5"
+                : "border-green-600/30 bg-green-600/5"
+            }`}>
+              <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-display text-[10px] tracking-widest text-green-500 block">
+                  {relevantSubAttr.field === "bed_length"
+                    ? `THIS PRODUCT FITS YOUR ${relevantSubAttr.value.toUpperCase()} BED`
+                    : `THIS PRODUCT FITS YOUR ${relevantSubAttr.value.toUpperCase()} CAB`}
+                </span>
+                <button
+                  onClick={() => {
+                    const el = document.querySelector('[data-accordion-fitment]');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="font-body text-[10px] text-muted-foreground hover:text-primary transition-colors mt-0.5"
+                >
+                  {relevantSubAttr.field === "bed_length"
+                    ? "Not sure of your bed length? →"
+                    : "Not sure of your cab type? →"}
+                </button>
+              </div>
             </div>
           )}
 
