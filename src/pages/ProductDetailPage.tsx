@@ -258,7 +258,7 @@ const ProductTemplate = () => {
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [siblingProducts, setSiblingProducts] = useState<Array<{ handle: string; title: string; subAttr: FitmentSubAttributes }>>([]);
+  
   const imagesGalleryRef = useRef<HTMLDivElement>(null);
 
   // Track product view (GA4 standard)
@@ -367,52 +367,8 @@ const ProductTemplate = () => {
     return null;
   }, [product, fitmentSubAttrs]);
 
-  // Fetch sibling products with different sub-attributes
-  useEffect(() => {
-    if (!product || !relevantSubAttr || !vehicle) {
-      setSiblingProducts([]);
-      return;
-    }
-    const fetchSiblings = async () => {
-      try {
-        const { data } = await supabase
-          .from("products_cache")
-          .select("handle, title, fitment_subattributes")
-          .eq("status", "active")
-          .ilike("product_type", `%${product.productType}%`)
-          .ilike("title", `%${vehicle.make}%${vehicle.model}%`)
-          .neq("handle", product.handle)
-          .not("fitment_subattributes", "is", null)
-          .limit(10);
 
-        if (data) {
-          const seen = new Set<string>();
-          const siblings = data
-            .filter((p: any) => {
-              if (!p.fitment_subattributes) return false;
-              const subAttr = typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes;
-              const val = String(subAttr[relevantSubAttr.field] || "").trim();
-              if (!val || val === relevantSubAttr.value || seen.has(val)) return false;
-              seen.add(val);
-              return true;
-            })
-            .map((p: any) => ({
-              handle: p.handle,
-              title: p.title,
-              subAttr: typeof p.fitment_subattributes === "string" ? JSON.parse(p.fitment_subattributes) : p.fitment_subattributes,
-            }));
-          setSiblingProducts(siblings);
-        }
-      } catch { /* silent */ }
-    };
-    fetchSiblings();
-  }, [product?.handle, relevantSubAttr?.field, relevantSubAttr?.value, vehicle?.make, product?.productType]);
 
-  // Determine if customer needs sub-attribute warning
-  const showSubAttrWarning = useMemo(() => {
-    if (!vehicle || !relevantSubAttr) return false;
-    return true;
-  }, [vehicle, relevantSubAttr]);
 
   // Bed length badge: fixed attribute (not a variant selector)
   const bedLengthBadge = useMemo(() => {
@@ -719,55 +675,8 @@ const ProductTemplate = () => {
             </p>
           )}
 
-          {/* Sub-Attribute Configurator (sibling products) */}
-          {relevantSubAttr && siblingProducts.length > 0 && (() => {
-            // Build all options including current, sorted numerically for bed lengths
-            const allOptions = [
-              { handle: product.handle, value: relevantSubAttr.value, isCurrent: true },
-              ...siblingProducts
-                .filter(sib => sib.subAttr[relevantSubAttr.field])
-                .map(sib => ({ handle: sib.handle, value: String(sib.subAttr[relevantSubAttr.field]), isCurrent: false }))
-            ];
-            // Stable sort: numeric for bed lengths, alphabetical otherwise
-            allOptions.sort((a, b) => {
-              const numA = parseFloat(a.value);
-              const numB = parseFloat(b.value);
-              if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-              return a.value.localeCompare(b.value);
-            });
-            return (
-              <div className="mb-3">
-                <h3 className="font-display text-[10px] tracking-widest text-muted-foreground mb-1.5">
-                  {relevantSubAttr.label.toUpperCase()}:
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {allOptions.map((opt) => (
-                    <button
-                      key={opt.handle}
-                      onClick={() => {
-                        if (!opt.isCurrent) {
-                          trackEvent("fitment_subattribute_selected", {
-                            item_id: product.id,
-                            attribute_type: relevantSubAttr.field,
-                            attribute_value: opt.value,
-                            source: "pdp_configurator",
-                          });
-                          navigate(`/products/${opt.handle}`);
-                        }
-                      }}
-                      className={`px-3 py-1.5 font-display text-[10px] tracking-wider transition-colors border ${
-                        opt.isCurrent
-                          ? "bg-primary text-primary-foreground border-primary font-bold"
-                          : "bg-card text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                      }`}
-                    >
-                      {opt.value.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+
+
 
           {/* Sub-Attribute Confirmation */}
           {vehicle && relevantSubAttr && (
