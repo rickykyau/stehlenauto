@@ -2,6 +2,7 @@
  * Campaign landing page for eBay reactivation emails.
  * URL: /welcome-back
  * noindex, nofollow — not for organic search.
+ * Categories + Featured products are pulled from the CMS (admin/content).
  */
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -13,21 +14,40 @@ import ProductCard from "@/components/ProductCard";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest, PRODUCTS_QUERY } from "@/lib/shopify";
 import type { ShopifyProduct } from "@/lib/shopify";
+import { supabase } from "@/integrations/supabase/client";
 
-/* ─── Categories (same as homepage) ─── */
-const CATEGORIES = [
-  { handle: "tonneau-covers", title: "Tonneau Covers", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tc-lth_2btbl-16w8p-01-ws-2_a9465d73-f185-4ae9-8440-381b63cd3658.jpg?v=1773608065" },
-  { handle: "running-boards-side-steps", title: "Running Boards", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_sbrs-rs2-tb-ws-1.jpg?v=1773608085" },
-  { handle: "bull-guards-grille-guards", title: "Bull Bars & Brush Guards", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_blgr-tmy20-bk-ws-1.jpg?v=1773608061" },
-  { handle: "front-grilles", title: "Grilles", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_fg-zh-mus05gt-me-bk-ws-1.jpg?v=1773608072" },
-  { handle: "headlights", title: "Headlights & Tail Lights", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_hlpnb-tun14lsq-lam-ac-ws-1.jpg?v=1773608075" },
-  { handle: "trailer-hitches", title: "Hitches & Towing", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_th-xte05-c514_2bth-bmount-l2-ws-1.jpg?v=1773608068" },
-  { handle: "chase-racks-sport-bars", title: "Bumpers", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_crjz-raz-1000-st-mb-ws-1_135fbf61-e2a7-409b-9228-51a321b81ac9.jpg?v=1773608092" },
-  { handle: "molle-panels", title: "Fenders & Body Kits", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_mp-colo23-5-3p-ws-1_de4c08ed-efa7-41bf-93b1-57376cde9caa.jpg?v=1773608095" },
-  { handle: "truck-bed-mats", title: "Bed Mats & Liners", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-tun22-5.5-rb-v2-w-1.jpg?v=1773608078" },
-  { handle: "roof-racks-baskets", title: "Roof Racks", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_rr-lp-fullsize-uni-ws-1_b80d4918-e311-4039-8d13-c3c613105c8b.jpg?v=1773608088" },
-  { handle: "floor-mats", title: "Floor Mats", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_tbm-dak00-6.5-rb-gy-ws-1.jpg?v=1773608081" },
-  { handle: "under-seat-storage", title: "Accessories", image: "https://cdn.shopify.com/s/files/1/0724/2638/9551/collections/LISTING_uss-sil14cc-bk-ws-2.jpg?v=1773608098" },
+/* ─── CMS types ─── */
+interface CmsCategory {
+  handle: string;
+  title: string;
+  image_url?: string;
+  visible: boolean;
+  order: number;
+}
+
+interface CmsFeaturedCard {
+  product_handle: string | null;
+  custom_link: string | null;
+  title: string;
+  description: string;
+  image_url: string | null;
+  product_image_url: string | null;
+}
+
+/* ─── Fallback categories (used if CMS has none) ─── */
+const FALLBACK_CATEGORIES = [
+  { handle: "tonneau-covers", title: "Tonneau Covers", image: "" },
+  { handle: "running-boards-side-steps", title: "Running Boards", image: "" },
+  { handle: "bull-guards-grille-guards", title: "Bull Bars & Brush Guards", image: "" },
+  { handle: "front-grilles", title: "Grilles", image: "" },
+  { handle: "headlights", title: "Headlights & Tail Lights", image: "" },
+  { handle: "trailer-hitches", title: "Hitches & Towing", image: "" },
+  { handle: "chase-racks-sport-bars", title: "Bumpers", image: "" },
+  { handle: "molle-panels", title: "Fenders & Body Kits", image: "" },
+  { handle: "truck-bed-mats", title: "Bed Mats & Liners", image: "" },
+  { handle: "roof-racks-baskets", title: "Roof Racks", image: "" },
+  { handle: "floor-mats", title: "Floor Mats", image: "" },
+  { handle: "under-seat-storage", title: "Accessories", image: "" },
 ];
 
 const WelcomeBackPage = () => {
@@ -45,10 +65,55 @@ const WelcomeBackPage = () => {
     return () => { document.head.removeChild(meta); };
   }, []);
 
-  /* ── Fetch best sellers ── */
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["welcome-back-best-sellers"],
+  /* ── Fetch CMS content (categories + featured) ── */
+  const { data: cmsData } = useQuery({
+    queryKey: ["welcome-back-cms"],
     queryFn: async () => {
+      const { data } = await supabase
+        .from("homepage_content")
+        .select("section, content")
+        .in("section", ["categories", "featured"]);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categories: { handle: string; title: string; image: string }[] = (() => {
+    const catRow = cmsData?.find((r) => r.section === "categories");
+    if (!catRow) return FALLBACK_CATEGORIES;
+    const cats = ((catRow.content as any)?.categories ?? []) as CmsCategory[];
+    const visible = cats.filter((c) => c.visible).sort((a, b) => a.order - b.order);
+    if (visible.length === 0) return FALLBACK_CATEGORIES;
+    return visible.map((c) => ({ handle: c.handle, title: c.title, image: c.image_url || "" }));
+  })();
+
+  const cmsFeaturedHandles: string[] = (() => {
+    const featRow = cmsData?.find((r) => r.section === "featured");
+    if (!featRow) return [];
+    const content = featRow.content as any;
+    if (content?.cards) {
+      return (content.cards as CmsFeaturedCard[])
+        .map((c) => c.product_handle)
+        .filter(Boolean) as string[];
+    }
+    return content?.handles ?? [];
+  })();
+
+  /* ── Fetch featured products from CMS or fallback to best sellers ── */
+  const { data: products = [], isLoading } = useQuery({
+    queryKey: ["welcome-back-products", cmsFeaturedHandles],
+    queryFn: async () => {
+      if (cmsFeaturedHandles.length > 0) {
+        const query = cmsFeaturedHandles.map((h) => `handle:${h}`).join(" OR ");
+        const result = await storefrontApiRequest(PRODUCTS_QUERY, {
+          first: cmsFeaturedHandles.length,
+          query,
+          sortKey: "RELEVANCE",
+          reverse: false,
+          after: null,
+        });
+        return (result?.data?.products?.edges || []) as ShopifyProduct[];
+      }
       const result = await storefrontApiRequest(PRODUCTS_QUERY, {
         first: 8,
         query: null,
@@ -59,7 +124,10 @@ const WelcomeBackPage = () => {
       return (result?.data?.products?.edges || []) as ShopifyProduct[];
     },
     staleTime: 5 * 60 * 1000,
+    enabled: !!cmsData,
   });
+
+  const featuredHeading = cmsFeaturedHandles.length > 0 ? "FEATURED PRODUCTS" : "BEST SELLERS";
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,25 +163,29 @@ const WelcomeBackPage = () => {
         </div>
       </section>
 
-      {/* ── 3. Shop by Category Grid ── */}
+      {/* ── 3. Shop by Category Grid (from CMS) ── */}
       <section className="border-b border-border">
         <div className="px-4 lg:px-8 py-6 border-b border-border">
           <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">SHOP BY CATEGORY</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
-          {CATEGORIES.map(({ handle, title, image }) => (
+          {categories.map(({ handle, title, image }) => (
             <Link
               key={handle}
               to={`/collections/all?category=${handle}`}
               className="group relative aspect-[4/3] overflow-hidden block border border-border hover:border-[#f5a823] transition-colors duration-300"
               onClick={() => trackEvent("category_tile_clicked", { category: handle, source: "welcome_back" })}
             >
-              <img
-                src={image}
-                alt={title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
+              {image ? (
+                <img
+                  src={image}
+                  alt={title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="w-full h-full bg-card" />
+              )}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 40%, transparent 70%)" }}
@@ -128,11 +200,11 @@ const WelcomeBackPage = () => {
         </div>
       </section>
 
-      {/* ── 4. Best Sellers ── */}
+      {/* ── 4. Featured / Best Sellers (from CMS) ── */}
       <section className="py-10 sm:py-14 px-4 sm:px-8 border-b border-border">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">BEST SELLERS</h2>
+            <h2 className="font-display text-xs tracking-[0.15em] text-muted-foreground">{featuredHeading}</h2>
             <Link
               to="/collections/all"
               className="font-display text-[10px] tracking-widest text-primary hover:brightness-110 transition-colors flex items-center gap-1"
@@ -152,7 +224,7 @@ const WelcomeBackPage = () => {
                   <ProductCard
                     product={p}
                     compact
-                    listName="welcome_back_best_sellers"
+                    listName="welcome_back_featured"
                     index={i}
                   />
                 </div>
